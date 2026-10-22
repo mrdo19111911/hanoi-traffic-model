@@ -987,3 +987,14 @@ Phân cụm spectral (NJW với k = 8, 16, 32, 64, cùng `natural_spectral` và 
   - lớp Cụm chỉ có hai nút, mặc định là Sông;
   - khi file không có `natural` thì mặc định là Tỉnh.
 - Toàn bộ test Python và vitest đều qua, và build thành công.
+
+### 22.4 Kết quả (2026-10-22)
+Đã chạy lại thí nghiệm gate trên file cụm mới (`reports/gate_matrix_experiment.json`, `reports/gate_matrix_experiment_2.json`). Tiêu chí như cũ: với các cặp xa, p95 ≤ 1 % và max ≤ 5 %.
+- **Lượt 1 (lấy mẫu đều, 500 cặp):** cả hai phân vùng đều đạt.
+  - `province` (k = 34): G = 698, p95 cặp xa 0,00 %, max 3,69 %. Bảng G×G mất 15,98 s, DB 187 MB cho 96 khung giờ.
+  - `natural` (k = 8): G = 350, p95 cặp xa 0,10 %, max 3,69 %. Bảng G×G mất 3,81 s, DB 47 MB.
+- **Lượt 2 (lấy mẫu phân tầng, 800 cặp):**
+  - `natural` đạt: 42 cặp xa trong 197 cặp khác cụm, max 0,04 %.
+  - `province` không đạt: 181 cặp xa trong 445 cặp, max 25,0 %. Cặp tệ nhất là A-A dài 96 km, đi qua phà.
+- **So sánh:** `natural` chỉ cần nửa số gate, thời gian G×G ít hơn khoảng 4 lần và DB bằng một phần tư.
+- **Còn mở:** các ô tệ nhất của lượt 2 là cặp hai cụm kề nhau, cả hai đầu ở đường nhỏ, dài 30–100 km. Max ở cả hai phân vùng là 101,76 %. Đây là cặp kề chứ không phải cặp xa, nên tiêu chí đạt hiện chưa xét tới chúng.
