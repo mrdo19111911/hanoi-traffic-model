@@ -20,6 +20,40 @@ from clip_to_roads import HALF, SKIP
 from compact_layer import decode
 
 
+_T = Transformer.from_crs(4326, 32648, always_xy=True)
+
+
+def utm(geoms):
+    """lon/lat footprints -> valid UTM 48N polygons."""
+    return np.array([shapely.make_valid(shapely.transform(x, lambda c: np.column_stack(_T.transform(c[:, 0], c[:, 1])))) for x in geoms], object)
+
+
+def carriageways(con, roads_parquet, bbox):
+    """Carriageway polygons (UTM, half-width HALF, no rounding margin) of roads meeting a lon/lat box, and their tree."""
+    env = 'ST_MakeEnvelope({}, {}, {}, {})'.format(*bbox)
+    roads = con.execute(f"""SELECT ST_AsWKB(ST_Buffer(ST_Transform(geometry, 'EPSG:4326', 'EPSG:32648', always_xy := true), {HALF}))
+        FROM '{roads_parquet}' WHERE {HALF} IS NOT NULL AND {SKIP} AND ST_Intersects(geometry, {env})""").fetchall()
+    R = [shapely.make_valid(shapely.from_wkb(bytes(w))) for (w,) in roads]
+    return R, STRtree(R)
+
+
+def on_road_m2(geoms, R, tree):
+    """Area (m2) of each lon/lat footprint on the carriageways R (UTM polygons, tree = STRtree(R))."""
+    out = []
+    for g in utm(geoms):
+        hit = tree.query(g, predicate='intersects')
+        out.append(shapely.union_all([R[j] for j in hit]).intersection(g).area if len(hit) else 0.0)
+    return np.array(out)
+
+
+def pair_overlaps(geoms):
+    """Overlap area (m2) of every pair of intersecting lon/lat footprints."""
+    g = utm(geoms)
+    i, j = STRtree(g).query(g, predicate='intersects')
+    m = i < j
+    return np.array([shapely.intersection(g[x], g[y]).area for x, y in zip(i[m], j[m])])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--bbox', type=float, nargs=4, metavar=('W', 'S', 'E', 'N'), required=True)
@@ -31,32 +65,12 @@ def main():
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
     env = f'ST_MakeEnvelope({W}, {S}, {E}, {N})'
     con = duckdb.connect(); con.execute('LOAD spatial')
-    roads = con.execute(f"""SELECT ST_AsWKB(ST_Buffer(ST_Transform(geometry, 'EPSG:4326', 'EPSG:32648', always_xy := true), {HALF}))
-        FROM '{p('osm_roads.parquet')}' WHERE {HALF} IS NOT NULL AND {SKIP} AND ST_Intersects(geometry, {env})""").fetchall()
-    R = [shapely.make_valid(shapely.from_wkb(bytes(w))) for (w,) in roads]
-    tree = STRtree(R)
-    T = Transformer.from_crs(4326, 32648, always_xy=True)
-
-    def overlap(geoms):
-        out = []
-        for g in geoms:
-            g = shapely.make_valid(shapely.transform(g, lambda c: np.column_stack(T.transform(c[:, 0], c[:, 1]))))
-            hit = tree.query(g, predicate='intersects')
-            out.append(shapely.union_all([R[j] for j in hit]).intersection(g).area if len(hit) else 0.0)
-        return np.array(out)
+    R, tree = carriageways(con, p('osm_roads.parquet'), a.bbox)
+    overlap = lambda geoms: on_road_m2(geoms, R, tree)
 
     def report(name, v, what='on a road'):
         print(f'{name:24s} n={len(v):8d}  {what} over 0.05 m2: {(v > 0.05).sum():6d}  over 0.5 m2: {(v > 0.5).sum():6d}  '
               f'over 2 m2: {(v > 2).sum():6d}  max {v.max(initial=0):.2f} m2')
-
-    def utm(geoms):
-        return np.array([shapely.make_valid(shapely.transform(x, lambda c: np.column_stack(T.transform(c[:, 0], c[:, 1])))) for x in geoms], object)
-
-    def pair_overlaps(geoms):
-        g = utm(geoms)
-        i, j = STRtree(g).query(g, predicate='intersects')
-        m = i < j
-        return np.array([shapely.intersection(g[x], g[y]).area for x, y in zip(i[m], j[m])])
 
     def narrow_gaps(name, geoms):
         """Neighbours that do not touch but stand less than 1 m apart, and the area of such gaps (closing at 0.5 m)."""

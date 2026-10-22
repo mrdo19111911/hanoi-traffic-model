@@ -20,7 +20,7 @@ Output data/buildings/vn_buildings.parquet, compact and zstd-compressed, one row
   floors uint8 (OSM levels when tagged, else 1 + round((height - 3.9) / 3.3), at least 1),
   osm_id, name, addr.
 
-    .venv/Scripts/python.exe buildings/heights_25d.py [--out data/buildings] [--workers 8] [--year 2023] [--bbox W S E N]
+    .venv/Scripts/python.exe buildings/heights_25d.py [--out data/buildings] [--workers N] [--year 2023] [--bbox W S E N]
 """
 import argparse, hashlib, json, os, threading, time, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -72,10 +72,85 @@ def group_medians(lab, H):
     return li[st], (hv[st + (cnt - 1) // 2] + hv[st + cnt // 2]) / 2
 
 
+def attrs_query(src, hh, keep=''):
+    """SQL for the output rows: footprints `src` (merged columns + geometry) joined with heights `hh` (id, h25)."""
+    # least()/greatest() skip NULLs in DuckDB, so a missing height must be guarded explicitly.
+    dm = lambda x: f"CASE WHEN {x} IS NULL THEN NULL ELSE CAST(round(least({x}, 6553) * 10) AS USMALLINT) END"
+    return f"""
+        WITH t AS (
+            SELECT m.id, m.src, ST_Centroid(m.geometry) c, m.area_m2, m.conf, m.osm_id, m.name,
+                   nullif(trim(concat_ws(' ', m.addr_housenumber, m.addr_street)), '') addr,
+                   CASE WHEN isnan(hh.h25) THEN NULL ELSE hh.h25 END h25,
+                   coalesce(try_cast(m.height AS DOUBLE), try_cast(m.building_levels AS DOUBLE) * 3.3) osm_h,
+                   try_cast(m.building_levels AS DOUBLE) osm_levels
+            FROM {src} m JOIN {hh} USING (id) {keep})
+        , u AS (SELECT *, coalesce(osm_h, CASE WHEN h25 >= 2 THEN h25 END) hm FROM t)
+        SELECT id, src, CAST(round(ST_X(c) * 1e6) AS INTEGER) lon_e6, CAST(round(ST_Y(c) * 1e6) AS INTEGER) lat_e6,
+               area_m2::FLOAT area_m2, CAST(round(conf * 100) AS UTINYINT) conf_pct,
+               {dm('h25')} h25_dm, {dm('osm_h')} osm_h_dm, {dm('hm')} height_dm,
+               CASE WHEN osm_h IS NOT NULL THEN 'osm' WHEN hm IS NOT NULL THEN 'g25' END height_src,
+               CASE WHEN osm_levels IS NOT NULL THEN CAST(least(osm_levels, 255) AS UTINYINT)
+                    WHEN hm IS NOT NULL THEN CAST(least(greatest(1, 1 + round((hm - 3.9) / 3.3)), 255) AS UTINYINT) END floors,
+               osm_id, name, addr
+        FROM u ORDER BY id"""
+
+
+def tile_heights(tile, bid, cx, cy, wkb):
+    """Heights read from one tile for buildings (ids, lon/lat centroids, lon/lat WKB) whose centroid lies in it:
+    (ids, heights, windows read, pixels decoded); windows = -1 when no centroid lies in the tile."""
+    url, z, x0, y0, x1, y1 = tile[:6]
+    tr = Transformer.from_crs(4326, z, always_xy=True)
+    ex, ey = tr.transform(cx, cy)
+    ins = (ex >= x0) & (ex < x1) & (ey >= y0) & (ey < y1)
+    if not ins.any():
+        return np.zeros(0, np.int64), np.zeros(0, np.float32), -1, 0
+    bid, ex, ey = bid[ins], ex[ins], ey[ins]
+    geoms = shapely.from_wkb([bytes(w) for w in wkb[ins]])
+    geoms = shapely.transform(geoms, lambda xy: np.column_stack(tr.transform(xy[:, 0], xy[:, 1])))
+    gkey = ((ex - x0) // WIN_M).astype(np.int64) * 100 + ((y1 - ey) // WIN_M).astype(np.int64)
+    found_i, found_h, nwin, npx = [], [], 0, 0
+    with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR', GDAL_HTTP_MAX_RETRY='5', GDAL_HTTP_RETRY_DELAY='2'):
+        with rasterio.open('/vsicurl/' + url) as r:
+            inv = ~r.transform
+            for key in np.unique(gkey):
+                m = np.flatnonzero(gkey == key)
+                gb = shapely.bounds(geoms[m])
+                c0, r0 = inv * (gb[:, 0].min() - 2, gb[:, 3].max() + 2)
+                c1, r1 = inv * (gb[:, 2].max() + 2, gb[:, 1].min() - 2)
+                c0, r0 = max(int(c0) // OVR * OVR, 0), max(int(r0) // OVR * OVR, 0)
+                c1, r1 = min(-(-int(c1) // OVR) * OVR, r.width), min(-(-int(r1) // OVR) * OVR, r.height)
+                if c1 <= c0 or r1 <= r0:
+                    continue
+                win = Window(c0, r0, c1 - c0, r1 - r0)
+                oh, ow = (r1 - r0) // OVR, (c1 - c0) // OVR
+                H = r.read(2, window=win, out_shape=(oh, ow))
+                nwin += 1; npx += H.size
+                if not (H > VALID).any():
+                    continue
+                T = r.window_transform(win) * rasterio.Affine.scale(OVR)
+                lab = rasterize(zip(geoms[m], range(1, len(m) + 1)), out_shape=H.shape, transform=T, fill=0, dtype='int32')
+                lbl, med = group_medians(lab, H)
+                have = np.zeros(len(m), bool); have[lbl - 1] = True
+                found_i.append(bid[m[lbl - 1]]); found_h.append(med)
+                # Footprints smaller than a pixel: value under the centroid.
+                rest = np.flatnonzero(~have)
+                if len(rest):
+                    cc, rr = ~T * (ex[m[rest]], ey[m[rest]])
+                    cc, rr = np.floor(cc).astype(int), np.floor(rr).astype(int)
+                    okp = (rr >= 0) & (rr < oh) & (cc >= 0) & (cc < ow)
+                    rest, cc, rr = rest[okp], cc[okp], rr[okp]
+                    v = H[rr, cc]; good = v > VALID
+                    found_i.append(bid[m[rest[good]]]); found_h.append(v[good])
+    fi = np.concatenate(found_i) if found_i else np.zeros(0, np.int64)
+    fh = np.concatenate(found_h).astype(np.float32) if found_h else np.zeros(0, np.float32)
+    return fi, fh, nwin, npx
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default='data/buildings')
-    ap.add_argument('--workers', type=int, default=8)
+    ap.add_argument('--workers', type=int, default=max(1, round(0.6 * (os.cpu_count() or 1))),
+                    help='tile threads (default 60 %% of the logical CPUs)')
     ap.add_argument('--year', type=int, default=2023)
     ap.add_argument('--bbox', type=float, nargs=4, metavar=('W', 'S', 'E', 'N'), help='limit to a lon/lat box (testing)')
     ap.add_argument('--src', default='vn_buildings_clean.parquet', help='footprints (clip_to_roads.py output)')
@@ -124,50 +199,9 @@ def main():
             todo = np.isnan(h[bid])
         if not todo.any():
             return
-        tr = Transformer.from_crs(4326, z, always_xy=True)
-        ex, ey = tr.transform(q['cx'][todo], q['cy'][todo])
-        ins = (ex >= x0) & (ex < x1) & (ey >= y0) & (ey < y1)
-        if not ins.any():
+        fi, fh, nwin, npx = tile_heights(tile, bid[todo], q['cx'][todo], q['cy'][todo], q['wkb'][todo])
+        if nwin < 0:
             return
-        bid, ex, ey = bid[todo][ins], ex[ins], ey[ins]
-        geoms = shapely.from_wkb([bytes(w) for w in q['wkb'][todo][ins]])
-        geoms = shapely.transform(geoms, lambda xy: np.column_stack(tr.transform(xy[:, 0], xy[:, 1])))
-        gkey = ((ex - x0) // WIN_M).astype(np.int64) * 100 + ((y1 - ey) // WIN_M).astype(np.int64)
-        found_i, found_h, nwin, npx = [], [], 0, 0
-        with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR', GDAL_HTTP_MAX_RETRY='5', GDAL_HTTP_RETRY_DELAY='2'):
-            with rasterio.open('/vsicurl/' + url) as r:
-                inv = ~r.transform
-                for key in np.unique(gkey):
-                    m = np.flatnonzero(gkey == key)
-                    gb = shapely.bounds(geoms[m])
-                    c0, r0 = inv * (gb[:, 0].min() - 2, gb[:, 3].max() + 2)
-                    c1, r1 = inv * (gb[:, 2].max() + 2, gb[:, 1].min() - 2)
-                    c0, r0 = max(int(c0) // OVR * OVR, 0), max(int(r0) // OVR * OVR, 0)
-                    c1, r1 = min(-(-int(c1) // OVR) * OVR, r.width), min(-(-int(r1) // OVR) * OVR, r.height)
-                    if c1 <= c0 or r1 <= r0:
-                        continue
-                    win = Window(c0, r0, c1 - c0, r1 - r0)
-                    oh, ow = (r1 - r0) // OVR, (c1 - c0) // OVR
-                    H = r.read(2, window=win, out_shape=(oh, ow))
-                    nwin += 1; npx += H.size
-                    if not (H > VALID).any():
-                        continue
-                    T = r.window_transform(win) * rasterio.Affine.scale(OVR)
-                    lab = rasterize(zip(geoms[m], range(1, len(m) + 1)), out_shape=H.shape, transform=T, fill=0, dtype='int32')
-                    lbl, med = group_medians(lab, H)
-                    have = np.zeros(len(m), bool); have[lbl - 1] = True
-                    found_i.append(bid[m[lbl - 1]]); found_h.append(med)
-                    # Footprints smaller than a pixel: value under the centroid.
-                    rest = np.flatnonzero(~have)
-                    if len(rest):
-                        cc, rr = ~T * (ex[m[rest]], ey[m[rest]])
-                        cc, rr = np.floor(cc).astype(int), np.floor(rr).astype(int)
-                        okp = (rr >= 0) & (rr < oh) & (cc >= 0) & (cc < ow)
-                        rest, cc, rr = rest[okp], cc[okp], rr[okp]
-                        v = H[rr, cc]; good = v > VALID
-                        found_i.append(bid[m[rest[good]]]); found_h.append(v[good])
-        fi = np.concatenate(found_i) if found_i else np.zeros(0, np.int64)
-        fh = np.concatenate(found_h).astype(np.float32) if found_h else np.zeros(0, np.float32)
         tmp = ckpt(url) + '.tmp.npz'
         np.savez(tmp, i=fi, h=fh); os.replace(tmp, ckpt(url))
         with lock:
@@ -184,25 +218,8 @@ def main():
     con.register('hh', pa.table({'id': np.arange(n_all, dtype=np.uint32), 'h25': h}))
     dst = os.path.join(a.out, a.dst).replace('\\', '/')
     keep = f"WHERE m.id IN (SELECT id FROM b)" if a.bbox else ''
-    # least()/greatest() skip NULLs in DuckDB, so a missing height must be guarded explicitly.
-    dm = lambda x: f"CASE WHEN {x} IS NULL THEN NULL ELSE CAST(round(least({x}, 6553) * 10) AS USMALLINT) END"
-    con.execute(f"""COPY (
-        WITH t AS (
-            SELECT m.id, m.src, ST_Centroid(m.geometry) c, m.area_m2, m.conf, m.osm_id, m.name,
-                   nullif(trim(concat_ws(' ', m.addr_housenumber, m.addr_street)), '') addr,
-                   CASE WHEN isnan(hh.h25) THEN NULL ELSE hh.h25 END h25,
-                   coalesce(try_cast(m.height AS DOUBLE), try_cast(m.building_levels AS DOUBLE) * 3.3) osm_h,
-                   try_cast(m.building_levels AS DOUBLE) osm_levels
-            FROM '{src}' m JOIN hh USING (id) {keep})
-        , u AS (SELECT *, coalesce(osm_h, CASE WHEN h25 >= 2 THEN h25 END) hm FROM t)
-        SELECT id, src, CAST(round(ST_X(c) * 1e6) AS INTEGER) lon_e6, CAST(round(ST_Y(c) * 1e6) AS INTEGER) lat_e6,
-               area_m2::FLOAT area_m2, CAST(round(conf * 100) AS UTINYINT) conf_pct,
-               {dm('h25')} h25_dm, {dm('osm_h')} osm_h_dm, {dm('hm')} height_dm,
-               CASE WHEN osm_h IS NOT NULL THEN 'osm' WHEN hm IS NOT NULL THEN 'g25' END height_src,
-               CASE WHEN osm_levels IS NOT NULL THEN CAST(least(osm_levels, 255) AS UTINYINT)
-                    WHEN hm IS NOT NULL THEN CAST(least(greatest(1, 1 + round((hm - 3.9) / 3.3)), 255) AS UTINYINT) END floors,
-               osm_id, name, addr
-        FROM u ORDER BY id) TO '{dst}' (FORMAT parquet, COMPRESSION zstd, COMPRESSION_LEVEL 9, ROW_GROUP_SIZE 500000)""")
+    q = attrs_query(f"'{src}'", 'hh', keep)
+    con.execute(f"COPY ({q}) TO '{dst}' (FORMAT parquet, COMPRESSION zstd, COMPRESSION_LEVEL 9, ROW_GROUP_SIZE 500000)")
     s = con.execute(f"""SELECT count(*), count(h25_dm), count(height_dm), median(height_dm) / 10, quantile_cont(height_dm, 0.9) / 10
                         FROM '{dst}'""").fetchone()
     print(f'wrote {dst} {os.path.getsize(dst) / 1e6:.0f} MB | rows {s[0]} | 2.5D {s[1]} | height {s[2]} | median {s[3]} m | p90 {s[4]} m | {time.time() - t0:.0f}s')

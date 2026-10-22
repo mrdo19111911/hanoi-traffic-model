@@ -24,6 +24,15 @@ Dependencies: `requirements-buildings.txt` (duckdb with the spatial extension, r
 .venv/Scripts/python.exe buildings/strip_buildings.py          # -> osrm/data/vietnam-nobuildings.osm.pbf
 ```
 
+Nationwide, the steps from `fit_footprints.py` to `split_by_area.py` run as one command, area by area (one area = one file of `commune_groups.json`), on 60 % of the logical CPUs (14 of 24):
+
+```powershell
+.venv/Scripts/python.exe buildings/build_areas.py              # -> buildings/by_area/<file> + index.json, each file committed and pushed
+.venv/Scripts/python.exe buildings/build_areas.py --area ha_noi_15.parquet --bbox 105.815 20.985 105.82 20.99 --no-git --dst-dir <tmp>   # small test
+```
+
+Each area runs pass A, pass B, the 2.5D heights (tiles in manifest order, first valid value wins), the compact encoding and the on-road / overlap check (both must be 0, file under 95 MB) in one worker; the parent commits each passed file alone (`git commit -- <file>`), pushes every 10 commits or 2 minutes (`--no-push` to keep them local), and writes `by_area/index.json` at the end. Failed areas are listed and not committed. State is in `data/buildings/_areas/` (`done/<file>.json` per area); a re-run skips finished areas. On the tiny test box the result equals the sequential `fit_footprints.py` + `heights_25d.py` + `compact_layer.py` path row for row.
+
 Every step can be re-run. The download resumes partial files. The merge works in 0.25 degree cells and skips cells already in `data/buildings/_parts/stats.json`; delete `_parts/` and `_merge.duckdb` to redo it, for example after a new PBF. `extract_osm.py` must be re-run whenever the PBF changes. Ids are assigned once by the merge; every later file keeps them.
 
 ## Merge rules (`merge_buildings.py`)
@@ -49,7 +58,7 @@ No house in Vietnam sticks out into a street or a ngõ, and no two buildings ove
   - **Close narrow gaps:** gaps under 1 m between buildings (closing of their union at 0.5 m, minus carriageways) are filled; each building grows into them by up to 0.5 m.
   - **Share the ground:** the outlines of touching footprints are noded together and cut the ground into faces. Each face goes to the highest-ranked footprint covering it: OSM first, then Open Buildings by confidence (Microsoft after Google), then larger first. Neighbours are built from the same faces, so they share each wall vertex for vertex: no overlap, no gap.
   - A footprint left with under 50 % of its area or under 6 m² was a duplicate and is dropped; its faces go to the next in rank.
-- Work runs in 0.25° cells on 8 processes. Pass B reads the pass A result of neighbours in adjacent cells and only looks at a building's surroundings, so a building on a cell edge comes out the same from both sides (tested with 0.005° cells: same counts).
+- Work runs in 0.25° cells (largest first) on 60 % of the logical CPUs (`--workers` overrides). Pass B reads the pass A result of neighbours in adjacent cells and only looks at a building's surroundings, so a building on a cell edge comes out the same from both sides (tested with 0.005° cells: same counts).
 - Output adds `shift_m`, `clip_m2`, `fill_m2`, `overlap_m2`, `road_gap_m` and `nb_gap_m` (distance to the nearest carriageway / other building, up to 5 m).
 - **Bùi Xương Trạch test** (11,600 footprints): 2,486 shifted (median 0.82 m; 804 of them OSM), 668 cut, 84 dropped on a road, 4,501 grown into a gap, 5,491 gave ground to a neighbour, 49 duplicates dropped, 11,467 left.
   - `check_road_overlap.py` on the raw footprints: 1,341 overlapping pairs over 0.5 m².
@@ -64,7 +73,7 @@ No house in Vietnam sticks out into a street or a ngõ, and no two buildings ove
 - On Bùi Xương Trạch (9,692 buildings), 1 m reads stay within 1 m of the full 0.5 m read for 98.6 % of buildings, and within 0.5 m for 93.2 %. At 2 m the figure is 93.4 % within 1 m.
 - Height of a building is the median of the pixels inside its (clipped) footprint. A footprint smaller than a pixel takes the pixel under its centroid. 2.5D values under 2 m are treated as "no building".
 - Tiles of neighbouring S2 cells overlap, and one of the two is nodata there. A building keeps the first valid value.
-- The nationwide run takes hours. Each finished tile is saved to `data/buildings/_25d_done/`. After an interruption (Windows Update restarted the machine during the first run), re-running resumes from those files. Delete `_25d_done/` when the footprints change.
+- `--workers` (threads reading tiles) defaults to 60 % of the logical CPUs. The nationwide run takes hours. Each finished tile is saved to `data/buildings/_25d_done/`. After an interruption (Windows Update restarted the machine during the first run), re-running resumes from those files. Delete `_25d_done/` when the footprints change.
 - Floors: the OSM `building:levels` tag when present. Otherwise `1 + round((height − 3.9) / 3.3)`, at least 1: ground floor 3.9 m, upper floors 3.3 m.
 - The 2.5D height is a model estimate from Sentinel-2, effective resolution 4 m. Against the three OSM-tagged buildings in Bùi Xương Trạch, it matched one (7 floors, 25.5 m) and missed two. It tends to under-read narrow tube houses.
 

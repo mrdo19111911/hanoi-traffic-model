@@ -93,6 +93,21 @@ def decode(row):
     return shapely.Polygon(c / 1e6)
 
 
+def encode_rows(ids, src, wkb, hdm, hsrc, fl, gap):
+    """Rows (id, src, footprint WKB, height_dm, height_src, floors, gap in m or None) -> (table in SCHEMA, is_rect,
+    footprints). The latitude for metres per degree is the median of the batch."""
+    geoms = shapely.from_wkb([bytes(w) for w in wkb])
+    geoms = np.array([g if g.geom_type == 'Polygon' else max(g.geoms, key=lambda x: x.area) for g in geoms], object)
+    lat_ref = float(np.median(shapely.get_y(shapely.centroid(geoms[:: max(1, len(geoms) // 1000)]))))
+    enc, is_rect = encode(geoms, lat_ref, np.array([np.nan if g is None else g for g in gap], float))
+    tbl = pa.table({'id': pa.array(ids, pa.uint32()), 'src': pa.array(src).dictionary_encode(),
+                    **{k: pa.array(enc[k]) for k in ('lon_e6', 'lat_e6', 'length_dm', 'width_dm', 'angle_cdeg')},
+                    'ring': pa.array(list(enc['ring']), pa.binary()),
+                    'height_dm': pa.array(hdm, pa.uint16()), 'height_src': pa.array(hsrc, pa.string()).dictionary_encode(),
+                    'floors': pa.array(fl, pa.uint8())}).cast(SCHEMA)
+    return tbl, is_rect, geoms
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default='data/buildings')
@@ -118,15 +133,7 @@ def main():
         if not rb:
             break
         ids, src, wkb, hdm, hsrc, fl, gap = zip(*rb)
-        geoms = shapely.from_wkb([bytes(w) for w in wkb])
-        geoms = np.array([g if g.geom_type == 'Polygon' else max(g.geoms, key=lambda x: x.area) for g in geoms], object)
-        lat_ref = float(np.median(shapely.get_y(shapely.centroid(geoms[:: max(1, len(geoms) // 1000)]))))
-        enc, is_rect = encode(geoms, lat_ref, np.array([np.nan if g is None else g for g in gap], float))
-        tbl = pa.table({'id': pa.array(ids, pa.uint32()), 'src': pa.array(src).dictionary_encode(),
-                        **{k: pa.array(enc[k]) for k in ('lon_e6', 'lat_e6', 'length_dm', 'width_dm', 'angle_cdeg')},
-                        'ring': pa.array(list(enc['ring']), pa.binary()),
-                        'height_dm': pa.array(hdm, pa.uint16()), 'height_src': pa.array(hsrc, pa.string()).dictionary_encode(),
-                        'floors': pa.array(fl, pa.uint8())}).cast(SCHEMA)
+        tbl, is_rect, geoms = encode_rows(ids, src, wkb, hdm, hsrc, fl, gap)
         writer.write_table(tbl, row_group_size=500_000)
         # Round-trip check on a sample: decoded footprint vs original (IoU).
         for i in range(0, len(geoms), max(1, len(geoms) // 200)):
