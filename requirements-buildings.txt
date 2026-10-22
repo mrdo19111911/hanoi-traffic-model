@@ -4,3 +4,4 @@ shapely
 pyproj
 numpy
 pyarrow
+scipy

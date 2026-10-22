@@ -8,7 +8,7 @@ The OSM map itself can then be shipped without buildings (`strip_buildings.py`).
 
 ## Run
 
-Dependencies: `requirements-buildings.txt` (duckdb with the spatial extension, rasterio, shapely, pyproj, numpy, pyarrow), plus osmium from `requirements-spatial.txt`.
+Dependencies: `requirements-buildings.txt` (duckdb with the spatial extension, rasterio, shapely, pyproj, numpy, pyarrow, scipy), plus osmium from `requirements-spatial.txt`.
 
 ```powershell
 .venv/Scripts/python.exe -m pip install -r requirements-buildings.txt
