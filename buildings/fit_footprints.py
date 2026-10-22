@@ -21,6 +21,9 @@ Pass B, shared walls, on the storage grid (lon/lat in units of 1e-6 degree, what
      dropped.
   Both steps only look at a building's own surroundings, so a building near a cell edge comes out the same from
   either cell. Pass B never adds carriageway area, so it cannot put a building back on a road.
+  An overlay GEOS refuses (TopologyException) is retried on make_valid inputs, then on inputs snapped to the grid
+  (overlay()); if it still fails, that tile closes no gap / that building is not grown (skipped_topology), or the
+  building is dropped (dropped_topology), instead of failing the whole run.
 Work is split into 0.25 degree cells (a building belongs to the cell of its centroid); pass B also reads the
 pass A result of neighbouring buildings in adjacent cells.
 
@@ -55,6 +58,30 @@ NB_MARGIN_DEG = 0.0006            # neighbours read from adjacent cells for pass
 WORKERS = max(1, round(0.6 * (os.cpu_count() or 1)))   # default processes: 60 % of the machine
 BISECT = 8                        # shift precision MAX_SHIFT_M / 2**8, about 1 cm
 CONF_OSM, CONF_MICROSOFT = 1.01, 0.69
+GEOSError = shapely.errors.GEOSException
+RETRIES = [0]                     # overlays that raised and then succeeded on repaired inputs, in this process
+
+
+def overlay(fn, *geoms, snap=None, **kw):
+    """fn(*geoms, **kw) for a GEOS overlay (union, intersection, difference). Only when it raises a GEOSException
+    (a TopologyException such as 'side location conflict', which GEOS also raises for two valid inputs when one
+    has vertices off the grid_size grid) it runs again on make_valid inputs, then on those inputs snapped to `snap`
+    (default: the call's grid_size; no snapping without one). The last failure is raised. A call that does not
+    raise returns exactly what fn returns."""
+    try:
+        return fn(*geoms, **kw)
+    except GEOSError:
+        pass
+    s = kw.get('grid_size') if snap is None else snap
+    fixes = [shapely.make_valid] + ([lambda x: shapely.set_precision(shapely.make_valid(x), s)] if s else [])
+    for n, fix in enumerate(fixes):
+        try:
+            r = fn(*(fix(x) for x in geoms), **kw)
+            RETRIES[0] += 1
+            return r
+        except GEOSError:
+            if n == len(fixes) - 1:
+                raise
 
 
 def largest(g):
@@ -69,7 +96,7 @@ def polys(g):
     if g.geom_type in ('Polygon', 'MultiPolygon') or g.is_empty:
         return g
     p = [x for x in shapely.get_parts(g) if x.geom_type in ('Polygon', 'MultiPolygon')]
-    return shapely.union_all(p) if p else shapely.Polygon()
+    return overlay(shapely.union_all, p) if p else shapely.Polygon()
 
 
 def _each(fn, geoms, keep_types):
@@ -298,18 +325,25 @@ def overlap_rows(t, n_own, bufs, box):
         q = STRtree(re6).query(shapely.box(*np.vstack([tbox, obox]).T))[1]
         roads = shapely.set_precision(re6[np.unique(q)], GRID)
         rtree = STRtree(roads) if len(roads) else None
+    # Every overlay goes through overlay() (retried on repaired inputs only when GEOS raises). A tile whose gaps
+    # still fail closes no gap, a building whose fill still fails keeps its pass A shape (skipped_topology).
+    retried0, skipped = RETRIES[0], 0
     pieces = []
     for k, ib in tiles:
         core = cores[k]
-        u = polys(shapely.union_all(g[ib], grid_size=GRID))
-        c = shapely.buffer(shapely.buffer(u, tol, join_style='mitre'), -tol, join_style='mitre')
-        if not c.is_valid:                          # the inner buffer can self-intersect
-            c = polys(shapely.make_valid(c))
-        gap = polys(shapely.intersection(polys(shapely.difference(c, u, grid_size=GRID)), core, grid_size=GRID))
-        if rtree is not None and not gap.is_empty:
-            ir = rtree.query(gap)
-            if len(ir):
-                gap = polys(shapely.difference(gap, polys(shapely.union_all(roads[ir], grid_size=GRID)), grid_size=GRID))
+        try:
+            u = polys(overlay(shapely.union_all, g[ib], grid_size=GRID))
+            c = shapely.buffer(shapely.buffer(u, tol, join_style='mitre'), -tol, join_style='mitre')
+            if not c.is_valid:                          # the inner buffer can self-intersect
+                c = polys(shapely.make_valid(c))
+            gap = polys(overlay(shapely.intersection, polys(overlay(shapely.difference, c, u, grid_size=GRID)), core, grid_size=GRID))
+            if rtree is not None and not gap.is_empty:
+                ir = rtree.query(gap)
+                if len(ir):
+                    gap = polys(overlay(shapely.difference, gap, polys(overlay(shapely.union_all, roads[ir], grid_size=GRID)), grid_size=GRID))
+        except GEOSError:
+            skipped += 1
+            continue
         pieces += [p for p in shapely.get_parts(gap) if p.area > 0]
     grown = g.copy()
     if pieces:
@@ -317,10 +351,24 @@ def overlap_rows(t, n_own, bufs, box):
         reach = shapely.buffer(g, tol, join_style='mitre')
         bi, pi = STRtree(pieces).query(reach, predicate='intersects')
         hk, inv = np.unique(bi, return_inverse=True)
-        pre = np.array([polys(shapely.union_all(pieces[pi[x]], grid_size=GRID)) for x in groups(inv, len(hk))], object)
-        fill = polys_all(shapely.intersection(pre, reach[hk], grid_size=GRID))
-        ne = ~shapely.is_empty(fill)
-        grown[hk[ne]] = largest_all(shapely.union(g[hk[ne]], fill[ne], grid_size=GRID))
+        pre = np.empty(len(hk), object)
+        for x, s in enumerate(groups(inv, len(hk))):
+            try:
+                pre[x] = polys(overlay(shapely.union_all, pieces[pi[s]], grid_size=GRID))
+            except GEOSError:
+                pre[x] = shapely.Polygon(); skipped += 1
+        try:
+            fill = polys_all(shapely.intersection(pre, reach[hk], grid_size=GRID))
+            ne = ~shapely.is_empty(fill)
+            grown[hk[ne]] = largest_all(shapely.union(g[hk[ne]], fill[ne], grid_size=GRID))
+        except GEOSError:                           # the same, building by building, each overlay retried
+            for x, k in enumerate(hk.tolist()):
+                try:
+                    f = polys(overlay(shapely.intersection, pre[x], reach[k], grid_size=GRID))
+                    if not f.is_empty:
+                        grown[k] = largest(overlay(shapely.union, g[k], f, grid_size=GRID))
+                except GEOSError:
+                    skipped += 1
     area = shapely.area(g)
     fill_m2 = (shapely.area(grown) - area) * afac
 
@@ -337,16 +385,21 @@ def overlap_rows(t, n_own, bufs, box):
     a1 = t['a1'].to_numpy()
     small = lambda k, x: shapely.is_empty(x) | (shapely.area(x) * afac[k] < np.maximum(KEEP_SHARE * a1[k], MIN_M2))
     final = grown[:n_own].copy()
+    topo = np.zeros(n_own, bool)                    # own buildings dropped because an overlay still failed
     for c in np.unique(comp[:n_own]):
         mem = members[c]
         if len(mem) == 1:
             continue
-        lines = shapely.union_all(shapely.boundary(grown[mem]), grid_size=GRID)
-        faces = shapely.get_parts(shapely.polygonize(shapely.get_parts(lines)))
+        own_k = mem[mem < n_own]
+        try:
+            lines = overlay(shapely.union_all, shapely.boundary(grown[mem]), grid_size=GRID)
+            faces = shapely.get_parts(shapely.polygonize(shapely.get_parts(lines)))
+        except GEOSError:                           # no partition for this group: its own buildings are dropped
+            final[own_k] = shapely.Polygon(); topo[own_k] = True
+            continue
         faces = faces[shapely.area(faces) > 0]
         fi, mi = STRtree(grown[mem]).query(shapely.point_on_surface(faces), predicate='intersects')
         mk = mem[mi]
-        own_k = mem[mem < n_own]
         alive = np.ones(len(fi), bool)
         prev = {}
         for _ in range(2):                          # the second round hands faces of dropped duplicates on
@@ -361,7 +414,10 @@ def overlap_rows(t, n_own, bufs, box):
                 if k in prev and (fs is None and prev[k] is None or fs is not None and prev[k] is not None and np.array_equal(fs, prev[k])):
                     continue
                 prev[k] = fs
-                final[k] = largest(polys(shapely.union_all(faces[fs], grid_size=GRID))) if fs is not None else shapely.Polygon()
+                try:
+                    final[k] = largest(polys(overlay(shapely.union_all, faces[fs], grid_size=GRID))) if fs is not None else shapely.Polygon()
+                except GEOSError:                   # dropped; its faces go to the next-ranked member, as a duplicate's
+                    final[k] = shapely.Polygon(); topo[k] = True
             gone = own_k[small(own_k, final[own_k])]
             if not len(gone):
                 break
@@ -387,7 +443,8 @@ def overlap_rows(t, n_own, bufs, box):
                     'area_m2': shapely.area(fk) * afac[:n_own][keep], 'shift_m': o['shift_m'], 'clip_m2': o['clip_m2'],
                     'fill_m2': fill_m2[:n_own][keep], 'overlap_m2': lost[keep], 'road_gap_m': road_gap, 'nb_gap_m': nb_gap})
     return res, {'filled': int(((fill_m2[:n_own] > 0.01) & keep).sum()),
-                 'trimmed': int(((lost > 0.01) & keep).sum()), 'dropped_dup': int((~keep).sum())}
+                 'trimmed': int(((lost > 0.01) & keep).sum()), 'dropped_dup': int((~keep & ~topo).sum()),
+                 'dropped_topology': int(topo.sum()), 'skipped_topology': skipped, 'retried_topology': RETRIES[0] - retried0}
 
 
 def run(fn, jobs, workers, label, t0):
@@ -445,6 +502,7 @@ def main():
             'shift_m_median': float(np.median(shifts[shifts > 0])) if (shifts > 0).any() else 0,
             'cut_at_road': tot(sa, 'cut'), 'dropped_on_road': tot(sa, 'dropped_road'),
             'gap_filled': tot(sb, 'filled'), 'trimmed_overlap': tot(sb, 'trimmed'), 'dropped_duplicate': tot(sb, 'dropped_dup'),
+            'dropped_topology': tot(sb, 'dropped_topology'), 'skipped_topology': tot(sb, 'skipped_topology'),
             'buildings_out': int(sum(t.num_rows for t in tabs)), 'seconds': round(time.time() - t0)}
     json.dump(meta, open(p(a.dst.replace('.parquet', '.meta.json')), 'w'), indent=1)
     print('wrote', p(a.dst), json.dumps(meta))

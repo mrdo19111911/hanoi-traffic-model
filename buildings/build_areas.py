@@ -12,7 +12,8 @@ Per area (worker process):
      time, values taken in manifest order: first valid value wins), heights and floors as heights_25d.py computes them;
   4. encode as compact_layer.py;
   5. check as check_road_overlap.py, on the compact rows (decoded) and the clean rows: no building on a carriageway
-     and no overlapping pair over 0.05 m2. Buildings that fail are deleted from both (on a road: the building; an
+     and no overlapping pair over 0.05 m2 (an area GEOS still cannot compute after the retries of
+     fit_footprints.overlay counts as failing). Buildings that fail are deleted from both (on a road: the building; an
      overlapping pair: the lower-ranked one, pass B order) and the check runs again, up to CHECK_ROUNDS times;
      the count is 'dropped_check'. Write buildings/by_area/<file>, under 95 MB. An area still failing is written
      to the state file and never committed; the next run builds it again.

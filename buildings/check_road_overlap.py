@@ -18,6 +18,9 @@ from shapely.strtree import STRtree
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clip_to_roads import HALF, SKIP
 from compact_layer import decode
+from fit_footprints import GEOSError, overlay
+
+SNAP_M = 1e-3                      # UTM metres: grid of the last retry of an overlay GEOS refuses
 
 
 _T = Transformer.from_crs(4326, 32648, always_xy=True)
@@ -38,13 +41,26 @@ def carriageways(con, roads_parquet, bbox):
     return R, STRtree(R)
 
 
+def _area(fn, *geoms):
+    """Area of an overlay, through fit_footprints.overlay (retried on repaired inputs, snapped to SNAP_M, only when
+    GEOS raises); inf when it still fails, so the check counts that building or pair as failing."""
+    try:
+        return overlay(fn, *geoms, snap=SNAP_M).area
+    except GEOSError:
+        return np.inf
+
+
+def _on_roads(r, g):
+    return shapely.union_all(r).intersection(g)
+
+
 def on_road_m2(geoms, R, tree, projected=False):
     """Area (m2) of each lon/lat footprint (UTM polygons from utm() when projected) on the carriageways R
     (UTM polygons, tree = STRtree(R))."""
     out = []
     for g in (geoms if projected else utm(geoms)):
         hit = tree.query(g, predicate='intersects')
-        out.append(shapely.union_all([R[j] for j in hit]).intersection(g).area if len(hit) else 0.0)
+        out.append(_area(_on_roads, [R[j] for j in hit], g) if len(hit) else 0.0)
     return np.array(out)
 
 
@@ -54,7 +70,7 @@ def pair_overlaps(geoms, projected=False, pairs=False):
     g = np.asarray(geoms, object) if projected else utm(geoms)
     i, j = STRtree(g).query(g, predicate='intersects')
     m = i < j
-    a = np.array([shapely.intersection(g[x], g[y]).area for x, y in zip(i[m], j[m])])
+    a = np.array([_area(shapely.intersection, g[x], g[y]) for x, y in zip(i[m], j[m])])
     return (i[m], j[m], a) if pairs else a
 
 
