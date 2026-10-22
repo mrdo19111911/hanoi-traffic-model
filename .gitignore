@@ -1,0 +1,30 @@
+__pycache__/
+.venv/
+*.pyc
+/osrm/tools/
+/osrm/data/
+/osrm/downloads/
+/osrm/logs/
+/osrm/build.json
+/osrm/server.json
+/osrm/*.tmp
+/osrm/*.tar.gz
+/runtime/
+/data/api_raw/
+
+# Large or generated building data, rebuilt by buildings/*.py (see buildings/README.md)
+/data/buildings/
+/data/open_buildings/
+# Speeds and route geometry from the TomTom API: TomTom's terms do not allow republishing them
+/data/*.json
+/data/*.jsonl
+/reports/spatial_crawl.json
+# Generated spike output (235 MB), rebuilt from its README
+/reports/gate_compose_spike/
+# Frontend build and dependencies
+/frontend/node_modules/
+/frontend/dist/
+/frontend/tsconfig.tsbuildinfo
+# Local tool state
+/.claude/
+/.superpowers/

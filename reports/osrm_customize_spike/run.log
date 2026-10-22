@@ -1,0 +1,22 @@
+[14:14:48] building speed CSVs
+[14:15:09] csv_big {'pairs': 1552012, 'rows': 3104024, 'skipped_ferry': 68, 'skipped_unmapped': 0, 'by_class': {'quoclo': 776636, 'caotoc': 61165, 'tinhlo': 714211}, 'bytes': 78049036, 'build_s': 6.5}
+[14:15:09] csv_hanoi {'pairs': 5695854, 'rows': 11391708, 'skipped_unknown': 384466, 'by_class': {'noido': 3751565, 'chinh': 418644, 'nho': 1434994, 'quoclo': 73385, 'caotoc': 17266}, 'bytes': 286906908, 'build_s': 14.6}
+[14:15:13] routed (pristine) ready in 1.5s, mem {'ws_mb': 2857, 'peak_ws_mb': 2857, 'private_mb': 2863, 'peak_private_mb': 2863}
+[14:15:15] base /table 500x500: {'request_s': 2.21, 'parse_s': 0.11, 'mb': 4.5, 'cells': 250000, 'nulls': 0}
+[14:15:17] base /table 500x500: {'request_s': 2.14, 'parse_s': 0.11, 'mb': 4.5, 'cells': 250000, 'nulls': 0}
+[14:15:23] base /table 1000x1000: {'request_s': 5.81, 'parse_s': 0.43, 'mb': 17.4, 'cells': 1000000, 'nulls': 0}
+[14:15:30] base /table 1000x1000: {'request_s': 5.99, 'parse_s': 0.43, 'mb': 17.4, 'cells': 1000000, 'nulls': 0}
+[14:15:49] base /table 2000x2000: {'request_s': 17.44, 'parse_s': 1.75, 'mb': 68.4, 'cells': 4000000, 'nulls': 0}
+[14:16:08] base /table 2000x2000: {'request_s': 16.95, 'parse_s': 1.7, 'mb': 68.4, 'cells': 4000000, 'nulls': 0}
+[14:16:39] base /table 1x2000: {'request_s': 31.03, 'parse_s': 0.03, 'mb': 0.6, 'cells': 2000, 'nulls': 0}
+[14:16:42] base /table 2x2000: {'request_s': 2.72, 'parse_s': 0.01, 'mb': 0.6, 'cells': 4000, 'nulls': 0}
+[14:16:45] base /table 8x2000: {'request_s': 2.76, 'parse_s': 0.01, 'mb': 0.8, 'cells': 16000, 'nulls': 0}
+[14:17:16] base /table 2000x1: {'request_s': 31.01, 'parse_s': 0.01, 'mb': 0.6, 'cells': 2000, 'nulls': 0}
+[14:17:47] base /table 1x2000_annot_duration_only: {'request_s': 30.9}
+[14:18:10] routed --mmap ready in 0.5s, 2000x2000 {'request_s': 17.53, 'parse_s': 1.73, 'mb': 68.4, 'cells': 4000000, 'nulls': 0}, mem {'ws_mb': 470, 'peak_ws_mb': 1220, 'private_mb': 17, 'peak_private_mb': 772}
+[14:18:24] customize no_speed_file: {'seconds': 13.5, 'exit': 0, 'memory': {'ws_mb': 0, 'peak_ws_mb': 2802, 'private_mb': 0, 'peak_private_mb': 2803}, 'files_written': ['vietnam-latest.osrm.cell_metrics', 'vietnam-latest.osrm.datasource_names', 'vietnam-latest.osrm.mldgr'], 'files_written_mb': {'vietnam-latest.osrm.cell_metrics': 700, 'vietnam-latest.osrm.datasource_names': 0, 'vietnam-latest.osrm.mldgr': 488}}
+[14:18:39] customize big_roads: {'seconds': 14.9, 'exit': 0, 'memory': {'ws_mb': 0, 'peak_ws_mb': 2803, 'private_mb': 0, 'peak_private_mb': 2804}, 'files_written': ['vietnam-latest.osrm.cell_metrics', 'vietnam-latest.osrm.datasource_names', 'vietnam-latest.osrm.geometry', 'vietnam-latest.osrm.mldgr'], 'files_written_mb': {'vietnam-latest.osrm.cell_metrics': 700, 'vietnam-latest.osrm.datasource_names': 0, 'vietnam-latest.osrm.geometry': 929, 'vietnam-latest.osrm.mldgr': 488}}
+[14:19:03] customized routed: {'load_s': 1.5, 'table_2000': {'request_s': 17.3, 'parse_s': 1.78, 'mb': 68.8, 'cells': 4000000, 'nulls': 0}, 'mean_500_duration_base_s': 43798, 'mean_500_duration_custom_s': 50973}
+[14:19:25] customize big_roads_6_threads: {'seconds': 22.1, 'exit': 0, 'memory': {'ws_mb': 0, 'peak_ws_mb': 2507, 'private_mb': 0, 'peak_private_mb': 2507}, 'files_written': ['vietnam-latest.osrm.cell_metrics', 'vietnam-latest.osrm.datasource_names', 'vietnam-latest.osrm.geometry', 'vietnam-latest.osrm.mldgr'], 'files_written_mb': {'vietnam-latest.osrm.cell_metrics': 700, 'vietnam-latest.osrm.datasource_names': 0, 'vietnam-latest.osrm.geometry': 929, 'vietnam-latest.osrm.mldgr': 488}}
+[14:19:42] customize hanoi_all_classes: {'seconds': 16.9, 'exit': 0, 'memory': {'ws_mb': 0, 'peak_ws_mb': 3050, 'private_mb': 0, 'peak_private_mb': 3077}, 'files_written': ['vietnam-latest.osrm.cell_metrics', 'vietnam-latest.osrm.datasource_names', 'vietnam-latest.osrm.geometry', 'vietnam-latest.osrm.mldgr'], 'files_written_mb': {'vietnam-latest.osrm.cell_metrics': 700, 'vietnam-latest.osrm.datasource_names': 0, 'vietnam-latest.osrm.geometry': 929, 'vietnam-latest.osrm.mldgr': 488}}
+[14:19:59] customize big_plus_hanoi: {'seconds': 16.7, 'exit': 0, 'memory': {'ws_mb': 0, 'peak_ws_mb': 3336, 'private_mb': 0, 'peak_private_mb': 3364}, 'files_written': ['vietnam-latest.osrm.cell_metrics', 'vietnam-latest.osrm.datasource_names', 'vietnam-latest.osrm.geometry', 'vietnam-latest.osrm.mldgr'], 'files_written_mb': {'vietnam-latest.osrm.cell_metrics': 700, 'vietnam-latest.osrm.datasource_names': 0, 'vietnam-latest.osrm.geometry': 929, 'vietnam-latest.osrm.mldgr': 488}}

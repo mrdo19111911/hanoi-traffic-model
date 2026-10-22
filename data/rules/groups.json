@@ -1,0 +1,7 @@
+{
+  "groups": [
+    {"name": "duoi2t", "gross_t": 1.9, "payload_t": 0.99, "axles": 2, "kind": "normal", "height_m": 2.6, "length_m": 5.0, "is_base": true},
+    {"name": "tu2t", "gross_t": 8.0, "payload_t": 5.0, "axles": 2, "kind": "normal", "height_m": 3.4, "length_m": 7.5, "is_base": false},
+    {"name": "container", "gross_t": 40.0, "payload_t": 27.0, "axles": 5, "kind": "container", "height_m": 4.2, "length_m": 16.5, "is_base": false}
+  ]
+}

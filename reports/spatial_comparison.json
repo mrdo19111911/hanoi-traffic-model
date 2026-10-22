@@ -1,0 +1,167 @@
+{
+  "status": "exploratory_only",
+  "source": "spatial_samples",
+  "holdout": "route",
+  "limitations": [
+    "Speeds are TomTom instruction-segment means, not independently measured physical point speeds.",
+    "The sample is small; scores per road class and slot rest on few held-out routes.",
+    "Five-fold split holds out whole routes; nearby routes can still be correlated.",
+    "Formula comparisons are cross-validation results, without a separate untouched final test dataset."
+  ],
+  "candidates": [
+    "mean",
+    "nearest",
+    "idw1",
+    "idw2",
+    "linear_idw1",
+    "linear_idw2"
+  ],
+  "samples_by_class": {
+    "noido": 33,
+    "chinh": 42,
+    "quoclo": 11,
+    "nho": 8,
+    "caotoc": 7
+  },
+  "excluded": {},
+  "unscorable_without_same_class_training": {
+    "nho": 8,
+    "caotoc": 7
+  },
+  "scores": {
+    "chinh": {
+      "mean": {
+        "n_held_out": 42,
+        "mae_kmh": 5.7579125105770395,
+        "length_weighted_mae_kmh": 5.659919755065767,
+        "travel_time_wape_pct": 29.522860196126324,
+        "inside_triangle_pct": 0.0
+      },
+      "nearest": {
+        "n_held_out": 42,
+        "mae_kmh": 6.454384751559187,
+        "length_weighted_mae_kmh": 7.421902642361254,
+        "travel_time_wape_pct": 52.66019690282833,
+        "inside_triangle_pct": 0.0
+      },
+      "idw1": {
+        "n_held_out": 42,
+        "mae_kmh": 4.995854118100901,
+        "length_weighted_mae_kmh": 4.865017142264033,
+        "travel_time_wape_pct": 25.55467280345591,
+        "inside_triangle_pct": 0.0
+      },
+      "idw2": {
+        "n_held_out": 42,
+        "mae_kmh": 4.717570555561373,
+        "length_weighted_mae_kmh": 4.564182875858984,
+        "travel_time_wape_pct": 23.368963433061943,
+        "inside_triangle_pct": 0.0
+      },
+      "linear_idw1": {
+        "n_held_out": 42,
+        "mae_kmh": 5.109508118793541,
+        "length_weighted_mae_kmh": 5.1705199777275705,
+        "travel_time_wape_pct": 26.948831467642858,
+        "inside_triangle_pct": 35.714285714285715
+      },
+      "linear_idw2": {
+        "n_held_out": 42,
+        "mae_kmh": 4.972236146674878,
+        "length_weighted_mae_kmh": 5.161034465211841,
+        "travel_time_wape_pct": 27.01711450399236,
+        "inside_triangle_pct": 35.714285714285715
+      }
+    },
+    "noido": {
+      "mean": {
+        "n_held_out": 33,
+        "mae_kmh": 5.255944524912581,
+        "length_weighted_mae_kmh": 4.008560905774586,
+        "travel_time_wape_pct": 25.399027635675107,
+        "inside_triangle_pct": 0.0
+      },
+      "nearest": {
+        "n_held_out": 33,
+        "mae_kmh": 4.376850001486851,
+        "length_weighted_mae_kmh": 3.200277504625076,
+        "travel_time_wape_pct": 21.511410770340984,
+        "inside_triangle_pct": 0.0
+      },
+      "idw1": {
+        "n_held_out": 33,
+        "mae_kmh": 4.899139794758918,
+        "length_weighted_mae_kmh": 3.544175616637544,
+        "travel_time_wape_pct": 22.181750089704714,
+        "inside_triangle_pct": 0.0
+      },
+      "idw2": {
+        "n_held_out": 33,
+        "mae_kmh": 4.587049077227916,
+        "length_weighted_mae_kmh": 3.187049593941411,
+        "travel_time_wape_pct": 20.304725377748223,
+        "inside_triangle_pct": 0.0
+      },
+      "linear_idw1": {
+        "n_held_out": 33,
+        "mae_kmh": 4.780995161926354,
+        "length_weighted_mae_kmh": 3.363111121110478,
+        "travel_time_wape_pct": 20.98707924196776,
+        "inside_triangle_pct": 12.121212121212121
+      },
+      "linear_idw2": {
+        "n_held_out": 33,
+        "mae_kmh": 4.600334272496015,
+        "length_weighted_mae_kmh": 3.2001421818660867,
+        "travel_time_wape_pct": 20.354876088880733,
+        "inside_triangle_pct": 12.121212121212121
+      }
+    },
+    "quoclo": {
+      "mean": {
+        "n_held_out": 11,
+        "mae_kmh": 4.291336406561731,
+        "length_weighted_mae_kmh": 4.57224854901386,
+        "travel_time_wape_pct": 11.503229540625778,
+        "inside_triangle_pct": 0.0
+      },
+      "nearest": {
+        "n_held_out": 11,
+        "mae_kmh": 4.274446188747873,
+        "length_weighted_mae_kmh": 4.558848719217746,
+        "travel_time_wape_pct": 11.42025168104349,
+        "inside_triangle_pct": 0.0
+      },
+      "idw1": {
+        "n_held_out": 11,
+        "mae_kmh": 4.2333923297399725,
+        "length_weighted_mae_kmh": 4.5262786997400735,
+        "travel_time_wape_pct": 11.366152303484657,
+        "inside_triangle_pct": 0.0
+      },
+      "idw2": {
+        "n_held_out": 11,
+        "mae_kmh": 4.269492802155473,
+        "length_weighted_mae_kmh": 4.5549189571516795,
+        "travel_time_wape_pct": 11.413775151278664,
+        "inside_triangle_pct": 0.0
+      },
+      "linear_idw1": {
+        "n_held_out": 11,
+        "mae_kmh": 4.2333923297399725,
+        "length_weighted_mae_kmh": 4.5262786997400735,
+        "travel_time_wape_pct": 11.366152303484657,
+        "inside_triangle_pct": 9.090909090909092
+      },
+      "linear_idw2": {
+        "n_held_out": 11,
+        "mae_kmh": 4.269492802155473,
+        "length_weighted_mae_kmh": 4.5549189571516795,
+        "travel_time_wape_pct": 11.413775151278664,
+        "inside_triangle_pct": 9.090909090909092
+      }
+    }
+  },
+  "samples_path": "E:\\Work\\hanoi-traffic-model\\hanoi-traffic-model\\data\\spatial_samples.jsonl",
+  "pbf_sha256": "d408722f4e9616e26b859a1a49ea654857109209160d6854f3a6bcdc9ab83e43"
+}

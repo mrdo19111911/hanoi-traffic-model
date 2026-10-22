@@ -1,0 +1,315 @@
+{
+  "machine": {
+    "cpu": "AMD Ryzen 9 3900X 12C/24T",
+    "ram_gb": 31.9
+  },
+  "csv_big": {
+    "pairs": 1552012,
+    "rows": 3104024,
+    "skipped_ferry": 68,
+    "skipped_unmapped": 0,
+    "by_class": {
+      "quoclo": 776636,
+      "caotoc": 61165,
+      "tinhlo": 714211
+    },
+    "bytes": 78049036,
+    "build_s": 6.5
+  },
+  "csv_hanoi": {
+    "pairs": 5695854,
+    "rows": 11391708,
+    "skipped_unknown": 384466,
+    "by_class": {
+      "noido": 3751565,
+      "chinh": 418644,
+      "nho": 1434994,
+      "quoclo": 73385,
+      "caotoc": 17266
+    },
+    "bytes": 286906908,
+    "build_s": 14.6
+  },
+  "routed_base": {
+    "load_s": 1.5,
+    "memory_after_load": {
+      "ws_mb": 2857,
+      "peak_ws_mb": 2857,
+      "private_mb": 2863,
+      "peak_private_mb": 2863
+    },
+    "memory_after_tables": {
+      "ws_mb": 2993,
+      "peak_ws_mb": 3642,
+      "private_mb": 3004,
+      "peak_private_mb": 3631
+    }
+  },
+  "table_base": {
+    "500x500": [
+      {
+        "request_s": 2.21,
+        "parse_s": 0.11,
+        "mb": 4.5,
+        "cells": 250000,
+        "nulls": 0
+      },
+      {
+        "request_s": 2.14,
+        "parse_s": 0.11,
+        "mb": 4.5,
+        "cells": 250000,
+        "nulls": 0
+      }
+    ],
+    "1000x1000": [
+      {
+        "request_s": 5.81,
+        "parse_s": 0.43,
+        "mb": 17.4,
+        "cells": 1000000,
+        "nulls": 0
+      },
+      {
+        "request_s": 5.99,
+        "parse_s": 0.43,
+        "mb": 17.4,
+        "cells": 1000000,
+        "nulls": 0
+      }
+    ],
+    "2000x2000": [
+      {
+        "request_s": 17.44,
+        "parse_s": 1.75,
+        "mb": 68.4,
+        "cells": 4000000,
+        "nulls": 0
+      },
+      {
+        "request_s": 16.95,
+        "parse_s": 1.7,
+        "mb": 68.4,
+        "cells": 4000000,
+        "nulls": 0
+      }
+    ],
+    "1x2000": [
+      {
+        "request_s": 31.03,
+        "parse_s": 0.03,
+        "mb": 0.6,
+        "cells": 2000,
+        "nulls": 0
+      }
+    ],
+    "2x2000": [
+      {
+        "request_s": 2.72,
+        "parse_s": 0.01,
+        "mb": 0.6,
+        "cells": 4000,
+        "nulls": 0
+      }
+    ],
+    "8x2000": [
+      {
+        "request_s": 2.76,
+        "parse_s": 0.01,
+        "mb": 0.8,
+        "cells": 16000,
+        "nulls": 0
+      }
+    ],
+    "2000x1": [
+      {
+        "request_s": 31.01,
+        "parse_s": 0.01,
+        "mb": 0.6,
+        "cells": 2000,
+        "nulls": 0
+      }
+    ],
+    "1x2000_annot_duration_only": [
+      {
+        "request_s": 30.9
+      }
+    ]
+  },
+  "routed_mmap": {
+    "load_s": 0.5,
+    "memory_after_load": {
+      "ws_mb": 7,
+      "peak_ws_mb": 7,
+      "private_mb": 11,
+      "peak_private_mb": 11
+    },
+    "table_2000": {
+      "request_s": 17.53,
+      "parse_s": 1.73,
+      "mb": 68.4,
+      "cells": 4000000,
+      "nulls": 0
+    },
+    "memory_after_table": {
+      "ws_mb": 470,
+      "peak_ws_mb": 1220,
+      "private_mb": 17,
+      "peak_private_mb": 772
+    }
+  },
+  "customize": {
+    "no_speed_file": {
+      "seconds": 13.5,
+      "exit": 0,
+      "memory": {
+        "ws_mb": 0,
+        "peak_ws_mb": 2802,
+        "private_mb": 0,
+        "peak_private_mb": 2803
+      },
+      "files_written": [
+        "vietnam-latest.osrm.cell_metrics",
+        "vietnam-latest.osrm.datasource_names",
+        "vietnam-latest.osrm.mldgr"
+      ],
+      "files_written_mb": {
+        "vietnam-latest.osrm.cell_metrics": 700,
+        "vietnam-latest.osrm.datasource_names": 0,
+        "vietnam-latest.osrm.mldgr": 488
+      }
+    },
+    "big_roads": {
+      "seconds": 14.9,
+      "exit": 0,
+      "memory": {
+        "ws_mb": 0,
+        "peak_ws_mb": 2803,
+        "private_mb": 0,
+        "peak_private_mb": 2804
+      },
+      "files_written": [
+        "vietnam-latest.osrm.cell_metrics",
+        "vietnam-latest.osrm.datasource_names",
+        "vietnam-latest.osrm.geometry",
+        "vietnam-latest.osrm.mldgr"
+      ],
+      "files_written_mb": {
+        "vietnam-latest.osrm.cell_metrics": 700,
+        "vietnam-latest.osrm.datasource_names": 0,
+        "vietnam-latest.osrm.geometry": 929,
+        "vietnam-latest.osrm.mldgr": 488
+      }
+    },
+    "big_roads_6_threads": {
+      "seconds": 22.1,
+      "exit": 0,
+      "memory": {
+        "ws_mb": 0,
+        "peak_ws_mb": 2507,
+        "private_mb": 0,
+        "peak_private_mb": 2507
+      },
+      "files_written": [
+        "vietnam-latest.osrm.cell_metrics",
+        "vietnam-latest.osrm.datasource_names",
+        "vietnam-latest.osrm.geometry",
+        "vietnam-latest.osrm.mldgr"
+      ],
+      "files_written_mb": {
+        "vietnam-latest.osrm.cell_metrics": 700,
+        "vietnam-latest.osrm.datasource_names": 0,
+        "vietnam-latest.osrm.geometry": 929,
+        "vietnam-latest.osrm.mldgr": 488
+      }
+    },
+    "hanoi_all_classes": {
+      "seconds": 16.9,
+      "exit": 0,
+      "memory": {
+        "ws_mb": 0,
+        "peak_ws_mb": 3050,
+        "private_mb": 0,
+        "peak_private_mb": 3077
+      },
+      "files_written": [
+        "vietnam-latest.osrm.cell_metrics",
+        "vietnam-latest.osrm.datasource_names",
+        "vietnam-latest.osrm.geometry",
+        "vietnam-latest.osrm.mldgr"
+      ],
+      "files_written_mb": {
+        "vietnam-latest.osrm.cell_metrics": 700,
+        "vietnam-latest.osrm.datasource_names": 0,
+        "vietnam-latest.osrm.geometry": 929,
+        "vietnam-latest.osrm.mldgr": 488
+      }
+    },
+    "big_plus_hanoi": {
+      "seconds": 16.7,
+      "exit": 0,
+      "memory": {
+        "ws_mb": 0,
+        "peak_ws_mb": 3336,
+        "private_mb": 0,
+        "peak_private_mb": 3364
+      },
+      "files_written": [
+        "vietnam-latest.osrm.cell_metrics",
+        "vietnam-latest.osrm.datasource_names",
+        "vietnam-latest.osrm.geometry",
+        "vietnam-latest.osrm.mldgr"
+      ],
+      "files_written_mb": {
+        "vietnam-latest.osrm.cell_metrics": 700,
+        "vietnam-latest.osrm.datasource_names": 0,
+        "vietnam-latest.osrm.geometry": 929,
+        "vietnam-latest.osrm.mldgr": 488
+      }
+    }
+  },
+  "routed_custom": {
+    "load_s": 1.5,
+    "table_2000": {
+      "request_s": 17.3,
+      "parse_s": 1.78,
+      "mb": 68.8,
+      "cells": 4000000,
+      "nulls": 0
+    },
+    "mean_500_duration_base_s": 43798,
+    "mean_500_duration_custom_s": 50973
+  },
+  "dataset_mb": {
+    "vietnam-latest.osrm.cell_metrics": 700,
+    "vietnam-latest.osrm.cells": 8,
+    "vietnam-latest.osrm.cnbg": 83,
+    "vietnam-latest.osrm.cnbg_to_ebg": 83,
+    "vietnam-latest.osrm.datasource_names": 0,
+    "vietnam-latest.osrm.ebg": 467,
+    "vietnam-latest.osrm.ebg_nodes": 123,
+    "vietnam-latest.osrm.edges": 136,
+    "vietnam-latest.osrm.enw": 122,
+    "vietnam-latest.osrm.fileIndex": 534,
+    "vietnam-latest.osrm.geometry": 929,
+    "vietnam-latest.osrm.icd": 104,
+    "vietnam-latest.osrm.maneuver_overrides": 0,
+    "vietnam-latest.osrm.mldgr": 488,
+    "vietnam-latest.osrm.names": 2,
+    "vietnam-latest.osrm.nbg_nodes": 337,
+    "vietnam-latest.osrm.partition": 82,
+    "vietnam-latest.osrm.properties": 0,
+    "vietnam-latest.osrm.ramIndex": 2,
+    "vietnam-latest.osrm.restrictions": 0,
+    "vietnam-latest.osrm.timestamp": 0,
+    "vietnam-latest.osrm.tld": 0,
+    "vietnam-latest.osrm.tls": 0,
+    "vietnam-latest.osrm.turn_duration_penalties": 39,
+    "vietnam-latest.osrm.turn_penalties_index": 233,
+    "vietnam-latest.osrm.turn_weight_penalties": 39
+  },
+  "persistence_check": {
+    "customize_no_file_after_big_plus_hanoi_s": 12.6,
+    "mean_500_duration_s": 43783
+  }
+}

@@ -1,0 +1,3544 @@
+{
+ "source": "osrm/data/big_roads.geojson",
+ "settings": {
+  "speeds_kmh": {
+   "caotoc": 80.0,
+   "quoclo": 50.0,
+   "tinhlo": 40.0
+  },
+  "ferry_kmh": 15.0,
+  "min_hours_clip": 0.008333333333333333,
+  "ks": [
+   8,
+   16,
+   32,
+   64
+  ],
+  "kmeans_restarts": 10,
+  "seed": 20261020,
+  "sigma_km_exp_variant": 10.0,
+  "affinity_time": "sum over parallel chains of 1/hours",
+  "affinity_exp_km": "sum over parallel chains of exp(-km/sigma)",
+  "method": "NJW: smallest-k eigvecs of I - D^-1/2 W D^-1/2 (eigsh shift-invert), row-normalised, kmeans2 ++",
+  "conductance_weights": "time affinity for all rows incl. baseline",
+  "baseline": "k-means on equirectangular-projected junction coords"
+ },
+ "graph": {
+  "features_kept": 66775,
+  "features_dropped": {
+   "fragment": 78,
+   "isolated": 1021,
+   "nonline": 0
+  },
+  "split_nodes": 69968,
+  "split_segments": 82813,
+  "split_km": 65412.8,
+  "degree2_only_loops_skipped_segments": 0,
+  "junction_components_before_main": 22,
+  "junction_nodes_main": 24349,
+  "junction_edges_main": 35747,
+  "junction_chains_main": 37103,
+  "main_km": 65332.7,
+  "dropped_off_main_km": 80.0
+ },
+ "runtime_s": {
+  "load_split_s": 2.02,
+  "contract_s": 0.2,
+  "eigsh_time_s": 0.83,
+  "eigsh_exp_km_s": 0.8
+ },
+ "results": {
+  "time": {
+   "eigenvalues_first_10": [
+    1.068e-16,
+    2.135e-07,
+    1.652e-06,
+    4.432e-06,
+    7.694e-06,
+    1.002e-05,
+    1.183e-05,
+    1.285e-05,
+    1.612e-05,
+    2.325e-05
+   ],
+   "eigenvalue_k": {
+    "8": 1.285e-05,
+    "16": 4.196e-05,
+    "32": 0.000103,
+    "64": 0.0002472
+   },
+   "k": {
+    "8": {
+     "k_effective": 8,
+     "nodes": {
+      "min": 769.0,
+      "median": 2971.5,
+      "max": 6305.0
+     },
+     "km": {
+      "min": 3480.5,
+      "median": 8475.4,
+      "max": 10831.3
+     },
+     "cut_edges": 80,
+     "cut_chains": 82,
+     "cut_km": 1202.5,
+     "cut_km_share": 0.0184,
+     "conductance": {
+      "mean": 0.0003,
+      "max": 0.0004,
+      "min": 0.0002
+     },
+     "conductance_unweighted": {
+      "mean": 0.0029,
+      "max": 0.0069
+     },
+     "contiguous_clusters": 7,
+     "worst_cluster_pieces": 2,
+     "min_largest_piece_share": 1.0,
+     "boundary_nodes": 150,
+     "boundary_per_cluster": {
+      "min": 13.0,
+      "median": 17.5,
+      "max": 32.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 533545,
+      "point_to_boundary_pairs": 78879,
+      "boundary_transit_pairs": 22350,
+      "routes_needed_clustered": 634774,
+      "min_plus_ops_for_inter_pairs": 1306086048
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 2899,
+       "km": 8395.5,
+       "boundary_nodes": 20,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 6305,
+       "km": 10831.3,
+       "boundary_nodes": 32,
+       "conductance": 0.0002,
+       "pieces": 2
+      },
+      {
+       "cluster": 2,
+       "nodes": 1441,
+       "km": 8938.4,
+       "boundary_nodes": 18,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 4447,
+       "km": 8493.8,
+       "boundary_nodes": 22,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 769,
+       "km": 3480.5,
+       "boundary_nodes": 15,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 2372,
+       "km": 5963.1,
+       "boundary_nodes": 13,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 3044,
+       "km": 8456.9,
+       "boundary_nodes": 13,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 3072,
+       "km": 9570.7,
+       "boundary_nodes": 17,
+       "conductance": 0.0002,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 1.21
+    },
+    "16": {
+     "k_effective": 16,
+     "nodes": {
+      "min": 706.0,
+      "median": 1225.5,
+      "max": 3792.0
+     },
+     "km": {
+      "min": 2387.8,
+      "median": 3189.4,
+      "max": 7184.6
+     },
+     "cut_edges": 164,
+     "cut_chains": 169,
+     "cut_km": 2641.5,
+     "cut_km_share": 0.0404,
+     "conductance": {
+      "mean": 0.0008,
+      "max": 0.0014,
+      "min": 0.0001
+     },
+     "conductance_unweighted": {
+      "mean": 0.0048,
+      "max": 0.007
+     },
+     "contiguous_clusters": 15,
+     "worst_cluster_pieces": 2,
+     "min_largest_piece_share": 0.796,
+     "boundary_nodes": 313,
+     "boundary_per_cluster": {
+      "min": 10.0,
+      "median": 16.5,
+      "max": 44.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 279465,
+      "point_to_boundary_pairs": 84870,
+      "boundary_transit_pairs": 97656,
+      "routes_needed_clustered": 461992,
+      "min_plus_ops_for_inter_pairs": 1610511095
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 2612,
+       "km": 5388.1,
+       "boundary_nodes": 28,
+       "conductance": 0.0009,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 980,
+       "km": 3128.7,
+       "boundary_nodes": 18,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 715,
+       "km": 6024.8,
+       "boundary_nodes": 11,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 1027,
+       "km": 4698.5,
+       "boundary_nodes": 17,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 1092,
+       "km": 2387.8,
+       "boundary_nodes": 16,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 3792,
+       "km": 7184.6,
+       "boundary_nodes": 44,
+       "conductance": 0.0007,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 2114,
+       "km": 5765.2,
+       "boundary_nodes": 23,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 1274,
+       "km": 2856.3,
+       "boundary_nodes": 14,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 1118,
+       "km": 3945.3,
+       "boundary_nodes": 16,
+       "conductance": 0.0012,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 1254,
+       "km": 3011.9,
+       "boundary_nodes": 13,
+       "conductance": 0.0009,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 1415,
+       "km": 3274.8,
+       "boundary_nodes": 25,
+       "conductance": 0.0012,
+       "pieces": 2
+      },
+      {
+       "cluster": 11,
+       "nodes": 2491,
+       "km": 2954.3,
+       "boundary_nodes": 31,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 12,
+       "nodes": 706,
+       "km": 2904.9,
+       "boundary_nodes": 10,
+       "conductance": 0.0001,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 1147,
+       "km": 3218.3,
+       "boundary_nodes": 12,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 1197,
+       "km": 2787.4,
+       "boundary_nodes": 11,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 15,
+       "nodes": 1415,
+       "km": 3160.5,
+       "boundary_nodes": 24,
+       "conductance": 0.0004,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 2.43
+    },
+    "32": {
+     "k_effective": 32,
+     "nodes": {
+      "min": 171.0,
+      "median": 716.5,
+      "max": 2079.0
+     },
+     "km": {
+      "min": 735.1,
+      "median": 1792.5,
+      "max": 3886.9
+     },
+     "cut_edges": 257,
+     "cut_chains": 259,
+     "cut_km": 4072.3,
+     "cut_km_share": 0.0623,
+     "conductance": {
+      "mean": 0.0009,
+      "max": 0.0041,
+      "min": 0.0002
+     },
+     "conductance_unweighted": {
+      "mean": 0.0086,
+      "max": 0.0175
+     },
+     "contiguous_clusters": 31,
+     "worst_cluster_pieces": 3,
+     "min_largest_piece_share": 0.996,
+     "boundary_nodes": 482,
+     "boundary_per_cluster": {
+      "min": 5.0,
+      "median": 12.0,
+      "max": 35.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 145715,
+      "point_to_boundary_pairs": 63276,
+      "boundary_transit_pairs": 231842,
+      "routes_needed_clustered": 440833,
+      "min_plus_ops_for_inter_pairs": 953820863
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 226,
+       "km": 999.4,
+       "boundary_nodes": 11,
+       "conductance": 0.0006,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 684,
+       "km": 1391.2,
+       "boundary_nodes": 11,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 846,
+       "km": 1986.3,
+       "boundary_nodes": 12,
+       "conductance": 0.002,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 659,
+       "km": 3108.0,
+       "boundary_nodes": 12,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 784,
+       "km": 2017.6,
+       "boundary_nodes": 12,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 323,
+       "km": 2299.4,
+       "boundary_nodes": 15,
+       "conductance": 0.0006,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 856,
+       "km": 1302.2,
+       "boundary_nodes": 18,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 332,
+       "km": 1108.5,
+       "boundary_nodes": 7,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 1078,
+       "km": 2037.9,
+       "boundary_nodes": 19,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 753,
+       "km": 1801.5,
+       "boundary_nodes": 12,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 1029,
+       "km": 2257.9,
+       "boundary_nodes": 11,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 11,
+       "nodes": 614,
+       "km": 1345.3,
+       "boundary_nodes": 11,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 12,
+       "nodes": 221,
+       "km": 2809.1,
+       "boundary_nodes": 8,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 728,
+       "km": 2662.9,
+       "boundary_nodes": 12,
+       "conductance": 0.0019,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 705,
+       "km": 1488.3,
+       "boundary_nodes": 13,
+       "conductance": 0.0006,
+       "pieces": 1
+      },
+      {
+       "cluster": 15,
+       "nodes": 1505,
+       "km": 3886.9,
+       "boundary_nodes": 27,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 16,
+       "nodes": 1330,
+       "km": 3146.6,
+       "boundary_nodes": 21,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 17,
+       "nodes": 760,
+       "km": 2227.2,
+       "boundary_nodes": 15,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 18,
+       "nodes": 219,
+       "km": 801.0,
+       "boundary_nodes": 11,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 19,
+       "nodes": 382,
+       "km": 1008.6,
+       "boundary_nodes": 5,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 20,
+       "nodes": 919,
+       "km": 3208.9,
+       "boundary_nodes": 12,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 21,
+       "nodes": 1004,
+       "km": 919.1,
+       "boundary_nodes": 27,
+       "conductance": 0.0021,
+       "pieces": 1
+      },
+      {
+       "cluster": 22,
+       "nodes": 349,
+       "km": 1103.6,
+       "boundary_nodes": 9,
+       "conductance": 0.0012,
+       "pieces": 1
+      },
+      {
+       "cluster": 23,
+       "nodes": 1609,
+       "km": 2726.6,
+       "boundary_nodes": 26,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 24,
+       "nodes": 171,
+       "km": 735.1,
+       "boundary_nodes": 5,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 25,
+       "nodes": 696,
+       "km": 1078.8,
+       "boundary_nodes": 29,
+       "conductance": 0.0041,
+       "pieces": 3
+      },
+      {
+       "cluster": 26,
+       "nodes": 309,
+       "km": 1783.6,
+       "boundary_nodes": 10,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 27,
+       "nodes": 529,
+       "km": 1446.5,
+       "boundary_nodes": 15,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 28,
+       "nodes": 1059,
+       "km": 2819.4,
+       "boundary_nodes": 20,
+       "conductance": 0.0007,
+       "pieces": 1
+      },
+      {
+       "cluster": 29,
+       "nodes": 990,
+       "km": 2657.0,
+       "boundary_nodes": 17,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 30,
+       "nodes": 2079,
+       "km": 1722.5,
+       "boundary_nodes": 35,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 31,
+       "nodes": 601,
+       "km": 1373.5,
+       "boundary_nodes": 14,
+       "conductance": 0.0006,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 7.0
+    },
+    "64": {
+     "k_effective": 64,
+     "nodes": {
+      "min": 47.0,
+      "median": 347.5,
+      "max": 819.0
+     },
+     "km": {
+      "min": 143.8,
+      "median": 856.9,
+      "max": 3269.8
+     },
+     "cut_edges": 488,
+     "cut_chains": 493,
+     "cut_km": 7441.4,
+     "cut_km_share": 0.1139,
+     "conductance": {
+      "mean": 0.0028,
+      "max": 0.0123,
+      "min": 0.0002
+     },
+     "conductance_unweighted": {
+      "mean": 0.0149,
+      "max": 0.0323
+     },
+     "contiguous_clusters": 61,
+     "worst_cluster_pieces": 3,
+     "min_largest_piece_share": 0.667,
+     "boundary_nodes": 907,
+     "boundary_per_cluster": {
+      "min": 2.0,
+      "median": 13.0,
+      "max": 29.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 83841,
+      "point_to_boundary_pairs": 61995,
+      "boundary_transit_pairs": 821742,
+      "routes_needed_clustered": 967579,
+      "min_plus_ops_for_inter_pairs": 932529806
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 330,
+       "km": 1415.3,
+       "boundary_nodes": 12,
+       "conductance": 0.0007,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 624,
+       "km": 1254.0,
+       "boundary_nodes": 22,
+       "conductance": 0.0034,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 328,
+       "km": 1189.8,
+       "boundary_nodes": 20,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 397,
+       "km": 862.3,
+       "boundary_nodes": 16,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 475,
+       "km": 817.2,
+       "boundary_nodes": 15,
+       "conductance": 0.0007,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 181,
+       "km": 601.2,
+       "boundary_nodes": 8,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 361,
+       "km": 668.0,
+       "boundary_nodes": 11,
+       "conductance": 0.0024,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 275,
+       "km": 581.9,
+       "boundary_nodes": 11,
+       "conductance": 0.0123,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 571,
+       "km": 1903.6,
+       "boundary_nodes": 20,
+       "conductance": 0.0018,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 819,
+       "km": 1367.8,
+       "boundary_nodes": 27,
+       "conductance": 0.0051,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 94,
+       "km": 538.3,
+       "boundary_nodes": 6,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 11,
+       "nodes": 376,
+       "km": 644.5,
+       "boundary_nodes": 12,
+       "conductance": 0.0047,
+       "pieces": 1
+      },
+      {
+       "cluster": 12,
+       "nodes": 209,
+       "km": 451.8,
+       "boundary_nodes": 12,
+       "conductance": 0.0074,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 313,
+       "km": 1628.9,
+       "boundary_nodes": 12,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 219,
+       "km": 2712.9,
+       "boundary_nodes": 11,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 15,
+       "nodes": 486,
+       "km": 859.7,
+       "boundary_nodes": 8,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 16,
+       "nodes": 717,
+       "km": 508.4,
+       "boundary_nodes": 17,
+       "conductance": 0.0065,
+       "pieces": 1
+      },
+      {
+       "cluster": 17,
+       "nodes": 276,
+       "km": 1559.0,
+       "boundary_nodes": 8,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 18,
+       "nodes": 237,
+       "km": 143.8,
+       "boundary_nodes": 13,
+       "conductance": 0.012,
+       "pieces": 1
+      },
+      {
+       "cluster": 19,
+       "nodes": 246,
+       "km": 435.9,
+       "boundary_nodes": 11,
+       "conductance": 0.0026,
+       "pieces": 1
+      },
+      {
+       "cluster": 20,
+       "nodes": 388,
+       "km": 644.5,
+       "boundary_nodes": 11,
+       "conductance": 0.0019,
+       "pieces": 1
+      },
+      {
+       "cluster": 21,
+       "nodes": 352,
+       "km": 361.4,
+       "boundary_nodes": 13,
+       "conductance": 0.0069,
+       "pieces": 1
+      },
+      {
+       "cluster": 22,
+       "nodes": 183,
+       "km": 321.2,
+       "boundary_nodes": 12,
+       "conductance": 0.0012,
+       "pieces": 2
+      },
+      {
+       "cluster": 23,
+       "nodes": 525,
+       "km": 1137.5,
+       "boundary_nodes": 18,
+       "conductance": 0.0044,
+       "pieces": 1
+      },
+      {
+       "cluster": 24,
+       "nodes": 290,
+       "km": 355.5,
+       "boundary_nodes": 17,
+       "conductance": 0.0029,
+       "pieces": 1
+      },
+      {
+       "cluster": 25,
+       "nodes": 529,
+       "km": 458.1,
+       "boundary_nodes": 24,
+       "conductance": 0.0087,
+       "pieces": 1
+      },
+      {
+       "cluster": 26,
+       "nodes": 385,
+       "km": 710.3,
+       "boundary_nodes": 18,
+       "conductance": 0.0018,
+       "pieces": 1
+      },
+      {
+       "cluster": 27,
+       "nodes": 492,
+       "km": 922.6,
+       "boundary_nodes": 16,
+       "conductance": 0.0033,
+       "pieces": 1
+      },
+      {
+       "cluster": 28,
+       "nodes": 234,
+       "km": 873.5,
+       "boundary_nodes": 5,
+       "conductance": 0.0009,
+       "pieces": 1
+      },
+      {
+       "cluster": 29,
+       "nodes": 603,
+       "km": 1156.9,
+       "boundary_nodes": 19,
+       "conductance": 0.0026,
+       "pieces": 1
+      },
+      {
+       "cluster": 30,
+       "nodes": 672,
+       "km": 858.7,
+       "boundary_nodes": 23,
+       "conductance": 0.0034,
+       "pieces": 1
+      },
+      {
+       "cluster": 31,
+       "nodes": 531,
+       "km": 1532.2,
+       "boundary_nodes": 16,
+       "conductance": 0.0021,
+       "pieces": 1
+      },
+      {
+       "cluster": 32,
+       "nodes": 684,
+       "km": 3269.8,
+       "boundary_nodes": 26,
+       "conductance": 0.0002,
+       "pieces": 3
+      },
+      {
+       "cluster": 33,
+       "nodes": 341,
+       "km": 1526.0,
+       "boundary_nodes": 12,
+       "conductance": 0.0018,
+       "pieces": 1
+      },
+      {
+       "cluster": 34,
+       "nodes": 487,
+       "km": 975.3,
+       "boundary_nodes": 13,
+       "conductance": 0.0007,
+       "pieces": 1
+      },
+      {
+       "cluster": 35,
+       "nodes": 627,
+       "km": 1391.9,
+       "boundary_nodes": 29,
+       "conductance": 0.0032,
+       "pieces": 1
+      },
+      {
+       "cluster": 36,
+       "nodes": 595,
+       "km": 1068.8,
+       "boundary_nodes": 27,
+       "conductance": 0.0037,
+       "pieces": 1
+      },
+      {
+       "cluster": 37,
+       "nodes": 534,
+       "km": 776.6,
+       "boundary_nodes": 29,
+       "conductance": 0.0057,
+       "pieces": 1
+      },
+      {
+       "cluster": 38,
+       "nodes": 337,
+       "km": 1226.4,
+       "boundary_nodes": 7,
+       "conductance": 0.003,
+       "pieces": 1
+      },
+      {
+       "cluster": 39,
+       "nodes": 180,
+       "km": 951.4,
+       "boundary_nodes": 5,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 40,
+       "nodes": 436,
+       "km": 1721.0,
+       "boundary_nodes": 20,
+       "conductance": 0.0034,
+       "pieces": 1
+      },
+      {
+       "cluster": 41,
+       "nodes": 524,
+       "km": 1069.1,
+       "boundary_nodes": 14,
+       "conductance": 0.0017,
+       "pieces": 1
+      },
+      {
+       "cluster": 42,
+       "nodes": 193,
+       "km": 424.5,
+       "boundary_nodes": 14,
+       "conductance": 0.0021,
+       "pieces": 1
+      },
+      {
+       "cluster": 43,
+       "nodes": 232,
+       "km": 736.4,
+       "boundary_nodes": 9,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 44,
+       "nodes": 343,
+       "km": 926.2,
+       "boundary_nodes": 10,
+       "conductance": 0.0017,
+       "pieces": 1
+      },
+      {
+       "cluster": 45,
+       "nodes": 420,
+       "km": 866.8,
+       "boundary_nodes": 15,
+       "conductance": 0.0071,
+       "pieces": 1
+      },
+      {
+       "cluster": 46,
+       "nodes": 343,
+       "km": 902.6,
+       "boundary_nodes": 10,
+       "conductance": 0.0034,
+       "pieces": 1
+      },
+      {
+       "cluster": 47,
+       "nodes": 182,
+       "km": 727.9,
+       "boundary_nodes": 7,
+       "conductance": 0.0023,
+       "pieces": 1
+      },
+      {
+       "cluster": 48,
+       "nodes": 352,
+       "km": 666.0,
+       "boundary_nodes": 15,
+       "conductance": 0.0028,
+       "pieces": 1
+      },
+      {
+       "cluster": 49,
+       "nodes": 122,
+       "km": 404.0,
+       "boundary_nodes": 4,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 50,
+       "nodes": 177,
+       "km": 601.0,
+       "boundary_nodes": 13,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 51,
+       "nodes": 213,
+       "km": 204.3,
+       "boundary_nodes": 8,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 52,
+       "nodes": 802,
+       "km": 1112.4,
+       "boundary_nodes": 26,
+       "conductance": 0.0072,
+       "pieces": 1
+      },
+      {
+       "cluster": 53,
+       "nodes": 166,
+       "km": 214.2,
+       "boundary_nodes": 11,
+       "conductance": 0.0024,
+       "pieces": 1
+      },
+      {
+       "cluster": 54,
+       "nodes": 369,
+       "km": 909.8,
+       "boundary_nodes": 13,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 55,
+       "nodes": 316,
+       "km": 1213.5,
+       "boundary_nodes": 12,
+       "conductance": 0.0022,
+       "pieces": 1
+      },
+      {
+       "cluster": 56,
+       "nodes": 239,
+       "km": 356.7,
+       "boundary_nodes": 6,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 57,
+       "nodes": 232,
+       "km": 821.8,
+       "boundary_nodes": 12,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 58,
+       "nodes": 47,
+       "km": 152.5,
+       "boundary_nodes": 2,
+       "conductance": 0.0028,
+       "pieces": 1
+      },
+      {
+       "cluster": 59,
+       "nodes": 276,
+       "km": 619.7,
+       "boundary_nodes": 11,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 60,
+       "nodes": 502,
+       "km": 855.2,
+       "boundary_nodes": 16,
+       "conductance": 0.0037,
+       "pieces": 1
+      },
+      {
+       "cluster": 61,
+       "nodes": 157,
+       "km": 463.9,
+       "boundary_nodes": 7,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 62,
+       "nodes": 723,
+       "km": 863.6,
+       "boundary_nodes": 16,
+       "conductance": 0.0018,
+       "pieces": 1
+      },
+      {
+       "cluster": 63,
+       "nodes": 480,
+       "km": 395.2,
+       "boundary_nodes": 24,
+       "conductance": 0.0037,
+       "pieces": 2
+      }
+     ],
+     "kmeans_s": 29.69
+    }
+   }
+  },
+  "exp_km": {
+   "eigenvalues_first_10": [
+    6.42e-17,
+    5.466e-07,
+    5.343e-06,
+    1.234e-05,
+    2.348e-05,
+    3.183e-05,
+    3.351e-05,
+    3.527e-05,
+    4.669e-05,
+    5.473e-05
+   ],
+   "eigenvalue_k": {
+    "8": 3.527e-05,
+    "16": 0.0001086,
+    "32": 0.000241,
+    "64": 0.0006944
+   },
+   "k": {
+    "8": {
+     "k_effective": 8,
+     "nodes": {
+      "min": 1595.0,
+      "median": 2571.5,
+      "max": 6224.0
+     },
+     "km": {
+      "min": 3708.3,
+      "median": 8800.0,
+      "max": 12177.9
+     },
+     "cut_edges": 78,
+     "cut_chains": 80,
+     "cut_km": 1408.1,
+     "cut_km_share": 0.0216,
+     "conductance": {
+      "mean": 0.0006,
+      "max": 0.001,
+      "min": 0.0004
+     },
+     "conductance_unweighted": {
+      "mean": 0.0024,
+      "max": 0.0039
+     },
+     "contiguous_clusters": 8,
+     "worst_cluster_pieces": 1,
+     "min_largest_piece_share": 1.0,
+     "boundary_nodes": 142,
+     "boundary_per_cluster": {
+      "min": 10.0,
+      "median": 17.5,
+      "max": 28.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 563770,
+      "point_to_boundary_pairs": 76522,
+      "boundary_transit_pairs": 20022,
+      "routes_needed_clustered": 660314,
+      "min_plus_ops_for_inter_pairs": 1217011931
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 6224,
+       "km": 10947.1,
+       "boundary_nodes": 28,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 3103,
+       "km": 8588.7,
+       "boundary_nodes": 10,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 1723,
+       "km": 3997.3,
+       "boundary_nodes": 12,
+       "conductance": 0.0006,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 4564,
+       "km": 9011.3,
+       "boundary_nodes": 21,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 2125,
+       "km": 12177.9,
+       "boundary_nodes": 20,
+       "conductance": 0.001,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 3018,
+       "km": 9346.0,
+       "boundary_nodes": 22,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 1997,
+       "km": 6148.1,
+       "boundary_nodes": 15,
+       "conductance": 0.0006,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 1595,
+       "km": 3708.3,
+       "boundary_nodes": 14,
+       "conductance": 0.0008,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 1.15
+    },
+    "16": {
+     "k_effective": 16,
+     "nodes": {
+      "min": 640.0,
+      "median": 1332.0,
+      "max": 2774.0
+     },
+     "km": {
+      "min": 2339.9,
+      "median": 3584.3,
+      "max": 6237.7
+     },
+     "cut_edges": 184,
+     "cut_chains": 188,
+     "cut_km": 3232.5,
+     "cut_km_share": 0.0495,
+     "conductance": {
+      "mean": 0.0021,
+      "max": 0.0078,
+      "min": 0.0001
+     },
+     "conductance_unweighted": {
+      "mean": 0.0054,
+      "max": 0.0114
+     },
+     "contiguous_clusters": 15,
+     "worst_cluster_pieces": 3,
+     "min_largest_piece_share": 0.987,
+     "boundary_nodes": 331,
+     "boundary_per_cluster": {
+      "min": 10.0,
+      "median": 15.0,
+      "max": 49.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 273001,
+      "point_to_boundary_pairs": 86995,
+      "boundary_transit_pairs": 109230,
+      "routes_needed_clustered": 469226,
+      "min_plus_ops_for_inter_pairs": 1710043541
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 1387,
+       "km": 3210.3,
+       "boundary_nodes": 11,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 1904,
+       "km": 4260.8,
+       "boundary_nodes": 27,
+       "conductance": 0.004,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 1799,
+       "km": 2779.4,
+       "boundary_nodes": 49,
+       "conductance": 0.0078,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 1003,
+       "km": 2339.9,
+       "boundary_nodes": 13,
+       "conductance": 0.002,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 2766,
+       "km": 5122.8,
+       "boundary_nodes": 27,
+       "conductance": 0.0027,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 1277,
+       "km": 3344.7,
+       "boundary_nodes": 22,
+       "conductance": 0.003,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 1239,
+       "km": 2970.9,
+       "boundary_nodes": 16,
+       "conductance": 0.0022,
+       "pieces": 3
+      },
+      {
+       "cluster": 7,
+       "nodes": 2384,
+       "km": 6237.7,
+       "boundary_nodes": 42,
+       "conductance": 0.0034,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 848,
+       "km": 3823.9,
+       "boundary_nodes": 14,
+       "conductance": 0.0001,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 1067,
+       "km": 2491.7,
+       "boundary_nodes": 15,
+       "conductance": 0.0009,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 1432,
+       "km": 4265.4,
+       "boundary_nodes": 15,
+       "conductance": 0.0012,
+       "pieces": 1
+      },
+      {
+       "cluster": 11,
+       "nodes": 641,
+       "km": 4887.8,
+       "boundary_nodes": 13,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 12,
+       "nodes": 1928,
+       "km": 5488.4,
+       "boundary_nodes": 10,
+       "conductance": 0.0009,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 1260,
+       "km": 2799.5,
+       "boundary_nodes": 13,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 2774,
+       "km": 5589.5,
+       "boundary_nodes": 30,
+       "conductance": 0.0022,
+       "pieces": 1
+      },
+      {
+       "cluster": 15,
+       "nodes": 640,
+       "km": 2487.6,
+       "boundary_nodes": 14,
+       "conductance": 0.0014,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 2.44
+    },
+    "32": {
+     "k_effective": 32,
+     "nodes": {
+      "min": 170.0,
+      "median": 758.5,
+      "max": 1704.0
+     },
+     "km": {
+      "min": 676.0,
+      "median": 1901.4,
+      "max": 3609.2
+     },
+     "cut_edges": 293,
+     "cut_chains": 296,
+     "cut_km": 4523.7,
+     "cut_km_share": 0.0692,
+     "conductance": {
+      "mean": 0.0035,
+      "max": 0.0137,
+      "min": 0.0001
+     },
+     "conductance_unweighted": {
+      "mean": 0.0101,
+      "max": 0.0297
+     },
+     "contiguous_clusters": 30,
+     "worst_cluster_pieces": 4,
+     "min_largest_piece_share": 0.893,
+     "boundary_nodes": 534,
+     "boundary_per_cluster": {
+      "min": 6.0,
+      "median": 14.5,
+      "max": 35.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 149944,
+      "point_to_boundary_pairs": 73433,
+      "boundary_transit_pairs": 284622,
+      "routes_needed_clustered": 507999,
+      "min_plus_ops_for_inter_pairs": 1275470970
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 1176,
+       "km": 899.8,
+       "boundary_nodes": 19,
+       "conductance": 0.0053,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 316,
+       "km": 1987.8,
+       "boundary_nodes": 10,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 831,
+       "km": 2337.6,
+       "boundary_nodes": 16,
+       "conductance": 0.0035,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 1704,
+       "km": 3531.3,
+       "boundary_nodes": 34,
+       "conductance": 0.0045,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 777,
+       "km": 1815.0,
+       "boundary_nodes": 11,
+       "conductance": 0.0009,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 648,
+       "km": 1314.9,
+       "boundary_nodes": 12,
+       "conductance": 0.0018,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 833,
+       "km": 1293.7,
+       "boundary_nodes": 27,
+       "conductance": 0.007,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 563,
+       "km": 2524.5,
+       "boundary_nodes": 14,
+       "conductance": 0.0026,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 734,
+       "km": 1475.6,
+       "boundary_nodes": 11,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 967,
+       "km": 2294.7,
+       "boundary_nodes": 15,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 304,
+       "km": 809.6,
+       "boundary_nodes": 10,
+       "conductance": 0.0023,
+       "pieces": 1
+      },
+      {
+       "cluster": 11,
+       "nodes": 1241,
+       "km": 2031.3,
+       "boundary_nodes": 35,
+       "conductance": 0.0079,
+       "pieces": 2
+      },
+      {
+       "cluster": 12,
+       "nodes": 393,
+       "km": 957.8,
+       "boundary_nodes": 6,
+       "conductance": 0.0001,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 905,
+       "km": 2420.9,
+       "boundary_nodes": 18,
+       "conductance": 0.0042,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 1058,
+       "km": 3210.8,
+       "boundary_nodes": 16,
+       "conductance": 0.0052,
+       "pieces": 1
+      },
+      {
+       "cluster": 15,
+       "nodes": 201,
+       "km": 2271.1,
+       "boundary_nodes": 9,
+       "conductance": 0.0067,
+       "pieces": 1
+      },
+      {
+       "cluster": 16,
+       "nodes": 651,
+       "km": 742.6,
+       "boundary_nodes": 18,
+       "conductance": 0.0069,
+       "pieces": 1
+      },
+      {
+       "cluster": 17,
+       "nodes": 288,
+       "km": 1253.3,
+       "boundary_nodes": 9,
+       "conductance": 0.0033,
+       "pieces": 1
+      },
+      {
+       "cluster": 18,
+       "nodes": 479,
+       "km": 1200.7,
+       "boundary_nodes": 9,
+       "conductance": 0.0029,
+       "pieces": 1
+      },
+      {
+       "cluster": 19,
+       "nodes": 1098,
+       "km": 3136.7,
+       "boundary_nodes": 10,
+       "conductance": 0.0028,
+       "pieces": 1
+      },
+      {
+       "cluster": 20,
+       "nodes": 1246,
+       "km": 3609.2,
+       "boundary_nodes": 35,
+       "conductance": 0.0072,
+       "pieces": 1
+      },
+      {
+       "cluster": 21,
+       "nodes": 170,
+       "km": 676.0,
+       "boundary_nodes": 10,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 22,
+       "nodes": 1400,
+       "km": 2304.7,
+       "boundary_nodes": 32,
+       "conductance": 0.0071,
+       "pieces": 1
+      },
+      {
+       "cluster": 23,
+       "nodes": 1160,
+       "km": 2330.4,
+       "boundary_nodes": 19,
+       "conductance": 0.0039,
+       "pieces": 1
+      },
+      {
+       "cluster": 24,
+       "nodes": 1077,
+       "km": 3236.9,
+       "boundary_nodes": 18,
+       "conductance": 0.0022,
+       "pieces": 1
+      },
+      {
+       "cluster": 25,
+       "nodes": 347,
+       "km": 684.9,
+       "boundary_nodes": 18,
+       "conductance": 0.0137,
+       "pieces": 1
+      },
+      {
+       "cluster": 26,
+       "nodes": 1228,
+       "km": 3217.8,
+       "boundary_nodes": 22,
+       "conductance": 0.0021,
+       "pieces": 1
+      },
+      {
+       "cluster": 27,
+       "nodes": 245,
+       "km": 964.1,
+       "boundary_nodes": 13,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 28,
+       "nodes": 740,
+       "km": 1415.7,
+       "boundary_nodes": 12,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 29,
+       "nodes": 252,
+       "km": 1704.2,
+       "boundary_nodes": 20,
+       "conductance": 0.0005,
+       "pieces": 4
+      },
+      {
+       "cluster": 30,
+       "nodes": 451,
+       "km": 1087.3,
+       "boundary_nodes": 12,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 31,
+       "nodes": 866,
+       "km": 2068.1,
+       "boundary_nodes": 14,
+       "conductance": 0.002,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 7.01
+    },
+    "64": {
+     "k_effective": 64,
+     "nodes": {
+      "min": 45.0,
+      "median": 348.0,
+      "max": 765.0
+     },
+     "km": {
+      "min": 134.7,
+      "median": 815.5,
+      "max": 2191.4
+     },
+     "cut_edges": 499,
+     "cut_chains": 509,
+     "cut_km": 7140.5,
+     "cut_km_share": 0.1093,
+     "conductance": {
+      "mean": 0.0057,
+      "max": 0.0166,
+      "min": 0.0001
+     },
+     "conductance_unweighted": {
+      "mean": 0.0155,
+      "max": 0.0402
+     },
+     "contiguous_clusters": 61,
+     "worst_cluster_pieces": 6,
+     "min_largest_piece_share": 0.354,
+     "boundary_nodes": 910,
+     "boundary_per_cluster": {
+      "min": 3.0,
+      "median": 12.5,
+      "max": 34.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 77015,
+      "point_to_boundary_pairs": 61093,
+      "boundary_transit_pairs": 827190,
+      "routes_needed_clustered": 965298,
+      "min_plus_ops_for_inter_pairs": 909539849
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 358,
+       "km": 805.6,
+       "boundary_nodes": 22,
+       "conductance": 0.0135,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 552,
+       "km": 921.6,
+       "boundary_nodes": 16,
+       "conductance": 0.0092,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 352,
+       "km": 636.5,
+       "boundary_nodes": 17,
+       "conductance": 0.0166,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 324,
+       "km": 1288.1,
+       "boundary_nodes": 11,
+       "conductance": 0.0031,
+       "pieces": 1
+      },
+      {
+       "cluster": 4,
+       "nodes": 284,
+       "km": 489.6,
+       "boundary_nodes": 12,
+       "conductance": 0.0031,
+       "pieces": 1
+      },
+      {
+       "cluster": 5,
+       "nodes": 268,
+       "km": 418.1,
+       "boundary_nodes": 21,
+       "conductance": 0.0149,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 165,
+       "km": 636.4,
+       "boundary_nodes": 6,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 83,
+       "km": 597.1,
+       "boundary_nodes": 8,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 630,
+       "km": 487.8,
+       "boundary_nodes": 17,
+       "conductance": 0.0092,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 692,
+       "km": 1824.3,
+       "boundary_nodes": 20,
+       "conductance": 0.0055,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 68,
+       "km": 148.5,
+       "boundary_nodes": 4,
+       "conductance": 0.0144,
+       "pieces": 1
+      },
+      {
+       "cluster": 11,
+       "nodes": 589,
+       "km": 1059.6,
+       "boundary_nodes": 23,
+       "conductance": 0.0111,
+       "pieces": 1
+      },
+      {
+       "cluster": 12,
+       "nodes": 665,
+       "km": 1322.7,
+       "boundary_nodes": 24,
+       "conductance": 0.0054,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 534,
+       "km": 1847.0,
+       "boundary_nodes": 34,
+       "conductance": 0.002,
+       "pieces": 6
+      },
+      {
+       "cluster": 14,
+       "nodes": 371,
+       "km": 1063.5,
+       "boundary_nodes": 16,
+       "conductance": 0.0026,
+       "pieces": 1
+      },
+      {
+       "cluster": 15,
+       "nodes": 354,
+       "km": 782.7,
+       "boundary_nodes": 11,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 16,
+       "nodes": 408,
+       "km": 1380.9,
+       "boundary_nodes": 10,
+       "conductance": 0.0059,
+       "pieces": 1
+      },
+      {
+       "cluster": 17,
+       "nodes": 349,
+       "km": 804.6,
+       "boundary_nodes": 11,
+       "conductance": 0.0032,
+       "pieces": 1
+      },
+      {
+       "cluster": 18,
+       "nodes": 343,
+       "km": 1142.7,
+       "boundary_nodes": 7,
+       "conductance": 0.001,
+       "pieces": 1
+      },
+      {
+       "cluster": 19,
+       "nodes": 307,
+       "km": 1357.6,
+       "boundary_nodes": 9,
+       "conductance": 0.0001,
+       "pieces": 1
+      },
+      {
+       "cluster": 20,
+       "nodes": 341,
+       "km": 874.6,
+       "boundary_nodes": 11,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 21,
+       "nodes": 701,
+       "km": 802.4,
+       "boundary_nodes": 21,
+       "conductance": 0.007,
+       "pieces": 1
+      },
+      {
+       "cluster": 22,
+       "nodes": 284,
+       "km": 1636.5,
+       "boundary_nodes": 9,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 23,
+       "nodes": 660,
+       "km": 956.3,
+       "boundary_nodes": 24,
+       "conductance": 0.0072,
+       "pieces": 1
+      },
+      {
+       "cluster": 24,
+       "nodes": 238,
+       "km": 347.2,
+       "boundary_nodes": 6,
+       "conductance": 0.0002,
+       "pieces": 1
+      },
+      {
+       "cluster": 25,
+       "nodes": 429,
+       "km": 673.1,
+       "boundary_nodes": 13,
+       "conductance": 0.0089,
+       "pieces": 1
+      },
+      {
+       "cluster": 26,
+       "nodes": 411,
+       "km": 1835.8,
+       "boundary_nodes": 23,
+       "conductance": 0.014,
+       "pieces": 2
+      },
+      {
+       "cluster": 27,
+       "nodes": 383,
+       "km": 805.3,
+       "boundary_nodes": 12,
+       "conductance": 0.0067,
+       "pieces": 1
+      },
+      {
+       "cluster": 28,
+       "nodes": 431,
+       "km": 1466.2,
+       "boundary_nodes": 15,
+       "conductance": 0.0078,
+       "pieces": 1
+      },
+      {
+       "cluster": 29,
+       "nodes": 376,
+       "km": 595.4,
+       "boundary_nodes": 13,
+       "conductance": 0.003,
+       "pieces": 1
+      },
+      {
+       "cluster": 30,
+       "nodes": 183,
+       "km": 593.5,
+       "boundary_nodes": 8,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 31,
+       "nodes": 608,
+       "km": 945.3,
+       "boundary_nodes": 23,
+       "conductance": 0.0087,
+       "pieces": 1
+      },
+      {
+       "cluster": 32,
+       "nodes": 502,
+       "km": 921.4,
+       "boundary_nodes": 11,
+       "conductance": 0.0064,
+       "pieces": 1
+      },
+      {
+       "cluster": 33,
+       "nodes": 513,
+       "km": 768.9,
+       "boundary_nodes": 28,
+       "conductance": 0.0133,
+       "pieces": 1
+      },
+      {
+       "cluster": 34,
+       "nodes": 303,
+       "km": 825.4,
+       "boundary_nodes": 12,
+       "conductance": 0.0088,
+       "pieces": 1
+      },
+      {
+       "cluster": 35,
+       "nodes": 310,
+       "km": 674.6,
+       "boundary_nodes": 11,
+       "conductance": 0.0039,
+       "pieces": 1
+      },
+      {
+       "cluster": 36,
+       "nodes": 300,
+       "km": 1040.0,
+       "boundary_nodes": 15,
+       "conductance": 0.0095,
+       "pieces": 2
+      },
+      {
+       "cluster": 37,
+       "nodes": 327,
+       "km": 163.5,
+       "boundary_nodes": 12,
+       "conductance": 0.009,
+       "pieces": 1
+      },
+      {
+       "cluster": 38,
+       "nodes": 300,
+       "km": 825.9,
+       "boundary_nodes": 11,
+       "conductance": 0.0041,
+       "pieces": 1
+      },
+      {
+       "cluster": 39,
+       "nodes": 512,
+       "km": 948.9,
+       "boundary_nodes": 20,
+       "conductance": 0.0087,
+       "pieces": 1
+      },
+      {
+       "cluster": 40,
+       "nodes": 716,
+       "km": 959.7,
+       "boundary_nodes": 25,
+       "conductance": 0.0084,
+       "pieces": 1
+      },
+      {
+       "cluster": 41,
+       "nodes": 463,
+       "km": 1229.0,
+       "boundary_nodes": 13,
+       "conductance": 0.0052,
+       "pieces": 1
+      },
+      {
+       "cluster": 42,
+       "nodes": 735,
+       "km": 2191.4,
+       "boundary_nodes": 18,
+       "conductance": 0.0034,
+       "pieces": 1
+      },
+      {
+       "cluster": 43,
+       "nodes": 328,
+       "km": 791.6,
+       "boundary_nodes": 12,
+       "conductance": 0.0037,
+       "pieces": 1
+      },
+      {
+       "cluster": 44,
+       "nodes": 128,
+       "km": 1747.3,
+       "boundary_nodes": 11,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 45,
+       "nodes": 154,
+       "km": 296.2,
+       "boundary_nodes": 5,
+       "conductance": 0.0115,
+       "pieces": 1
+      },
+      {
+       "cluster": 46,
+       "nodes": 176,
+       "km": 636.0,
+       "boundary_nodes": 9,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 47,
+       "nodes": 328,
+       "km": 1399.4,
+       "boundary_nodes": 17,
+       "conductance": 0.0042,
+       "pieces": 1
+      },
+      {
+       "cluster": 48,
+       "nodes": 509,
+       "km": 1068.0,
+       "boundary_nodes": 13,
+       "conductance": 0.0068,
+       "pieces": 1
+      },
+      {
+       "cluster": 49,
+       "nodes": 494,
+       "km": 393.2,
+       "boundary_nodes": 15,
+       "conductance": 0.0061,
+       "pieces": 1
+      },
+      {
+       "cluster": 50,
+       "nodes": 278,
+       "km": 534.1,
+       "boundary_nodes": 9,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 51,
+       "nodes": 261,
+       "km": 548.9,
+       "boundary_nodes": 10,
+       "conductance": 0.0052,
+       "pieces": 1
+      },
+      {
+       "cluster": 52,
+       "nodes": 347,
+       "km": 1641.6,
+       "boundary_nodes": 10,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 53,
+       "nodes": 182,
+       "km": 252.7,
+       "boundary_nodes": 12,
+       "conductance": 0.0052,
+       "pieces": 1
+      },
+      {
+       "cluster": 54,
+       "nodes": 427,
+       "km": 854.3,
+       "boundary_nodes": 15,
+       "conductance": 0.006,
+       "pieces": 1
+      },
+      {
+       "cluster": 55,
+       "nodes": 45,
+       "km": 134.7,
+       "boundary_nodes": 3,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 56,
+       "nodes": 267,
+       "km": 431.6,
+       "boundary_nodes": 13,
+       "conductance": 0.0044,
+       "pieces": 1
+      },
+      {
+       "cluster": 57,
+       "nodes": 765,
+       "km": 1873.5,
+       "boundary_nodes": 12,
+       "conductance": 0.0019,
+       "pieces": 1
+      },
+      {
+       "cluster": 58,
+       "nodes": 153,
+       "km": 564.5,
+       "boundary_nodes": 7,
+       "conductance": 0.0066,
+       "pieces": 1
+      },
+      {
+       "cluster": 59,
+       "nodes": 477,
+       "km": 382.3,
+       "boundary_nodes": 22,
+       "conductance": 0.0125,
+       "pieces": 1
+      },
+      {
+       "cluster": 60,
+       "nodes": 339,
+       "km": 602.2,
+       "boundary_nodes": 13,
+       "conductance": 0.0051,
+       "pieces": 1
+      },
+      {
+       "cluster": 61,
+       "nodes": 465,
+       "km": 787.0,
+       "boundary_nodes": 19,
+       "conductance": 0.0049,
+       "pieces": 1
+      },
+      {
+       "cluster": 62,
+       "nodes": 199,
+       "km": 1061.9,
+       "boundary_nodes": 12,
+       "conductance": 0.0066,
+       "pieces": 1
+      },
+      {
+       "cluster": 63,
+       "nodes": 305,
+       "km": 1096.2,
+       "boundary_nodes": 18,
+       "conductance": 0.0027,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 29.28
+    }
+   }
+  },
+  "baseline_xy_kmeans": {
+   "k": {
+    "8": {
+     "k_effective": 8,
+     "nodes": {
+      "min": 1752.0,
+      "median": 2147.5,
+      "max": 7176.0
+     },
+     "km": {
+      "min": 4306.2,
+      "median": 7642.4,
+      "max": 13847.8
+     },
+     "cut_edges": 120,
+     "cut_chains": 120,
+     "cut_km": 1732.9,
+     "cut_km_share": 0.0265,
+     "conductance": {
+      "mean": 0.0004,
+      "max": 0.001,
+      "min": 0.0001
+     },
+     "conductance_unweighted": {
+      "mean": 0.0038,
+      "max": 0.0068
+     },
+     "contiguous_clusters": 3,
+     "worst_cluster_pieces": 5,
+     "min_largest_piece_share": 0.992,
+     "boundary_nodes": 214,
+     "boundary_per_cluster": {
+      "min": 18.0,
+      "median": 24.5,
+      "max": 41.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 575170,
+      "point_to_boundary_pairs": 118747,
+      "boundary_transit_pairs": 45582,
+      "routes_needed_clustered": 739498,
+      "min_plus_ops_for_inter_pairs": 2883441127
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 2901,
+       "km": 8216.4,
+       "boundary_nodes": 22,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 1,
+       "nodes": 7176,
+       "km": 13847.8,
+       "boundary_nodes": 41,
+       "conductance": 0.0003,
+       "pieces": 4
+      },
+      {
+       "cluster": 2,
+       "nodes": 1767,
+       "km": 5146.8,
+       "boundary_nodes": 19,
+       "conductance": 0.0006,
+       "pieces": 1
+      },
+      {
+       "cluster": 3,
+       "nodes": 1774,
+       "km": 4871.1,
+       "boundary_nodes": 20,
+       "conductance": 0.0001,
+       "pieces": 2
+      },
+      {
+       "cluster": 4,
+       "nodes": 4684,
+       "km": 8891.0,
+       "boundary_nodes": 33,
+       "conductance": 0.0004,
+       "pieces": 4
+      },
+      {
+       "cluster": 5,
+       "nodes": 1946,
+       "km": 11252.2,
+       "boundary_nodes": 34,
+       "conductance": 0.001,
+       "pieces": 5
+      },
+      {
+       "cluster": 6,
+       "nodes": 2349,
+       "km": 7068.4,
+       "boundary_nodes": 27,
+       "conductance": 0.0004,
+       "pieces": 2
+      },
+      {
+       "cluster": 7,
+       "nodes": 1752,
+       "km": 4306.2,
+       "boundary_nodes": 18,
+       "conductance": 0.0002,
+       "pieces": 1
+      }
+     ],
+     "kmeans_s": 0.28
+    },
+    "16": {
+     "k_effective": 16,
+     "nodes": {
+      "min": 688.0,
+      "median": 1101.5,
+      "max": 3851.0
+     },
+     "km": {
+      "min": 2317.8,
+      "median": 3446.5,
+      "max": 7133.0
+     },
+     "cut_edges": 256,
+     "cut_chains": 258,
+     "cut_km": 3564.4,
+     "cut_km_share": 0.0546,
+     "conductance": {
+      "mean": 0.0009,
+      "max": 0.0016,
+      "min": 0.0002
+     },
+     "conductance_unweighted": {
+      "mean": 0.0078,
+      "max": 0.0117
+     },
+     "contiguous_clusters": 1,
+     "worst_cluster_pieces": 5,
+     "min_largest_piece_share": 0.986,
+     "boundary_nodes": 459,
+     "boundary_per_cluster": {
+      "min": 12.0,
+      "median": 24.5,
+      "max": 60.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 273383,
+      "point_to_boundary_pairs": 124885,
+      "boundary_transit_pairs": 210222,
+      "routes_needed_clustered": 608489,
+      "min_plus_ops_for_inter_pairs": 3504645190
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 688,
+       "km": 5549.4,
+       "boundary_nodes": 12,
+       "conductance": 0.0002,
+       "pieces": 2
+      },
+      {
+       "cluster": 1,
+       "nodes": 969,
+       "km": 2998.7,
+       "boundary_nodes": 23,
+       "conductance": 0.0016,
+       "pieces": 3
+      },
+      {
+       "cluster": 2,
+       "nodes": 899,
+       "km": 2317.8,
+       "boundary_nodes": 18,
+       "conductance": 0.0008,
+       "pieces": 2
+      },
+      {
+       "cluster": 3,
+       "nodes": 3568,
+       "km": 4796.7,
+       "boundary_nodes": 38,
+       "conductance": 0.0004,
+       "pieces": 2
+      },
+      {
+       "cluster": 4,
+       "nodes": 1451,
+       "km": 3481.2,
+       "boundary_nodes": 43,
+       "conductance": 0.0016,
+       "pieces": 4
+      },
+      {
+       "cluster": 5,
+       "nodes": 799,
+       "km": 3466.9,
+       "boundary_nodes": 20,
+       "conductance": 0.0003,
+       "pieces": 3
+      },
+      {
+       "cluster": 6,
+       "nodes": 2021,
+       "km": 4919.5,
+       "boundary_nodes": 41,
+       "conductance": 0.0008,
+       "pieces": 3
+      },
+      {
+       "cluster": 7,
+       "nodes": 1353,
+       "km": 2900.3,
+       "boundary_nodes": 23,
+       "conductance": 0.0009,
+       "pieces": 2
+      },
+      {
+       "cluster": 8,
+       "nodes": 722,
+       "km": 2847.5,
+       "boundary_nodes": 20,
+       "conductance": 0.0012,
+       "pieces": 4
+      },
+      {
+       "cluster": 9,
+       "nodes": 1090,
+       "km": 3224.9,
+       "boundary_nodes": 30,
+       "conductance": 0.0009,
+       "pieces": 5
+      },
+      {
+       "cluster": 10,
+       "nodes": 1113,
+       "km": 3708.9,
+       "boundary_nodes": 26,
+       "conductance": 0.0007,
+       "pieces": 3
+      },
+      {
+       "cluster": 11,
+       "nodes": 998,
+       "km": 3380.0,
+       "boundary_nodes": 14,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 12,
+       "nodes": 1327,
+       "km": 3426.0,
+       "boundary_nodes": 30,
+       "conductance": 0.0012,
+       "pieces": 3
+      },
+      {
+       "cluster": 13,
+       "nodes": 3851,
+       "km": 7133.0,
+       "boundary_nodes": 60,
+       "conductance": 0.001,
+       "pieces": 4
+      },
+      {
+       "cluster": 14,
+       "nodes": 2436,
+       "km": 4911.1,
+       "boundary_nodes": 40,
+       "conductance": 0.0012,
+       "pieces": 3
+      },
+      {
+       "cluster": 15,
+       "nodes": 1064,
+       "km": 2706.6,
+       "boundary_nodes": 21,
+       "conductance": 0.0011,
+       "pieces": 2
+      }
+     ],
+     "kmeans_s": 0.5
+    },
+    "32": {
+     "k_effective": 32,
+     "nodes": {
+      "min": 120.0,
+      "median": 637.0,
+      "max": 2493.0
+     },
+     "km": {
+      "min": 593.1,
+      "median": 1843.5,
+      "max": 3001.7
+     },
+     "cut_edges": 402,
+     "cut_chains": 406,
+     "cut_km": 6594.7,
+     "cut_km_share": 0.1009,
+     "conductance": {
+      "mean": 0.001,
+      "max": 0.0029,
+      "min": 0.0002
+     },
+     "conductance_unweighted": {
+      "mean": 0.0144,
+      "max": 0.0654
+     },
+     "contiguous_clusters": 11,
+     "worst_cluster_pieces": 6,
+     "min_largest_piece_share": 0.938,
+     "boundary_nodes": 725,
+     "boundary_per_cluster": {
+      "min": 7.0,
+      "median": 17.0,
+      "max": 56.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 137725,
+      "point_to_boundary_pairs": 101984,
+      "boundary_transit_pairs": 524900,
+      "routes_needed_clustered": 764610,
+      "min_plus_ops_for_inter_pairs": 2462600475
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 2475,
+       "km": 3001.7,
+       "boundary_nodes": 56,
+       "conductance": 0.001,
+       "pieces": 2
+      },
+      {
+       "cluster": 1,
+       "nodes": 839,
+       "km": 1886.7,
+       "boundary_nodes": 15,
+       "conductance": 0.0005,
+       "pieces": 5
+      },
+      {
+       "cluster": 2,
+       "nodes": 861,
+       "km": 1819.7,
+       "boundary_nodes": 26,
+       "conductance": 0.0029,
+       "pieces": 2
+      },
+      {
+       "cluster": 3,
+       "nodes": 120,
+       "km": 1160.7,
+       "boundary_nodes": 14,
+       "conductance": 0.0018,
+       "pieces": 4
+      },
+      {
+       "cluster": 4,
+       "nodes": 308,
+       "km": 1502.3,
+       "boundary_nodes": 19,
+       "conductance": 0.0008,
+       "pieces": 2
+      },
+      {
+       "cluster": 5,
+       "nodes": 735,
+       "km": 1831.7,
+       "boundary_nodes": 17,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 6,
+       "nodes": 740,
+       "km": 1693.1,
+       "boundary_nodes": 18,
+       "conductance": 0.001,
+       "pieces": 1
+      },
+      {
+       "cluster": 7,
+       "nodes": 853,
+       "km": 2392.9,
+       "boundary_nodes": 16,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 8,
+       "nodes": 174,
+       "km": 766.7,
+       "boundary_nodes": 8,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 9,
+       "nodes": 990,
+       "km": 2755.8,
+       "boundary_nodes": 23,
+       "conductance": 0.0013,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 562,
+       "km": 1247.5,
+       "boundary_nodes": 13,
+       "conductance": 0.0006,
+       "pieces": 2
+      },
+      {
+       "cluster": 11,
+       "nodes": 889,
+       "km": 1790.4,
+       "boundary_nodes": 42,
+       "conductance": 0.0027,
+       "pieces": 4
+      },
+      {
+       "cluster": 12,
+       "nodes": 605,
+       "km": 1394.2,
+       "boundary_nodes": 14,
+       "conductance": 0.0005,
+       "pieces": 1
+      },
+      {
+       "cluster": 13,
+       "nodes": 357,
+       "km": 1569.5,
+       "boundary_nodes": 12,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 176,
+       "km": 1855.3,
+       "boundary_nodes": 10,
+       "conductance": 0.0004,
+       "pieces": 2
+      },
+      {
+       "cluster": 15,
+       "nodes": 411,
+       "km": 936.0,
+       "boundary_nodes": 15,
+       "conductance": 0.0013,
+       "pieces": 2
+      },
+      {
+       "cluster": 16,
+       "nodes": 643,
+       "km": 2004.0,
+       "boundary_nodes": 17,
+       "conductance": 0.0002,
+       "pieces": 3
+      },
+      {
+       "cluster": 17,
+       "nodes": 535,
+       "km": 1798.0,
+       "boundary_nodes": 16,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 18,
+       "nodes": 844,
+       "km": 2588.3,
+       "boundary_nodes": 18,
+       "conductance": 0.0007,
+       "pieces": 1
+      },
+      {
+       "cluster": 19,
+       "nodes": 567,
+       "km": 1065.9,
+       "boundary_nodes": 15,
+       "conductance": 0.0005,
+       "pieces": 3
+      },
+      {
+       "cluster": 20,
+       "nodes": 1037,
+       "km": 1893.5,
+       "boundary_nodes": 42,
+       "conductance": 0.0018,
+       "pieces": 2
+      },
+      {
+       "cluster": 21,
+       "nodes": 429,
+       "km": 1218.7,
+       "boundary_nodes": 18,
+       "conductance": 0.0011,
+       "pieces": 2
+      },
+      {
+       "cluster": 22,
+       "nodes": 867,
+       "km": 1864.6,
+       "boundary_nodes": 17,
+       "conductance": 0.0007,
+       "pieces": 2
+      },
+      {
+       "cluster": 23,
+       "nodes": 631,
+       "km": 2299.0,
+       "boundary_nodes": 20,
+       "conductance": 0.0012,
+       "pieces": 2
+      },
+      {
+       "cluster": 24,
+       "nodes": 997,
+       "km": 2530.5,
+       "boundary_nodes": 47,
+       "conductance": 0.0019,
+       "pieces": 5
+      },
+      {
+       "cluster": 25,
+       "nodes": 1658,
+       "km": 2786.7,
+       "boundary_nodes": 36,
+       "conductance": 0.0015,
+       "pieces": 3
+      },
+      {
+       "cluster": 26,
+       "nodes": 126,
+       "km": 593.1,
+       "boundary_nodes": 7,
+       "conductance": 0.0004,
+       "pieces": 2
+      },
+      {
+       "cluster": 27,
+       "nodes": 330,
+       "km": 905.4,
+       "boundary_nodes": 12,
+       "conductance": 0.0009,
+       "pieces": 2
+      },
+      {
+       "cluster": 28,
+       "nodes": 442,
+       "km": 2402.6,
+       "boundary_nodes": 15,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 29,
+       "nodes": 2493,
+       "km": 2441.3,
+       "boundary_nodes": 53,
+       "conductance": 0.0014,
+       "pieces": 4
+      },
+      {
+       "cluster": 30,
+       "nodes": 1157,
+       "km": 2672.2,
+       "boundary_nodes": 33,
+       "conductance": 0.0015,
+       "pieces": 1
+      },
+      {
+       "cluster": 31,
+       "nodes": 498,
+       "km": 2070.0,
+       "boundary_nodes": 41,
+       "conductance": 0.0017,
+       "pieces": 6
+      }
+     ],
+     "kmeans_s": 1.19
+    },
+    "64": {
+     "k_effective": 64,
+     "nodes": {
+      "min": 19.0,
+      "median": 317.5,
+      "max": 1585.0
+     },
+     "km": {
+      "min": 197.4,
+      "median": 799.8,
+      "max": 1715.2
+     },
+     "cut_edges": 692,
+     "cut_chains": 699,
+     "cut_km": 10813.1,
+     "cut_km_share": 0.1655,
+     "conductance": {
+      "mean": 0.002,
+      "max": 0.0092,
+      "min": 0.0001
+     },
+     "conductance_unweighted": {
+      "mean": 0.0258,
+      "max": 0.098
+     },
+     "contiguous_clusters": 20,
+     "worst_cluster_pieces": 7,
+     "min_largest_piece_share": 0.773,
+     "boundary_nodes": 1241,
+     "boundary_per_cluster": {
+      "min": 5.0,
+      "median": 16.0,
+      "max": 54.0
+     },
+     "vrp_work_estimate": {
+      "customers": 2000,
+      "full_matrix_pairs": 3998000,
+      "intra_cluster_pairs": 68720,
+      "point_to_boundary_pairs": 86130,
+      "boundary_transit_pairs": 1538840,
+      "routes_needed_clustered": 1693690,
+      "min_plus_ops_for_inter_pairs": 1803744682
+     },
+     "per_cluster": [
+      {
+       "cluster": 0,
+       "nodes": 798,
+       "km": 1715.2,
+       "boundary_nodes": 41,
+       "conductance": 0.0022,
+       "pieces": 2
+      },
+      {
+       "cluster": 1,
+       "nodes": 445,
+       "km": 826.8,
+       "boundary_nodes": 13,
+       "conductance": 0.001,
+       "pieces": 1
+      },
+      {
+       "cluster": 2,
+       "nodes": 163,
+       "km": 474.5,
+       "boundary_nodes": 17,
+       "conductance": 0.0012,
+       "pieces": 4
+      },
+      {
+       "cluster": 3,
+       "nodes": 126,
+       "km": 593.1,
+       "boundary_nodes": 7,
+       "conductance": 0.0004,
+       "pieces": 2
+      },
+      {
+       "cluster": 4,
+       "nodes": 629,
+       "km": 1074.7,
+       "boundary_nodes": 26,
+       "conductance": 0.0017,
+       "pieces": 2
+      },
+      {
+       "cluster": 5,
+       "nodes": 382,
+       "km": 730.1,
+       "boundary_nodes": 34,
+       "conductance": 0.0035,
+       "pieces": 3
+      },
+      {
+       "cluster": 6,
+       "nodes": 357,
+       "km": 814.9,
+       "boundary_nodes": 25,
+       "conductance": 0.0025,
+       "pieces": 2
+      },
+      {
+       "cluster": 7,
+       "nodes": 201,
+       "km": 766.8,
+       "boundary_nodes": 19,
+       "conductance": 0.0021,
+       "pieces": 3
+      },
+      {
+       "cluster": 8,
+       "nodes": 102,
+       "km": 920.6,
+       "boundary_nodes": 13,
+       "conductance": 0.0012,
+       "pieces": 3
+      },
+      {
+       "cluster": 9,
+       "nodes": 406,
+       "km": 779.9,
+       "boundary_nodes": 16,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 10,
+       "nodes": 280,
+       "km": 679.9,
+       "boundary_nodes": 12,
+       "conductance": 0.0012,
+       "pieces": 1
+      },
+      {
+       "cluster": 11,
+       "nodes": 436,
+       "km": 738.7,
+       "boundary_nodes": 23,
+       "conductance": 0.0027,
+       "pieces": 2
+      },
+      {
+       "cluster": 12,
+       "nodes": 1068,
+       "km": 1174.9,
+       "boundary_nodes": 41,
+       "conductance": 0.0031,
+       "pieces": 7
+      },
+      {
+       "cluster": 13,
+       "nodes": 71,
+       "km": 746.4,
+       "boundary_nodes": 8,
+       "conductance": 0.0026,
+       "pieces": 1
+      },
+      {
+       "cluster": 14,
+       "nodes": 173,
+       "km": 782.1,
+       "boundary_nodes": 14,
+       "conductance": 0.0008,
+       "pieces": 3
+      },
+      {
+       "cluster": 15,
+       "nodes": 1585,
+       "km": 1492.1,
+       "boundary_nodes": 44,
+       "conductance": 0.0021,
+       "pieces": 3
+      },
+      {
+       "cluster": 16,
+       "nodes": 189,
+       "km": 431.1,
+       "boundary_nodes": 23,
+       "conductance": 0.0019,
+       "pieces": 3
+      },
+      {
+       "cluster": 17,
+       "nodes": 473,
+       "km": 1011.2,
+       "boundary_nodes": 13,
+       "conductance": 0.0017,
+       "pieces": 2
+      },
+      {
+       "cluster": 18,
+       "nodes": 234,
+       "km": 976.1,
+       "boundary_nodes": 20,
+       "conductance": 0.0026,
+       "pieces": 3
+      },
+      {
+       "cluster": 19,
+       "nodes": 350,
+       "km": 437.6,
+       "boundary_nodes": 14,
+       "conductance": 0.0026,
+       "pieces": 1
+      },
+      {
+       "cluster": 20,
+       "nodes": 637,
+       "km": 1443.2,
+       "boundary_nodes": 25,
+       "conductance": 0.0019,
+       "pieces": 2
+      },
+      {
+       "cluster": 21,
+       "nodes": 476,
+       "km": 818.8,
+       "boundary_nodes": 14,
+       "conductance": 0.0005,
+       "pieces": 2
+      },
+      {
+       "cluster": 22,
+       "nodes": 180,
+       "km": 459.8,
+       "boundary_nodes": 12,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 23,
+       "nodes": 539,
+       "km": 1294.8,
+       "boundary_nodes": 13,
+       "conductance": 0.0018,
+       "pieces": 1
+      },
+      {
+       "cluster": 24,
+       "nodes": 273,
+       "km": 796.9,
+       "boundary_nodes": 8,
+       "conductance": 0.0004,
+       "pieces": 1
+      },
+      {
+       "cluster": 25,
+       "nodes": 341,
+       "km": 734.6,
+       "boundary_nodes": 19,
+       "conductance": 0.0019,
+       "pieces": 1
+      },
+      {
+       "cluster": 26,
+       "nodes": 189,
+       "km": 693.5,
+       "boundary_nodes": 11,
+       "conductance": 0.0008,
+       "pieces": 3
+      },
+      {
+       "cluster": 27,
+       "nodes": 179,
+       "km": 769.0,
+       "boundary_nodes": 9,
+       "conductance": 0.0007,
+       "pieces": 2
+      },
+      {
+       "cluster": 28,
+       "nodes": 719,
+       "km": 1011.2,
+       "boundary_nodes": 35,
+       "conductance": 0.004,
+       "pieces": 3
+      },
+      {
+       "cluster": 29,
+       "nodes": 206,
+       "km": 987.9,
+       "boundary_nodes": 13,
+       "conductance": 0.0008,
+       "pieces": 2
+      },
+      {
+       "cluster": 30,
+       "nodes": 418,
+       "km": 1416.7,
+       "boundary_nodes": 31,
+       "conductance": 0.0018,
+       "pieces": 3
+      },
+      {
+       "cluster": 31,
+       "nodes": 214,
+       "km": 421.6,
+       "boundary_nodes": 14,
+       "conductance": 0.0019,
+       "pieces": 5
+      },
+      {
+       "cluster": 32,
+       "nodes": 404,
+       "km": 860.3,
+       "boundary_nodes": 22,
+       "conductance": 0.0036,
+       "pieces": 3
+      },
+      {
+       "cluster": 33,
+       "nodes": 484,
+       "km": 867.9,
+       "boundary_nodes": 33,
+       "conductance": 0.0013,
+       "pieces": 4
+      },
+      {
+       "cluster": 34,
+       "nodes": 379,
+       "km": 947.8,
+       "boundary_nodes": 7,
+       "conductance": 0.0001,
+       "pieces": 4
+      },
+      {
+       "cluster": 35,
+       "nodes": 1397,
+       "km": 1289.0,
+       "boundary_nodes": 54,
+       "conductance": 0.0031,
+       "pieces": 4
+      },
+      {
+       "cluster": 36,
+       "nodes": 257,
+       "km": 453.0,
+       "boundary_nodes": 14,
+       "conductance": 0.0019,
+       "pieces": 2
+      },
+      {
+       "cluster": 37,
+       "nodes": 284,
+       "km": 603.4,
+       "boundary_nodes": 13,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 38,
+       "nodes": 175,
+       "km": 896.0,
+       "boundary_nodes": 7,
+       "conductance": 0.0004,
+       "pieces": 2
+      },
+      {
+       "cluster": 39,
+       "nodes": 259,
+       "km": 635.6,
+       "boundary_nodes": 20,
+       "conductance": 0.0044,
+       "pieces": 1
+      },
+      {
+       "cluster": 40,
+       "nodes": 100,
+       "km": 532.7,
+       "boundary_nodes": 10,
+       "conductance": 0.0009,
+       "pieces": 2
+      },
+      {
+       "cluster": 41,
+       "nodes": 247,
+       "km": 816.4,
+       "boundary_nodes": 16,
+       "conductance": 0.0017,
+       "pieces": 3
+      },
+      {
+       "cluster": 42,
+       "nodes": 390,
+       "km": 797.1,
+       "boundary_nodes": 25,
+       "conductance": 0.0024,
+       "pieces": 4
+      },
+      {
+       "cluster": 43,
+       "nodes": 176,
+       "km": 636.0,
+       "boundary_nodes": 9,
+       "conductance": 0.0003,
+       "pieces": 1
+      },
+      {
+       "cluster": 44,
+       "nodes": 74,
+       "km": 662.2,
+       "boundary_nodes": 7,
+       "conductance": 0.0014,
+       "pieces": 2
+      },
+      {
+       "cluster": 45,
+       "nodes": 370,
+       "km": 1256.5,
+       "boundary_nodes": 23,
+       "conductance": 0.0023,
+       "pieces": 4
+      },
+      {
+       "cluster": 46,
+       "nodes": 258,
+       "km": 378.6,
+       "boundary_nodes": 12,
+       "conductance": 0.0009,
+       "pieces": 2
+      },
+      {
+       "cluster": 47,
+       "nodes": 633,
+       "km": 889.2,
+       "boundary_nodes": 32,
+       "conductance": 0.0019,
+       "pieces": 3
+      },
+      {
+       "cluster": 48,
+       "nodes": 364,
+       "km": 802.4,
+       "boundary_nodes": 17,
+       "conductance": 0.0016,
+       "pieces": 1
+      },
+      {
+       "cluster": 49,
+       "nodes": 975,
+       "km": 1199.5,
+       "boundary_nodes": 51,
+       "conductance": 0.0033,
+       "pieces": 2
+      },
+      {
+       "cluster": 50,
+       "nodes": 601,
+       "km": 1103.7,
+       "boundary_nodes": 25,
+       "conductance": 0.0017,
+       "pieces": 1
+      },
+      {
+       "cluster": 51,
+       "nodes": 219,
+       "km": 581.9,
+       "boundary_nodes": 15,
+       "conductance": 0.0029,
+       "pieces": 2
+      },
+      {
+       "cluster": 52,
+       "nodes": 311,
+       "km": 782.4,
+       "boundary_nodes": 13,
+       "conductance": 0.0044,
+       "pieces": 2
+      },
+      {
+       "cluster": 53,
+       "nodes": 324,
+       "km": 1159.7,
+       "boundary_nodes": 18,
+       "conductance": 0.0011,
+       "pieces": 1
+      },
+      {
+       "cluster": 54,
+       "nodes": 224,
+       "km": 601.1,
+       "boundary_nodes": 7,
+       "conductance": 0.0027,
+       "pieces": 1
+      },
+      {
+       "cluster": 55,
+       "nodes": 521,
+       "km": 896.1,
+       "boundary_nodes": 32,
+       "conductance": 0.0024,
+       "pieces": 1
+      },
+      {
+       "cluster": 56,
+       "nodes": 536,
+       "km": 939.3,
+       "boundary_nodes": 26,
+       "conductance": 0.0031,
+       "pieces": 2
+      },
+      {
+       "cluster": 57,
+       "nodes": 197,
+       "km": 511.1,
+       "boundary_nodes": 18,
+       "conductance": 0.002,
+       "pieces": 4
+      },
+      {
+       "cluster": 58,
+       "nodes": 184,
+       "km": 613.7,
+       "boundary_nodes": 15,
+       "conductance": 0.0017,
+       "pieces": 1
+      },
+      {
+       "cluster": 59,
+       "nodes": 99,
+       "km": 723.0,
+       "boundary_nodes": 22,
+       "conductance": 0.0092,
+       "pieces": 2
+      },
+      {
+       "cluster": 60,
+       "nodes": 350,
+       "km": 1590.3,
+       "boundary_nodes": 14,
+       "conductance": 0.0008,
+       "pieces": 1
+      },
+      {
+       "cluster": 61,
+       "nodes": 592,
+       "km": 1163.3,
+       "boundary_nodes": 15,
+       "conductance": 0.0014,
+       "pieces": 1
+      },
+      {
+       "cluster": 62,
+       "nodes": 19,
+       "km": 197.4,
+       "boundary_nodes": 5,
+       "conductance": 0.0024,
+       "pieces": 2
+      },
+      {
+       "cluster": 63,
+       "nodes": 107,
+       "km": 1118.1,
+       "boundary_nodes": 17,
+       "conductance": 0.0025,
+       "pieces": 3
+      }
+     ],
+     "kmeans_s": 3.3
+    }
+   }
+  }
+ }
+}

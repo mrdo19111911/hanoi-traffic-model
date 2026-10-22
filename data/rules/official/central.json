@@ -1,0 +1,788 @@
+{
+  "area": "central",
+  "researched_at": "2026-10-21",
+  "rules": [
+    {
+      "id": "na_vinh_pl1_18t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 70/2016/QĐ-UBND Nghệ An (Phụ lục 01), sửa bởi QĐ 67/2017/QĐ-UBND, QĐ 23/2019/QĐ-UBND, QĐ 30/2022/QĐ-UBND",
+      "source": "https://caselaw.vn/van-ban-phap-luat/138289-quyet-dinh-so-70-2016-qd-ubnd-ngay-06-12-2016-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an https://caselaw.vn/van-ban-phap-luat/307537-quyet-dinh-67-2017-qd-ubnd-ve-sua-doi-noi-dung-tai-so-thu-tu-16-36-va-55-phu-luc-1-kem-theo-quyet-dinh-70-2016-qd-ubnd-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-cac-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an https://caselaw.vn/van-ban-phap-luat/334735-quyet-dinh-so-23-2019-qd-ubnd-ngay-07-06-2019-bo-sung-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-cac-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an-kem-theo-quyet-dinh-70-2016-qd-ubnd",
+      "valid_from": "2016-12-20",
+      "valid_to": null,
+      "note": "Vinh cũ (nay các phường Trường Vinh, Thành Vinh, Vinh Hưng, Vinh Phú, Vinh Lộc). Ngưỡng: khối lượng hàng hóa được phép chuyên chở từ 1,8 tấn (theo giấy kiểm định), cấm 6h-22h hằng ngày. Caselaw ghi 'Đang có hiệu lực'; không tìm thấy văn bản bãi bỏ hay thay thế sau sáp nhập 7/2025, nhưng thẩm quyền 'UBND thành phố Vinh' trong văn bản đã không còn. Lê Mao, Trường Thi, Hồ Tùng Mậu có quy tắc 24/24 riêng (na_vinh_pl1_247). 'Lê-nin' trong văn bản có tên OSM 'Đường V.I Lênin'; 'Herman Gmeiner' trong OSM là 'Hermann Gmeiner'. Dòng 55 (Hồ Xuân Hương) do QĐ 67/2017 sửa; bản caselaw của QĐ 70 chỉ hiện 53 dòng. Dòng 54 Nguyễn Thái Học do QĐ 23/2019 bổ sung. Task 9 (đối chiếu OSM 2026-10-22): sửa chính tả theo OSM: 'Lệ Ninh' -> 'Lê Ninh', 'Hồ Sỹ Đống' -> 'Hồ Sỹ Đồng'. Các mốc không có tên trong OSM (Đảo Hải Quan, Ngã 5 Bưu Điện, Ngã 4 Hồ Cá Cửa Nam, Chợ Vinh, Ngã 4 Chợ Vinh, Phạm Nguyễn Du, Tôn Thất Tùng, Ngõ 25A) được bỏ: đoạn chạy tới đầu mút đường trong OSM; đã kiểm tra Đảo Hải Quan (18.6762,105.6943) và Ngã 5 Bưu Điện (18.6700,105.6840) là nơi các đường liên quan cùng kết thúc. Một số đường OSM dừng cách đường giao 80-500 m (Thái Phiên, Tân Tiến, Lê Hoàn, Tân Phúc, Nguyễn Khánh Toàn, Nguyễn Xuân Ôn, Nguyễn Xí, Phan Sỹ Thục): bỏ đầu mút đó, đoạn chạy tới đầu mút OSM. Phong Định Cảng: 'Phan Đăng Lưu' không giao trong OSM, dùng 'Nguyễn Viết Xuân' (giao tại điểm gần Phan Đăng Lưu nhất, cách 105 m) và chạy tới đầu mút (OSM dừng cách Nguyễn Du 400 m). Nguyễn Thị Minh Khai, Lê Hồng Phong, Cao Thắng, Hồ Sỹ Đồng: OSM đứt đoạn hoặc thiếu mốc, dùng toàn tuyến trong bbox. Nguyễn Đức Cảnh tách tại Lê Hồng Phong (OSM lệch nút). V.I Lênin (đường đôi): Đảo Hải Quan không có trong OSM và chỉ giữ một đầu sẽ chạy sai hướng, nên chỉ giữ Nguyễn Công Nghiệm - Nguyễn Sỹ Sách; khoảng 400 m sát Đảo Hải Quan chưa phủ. Bỏ hẳn (không có trong OSM hoặc đường cùng tên trong OSM nằm sai chỗ): Võ Nguyên Hiến (đường cùng tên trong OSM cách Phan Đăng Lưu 1,8 km), Nguyễn Bỉnh Khiêm, Tuệ Tĩnh, Minh Tân, Hoàng Nghĩa Lương (đường cùng tên trong OSM cách Trần Phú 1,4 km), Cao Bá Quát, Nguyễn Huy Oánh. Đầu mút bị bỏ có thể làm đoạn cấm dài hơn văn bản.",
+      "body": {
+        "vehicle": {"payload_t": [">=", 1.8], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "22:00"]]},
+        "scope": {
+          "bbox": [105.62, 18.63, 105.74, 18.73],
+          "routes": [
+            {"name": "Lê Lợi", "from": "Quang Trung", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Quang Trung", "from": "Lê Lợi", "to": "Trần Phú"},
+            {"name": "Phong Định Cảng", "from": "Nguyễn Viết Xuân"},
+            {"name": "Nguyễn Cảnh Hoan", "from": "Mai Hắc Đế", "to": "Lê Ninh"},
+            {"name": "Nguyễn Duy Trinh", "from": "Nguyễn Phong Sắc", "to": "Nguyễn Viết Xuân"},
+            {"name": "Nguyễn Phong Sắc", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Nguyễn Gia Thiều", "from": "Phong Định Cảng"},
+            {"name": "Nguyễn Sỹ Sách", "from": "V.I Lênin", "to": "Lê Lợi"},
+            {"name": "V.I Lênin", "from": "Nguyễn Công Nghiệm", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Cao Lỗ", "from": "Trần Phú", "to": "Ngư Hải"},
+            {"name": "Trần Hưng Học", "from": "Trần Phú", "to": "Ngư Hải"},
+            {"name": "Đặng Thái Thân", "to": "Quang Trung"},
+            {"name": "Thái Phiên", "from": "Trần Phú"},
+            {"name": "Ngư Hải", "from": "Quang Trung", "to": "Lê Mao"},
+            {"name": "Lê Huân", "to": "Trần Phú"},
+            {"name": "Cao Thắng"},
+            {"name": "Nguyễn Thị Minh Khai"},
+            {"name": "Đinh Công Tráng", "from": "Quang Trung"},
+            {"name": "Nguyễn Văn Cừ", "from": "Hồ Tùng Mậu", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Lê Hồng Phong"},
+            {"name": "Trần Quang Diệu", "from": "Lê Duẩn", "to": "Phan Đăng Lưu"},
+            {"name": "Duy Tân", "from": "Hermann Gmeiner", "to": "Nguyễn Phong Sắc"},
+            {"name": "Lê Hoàn", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Tân Phúc", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Hermann Gmeiner", "from": "Lê Hồng Phong", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Nguyễn Khánh Toàn", "to": "Nguyễn Sỹ Sách"},
+            {"name": "Nguyễn Đức Cảnh", "from": "Nguyễn Thị Minh Khai", "to": "Lê Hồng Phong"},
+            {"name": "Nguyễn Đức Cảnh", "from": "Lê Hồng Phong", "to": "Nguyễn Văn Cừ"},
+            {"name": "Nguyễn Xuân Ôn", "from": "Kim Đồng"},
+            {"name": "Đốc Thiết", "from": "Lê Lợi", "to": "Nguyễn Văn Cừ"},
+            {"name": "Lý Thường Kiệt", "from": "Lê Lợi", "to": "Trường Chinh"},
+            {"name": "Tân Tiến", "from": "Kim Đồng"},
+            {"name": "Kim Đồng", "from": "Lê Hồng Phong", "to": "Nguyễn Văn Cừ"},
+            {"name": "Đặng Tất", "from": "Ngư Hải", "to": "Lê Văn Tám"},
+            {"name": "Hồ Sỹ Đồng"},
+            {"name": "Hồng Bàng", "from": "Ngư Hải"},
+            {"name": "An Dương Vương", "from": "Trường Thi", "to": "Phong Định Cảng"},
+            {"name": "Nguyễn Xí", "to": "Phan Đăng Lưu"},
+            {"name": "Phan Đăng Lưu", "from": "Trường Thi", "to": "Nguyễn Xí"},
+            {"name": "Phan Sỹ Thục", "from": "Phan Đăng Lưu"},
+            {"name": "Lý Nhật Quang", "from": "Phong Định Cảng", "to": "Lý Thái Tông"},
+            {"name": "Võ Thị Sáu", "from": "Lý Nhật Quang", "to": "Phan Đăng Lưu"},
+            {"name": "Nguyễn Văn Trỗi", "from": "Nguyễn Du", "to": "Phong Định Cảng"},
+            {"name": "Bạch Liêu", "from": "Lê Duẩn", "to": "Phạm Kinh Vỹ"},
+            {"name": "Nguyễn Thái Học", "from": "Lê Lợi", "to": "Trường Chinh"},
+            {"name": "Hồ Xuân Hương", "from": "Phan Đình Phùng"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "na_vinh_pl1_247",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 70/2016/QĐ-UBND Nghệ An, Điều 3 khoản 1 (đoạn 2)",
+      "source": "https://caselaw.vn/van-ban-phap-luat/138289-quyet-dinh-so-70-2016-qd-ubnd-ngay-06-12-2016-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an",
+      "valid_from": "2016-12-20",
+      "valid_to": null,
+      "note": "Trường Thi, Hồ Tùng Mậu, Lê Mao (ngã 5 Bưu điện tỉnh - Trần Phú): cấm xe tải từ 1,8 tấn hàng hóa chuyên chở 24/24. Tình trạng sau sáp nhập: xem na_vinh_pl1_18t. Task 9 (đối chiếu OSM 2026-10-22): 'Ngã 5 Bưu Điện', 'Đảo KS Phương Đông', 'Đảo Hải Quan' không có tên trong OSM. Trường Thi dùng toàn tuyến (OSM Trường Thi nằm giữa hai đảo, đầu đông cách Đảo Hải Quan 37 m); Hồ Tùng Mậu bỏ đầu ngã 5 (đường OSM kết thúc cách ngã 5 33 m). Lê Mao là đường đôi; bỏ đầu ngã 5 sẽ chạy sai hướng (ra xa Trần Phú), nên chỉ giữ Ngư Hải - Trần Phú; khoảng 380 m từ ngã 5 tới Ngư Hải chưa phủ.",
+      "body": {
+        "vehicle": {"payload_t": [">=", 1.8], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "bbox": [105.66, 18.65, 105.71, 18.69],
+          "routes": [
+            {"name": "Lê Mao", "from": "Ngư Hải", "to": "Trần Phú"},
+            {"name": "Trường Thi"},
+            {"name": "Hồ Tùng Mậu", "to": "Trường Thi"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "na_vinh_pl2_4t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 70/2016/QĐ-UBND Nghệ An (Phụ lục 02), bổ sung bởi QĐ 30/2022/QĐ-UBND",
+      "source": "https://caselaw.vn/van-ban-phap-luat/138289-quyet-dinh-so-70-2016-qd-ubnd-ngay-06-12-2016-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an https://caselaw.vn/van-ban-phap-luat/397270-quyet-dinh-so-30-2022-qd-ubnd-ngay-06-04-2022-cua-tinh-nghe-an-sua-doi-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-cac-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an-kem-theo-quyet-dinh-70-2016-qd-ubnd",
+      "valid_from": "2016-12-20",
+      "valid_to": null,
+      "note": "Cấm xe tải có khối lượng hàng hóa được phép chuyên chở từ 4 tấn, 6h-22h hằng ngày. Dòng 20-24 do QĐ 30/2022 bổ sung (hiệu lực 18/4/2022). Ngô Gia Tự có hai đoạn (Phan Bội Châu - Nguyễn Cảnh Hoan theo PL02 gốc; Phan Bội Châu - đường 72m theo QĐ 30/2022). 'Nguyễn Nghiễm' và 'Phan Vân' cần đối chiếu tên trong OSM. Tình trạng sau sáp nhập: xem na_vinh_pl1_18t. Task 9 (đối chiếu OSM 2026-10-22): 'Đề Thám' là 'Đường Dế Thám' trong OSM (đoạn 113 m, dùng toàn tuyến). Phùng Chí Kiên tách tại V.I Lênin, Chu Văn An tách tại Lý Thường Kiệt, Nguyễn Công Trứ tách tại Phan Đình Phùng (OSM lệch nút). Bỏ đầu mút không có trong OSM: 'Đường tàu cũ' (Lục Niên), 'Đường bao khu đô thị Vinh Tân' (Nguyễn Sơn), 'Đường 72m' (Ngô Gia Tự); Phan Vân dừng cách Nguyễn Trường Tộ 87 m nên bỏ đầu đó. Bỏ hẳn (không có trong OSM): Nguyễn Nghiễm, Tôn Thất Tùng, Trần Cảnh Bình.",
+      "body": {
+        "vehicle": {"payload_t": [">=", 4], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "22:00"]]},
+        "scope": {
+          "bbox": [105.62, 18.63, 105.74, 18.73],
+          "routes": [
+            {"name": "Phùng Chí Kiên", "from": "Lê Viết Thuật", "to": "V.I Lênin"},
+            {"name": "Phùng Chí Kiên", "from": "V.I Lênin", "to": "Hà Huy Tập"},
+            {"name": "Chu Văn An", "from": "Lê Lợi", "to": "Lý Thường Kiệt"},
+            {"name": "Chu Văn An", "from": "Lý Thường Kiệt", "to": "Trường Chinh"},
+            {"name": "Đào Tấn", "from": "Quang Trung", "to": "Trần Hưng Đạo"},
+            {"name": "Phạm Ngũ Lão", "from": "Đặng Thái Thân", "to": "Trần Hưng Đạo"},
+            {"name": "Phan Chu Trinh", "from": "Trần Hưng Đạo", "to": "Quang Trung"},
+            {"name": "Lục Niên", "to": "Trần Phú"},
+            {"name": "Văn Thánh", "from": "Ngô Đức Kế", "to": "Trần Phú"},
+            {"name": "Hoàng Danh Sưởng", "from": "Ngô Đức Kế", "to": "Trần Phú"},
+            {"name": "Hoàng Nguyên Cát", "from": "Ngô Đức Kế", "to": "Trần Phú"},
+            {"name": "Dế Thám"},
+            {"name": "Nguyễn Công Trứ", "from": "Lê Hồng Sơn", "to": "Phan Đình Phùng"},
+            {"name": "Nguyễn Công Trứ", "from": "Phan Đình Phùng", "to": "Đặng Thái Thân"},
+            {"name": "Ngô Gia Tự", "from": "Phan Bội Châu", "to": "Nguyễn Cảnh Hoan"},
+            {"name": "Nguyễn Đình Chiểu", "from": "Chu Văn An", "to": "Phan Bội Châu"},
+            {"name": "Phan Vân", "from": "Trường Chinh"},
+            {"name": "Hoàng Văn Thụ", "from": "Mai Hắc Đế", "to": "Hà Huy Tập"},
+            {"name": "Hải Thượng Lãn Ông", "from": "Hà Huy Tập", "to": "Bùi Huy Bích"},
+            {"name": "Hà Huy Tập", "from": "Nguyễn Sỹ Sách", "to": "Phạm Đình Toái"},
+            {"name": "Cù Chính Lan", "from": "Lê Duẩn", "to": "Nguyễn Thiếp"},
+            {"name": "Nguyễn Thiếp", "from": "Trần Phú", "to": "Cù Chính Lan"},
+            {"name": "Nguyễn Sơn", "from": "Trần Phú"},
+            {"name": "Ngô Gia Tự", "from": "Phan Bội Châu"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "ht_phuong_15_35t_caodiem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 53/2025/QĐ-UBND Hà Tĩnh, Quy định kèm theo, Điều 3 khoản 1 và 6, Điều 12 khoản 4 điểm b",
+      "source": "https://luatvietnam.vn/van-ban/xem-truoc-file-3aab3bf4-1488-8600-5f5b-bd7c2ee7fb33",
+      "valid_from": "2025-09-15",
+      "valid_to": null,
+      "note": "Ô tô chở hàng có khối lượng chuyên chở cho phép từ 1,5 tấn đến 3,5 tấn chỉ được lưu thông ngoài giờ cao điểm (6h30-8h30, 16h30-18h30) trên đường đô thị (đường trong địa giới các phường). Điều 1 khoản 6 loại trừ quốc lộ và đường tỉnh trùng với đường đô thị, nên dùng except_refs QL, ĐT. Tên 9 phường theo Nghị quyết 1665/NQ-UBTVQH15 (từ 1/7/2025); tên hai phường Hồng Lĩnh chỉ thấy qua báo, chưa đối chiếu nghị quyết gốc. Văn bản ghi rõ 'được lưu thông trên các tuyến đường đô thị không bị cấm', tức biển cấm riêng vẫn áp dụng.",
+      "body": {
+        "vehicle": {"payload_t": [[">=", 1.5], ["<=", 3.5]], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:30", "08:30"], ["16:30", "18:30"]]},
+        "scope": {
+          "admin": {"province": "Hà Tĩnh", "units": ["Phường Thành Sen", "Phường Trần Phú", "Phường Hà Huy Tập", "Phường Bắc Hồng Lĩnh", "Phường Nam Hồng Lĩnh", "Phường Sông Trí", "Phường Hải Ninh", "Phường Hoành Sơn", "Phường Vũng Áng"], "except_refs": ["QL", "ĐT"]}
+        }
+      }
+    },
+    {
+      "id": "ht_phuong_tren35t_ngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 53/2025/QĐ-UBND Hà Tĩnh, Quy định kèm theo, Điều 12 khoản 4 điểm c",
+      "source": "https://luatvietnam.vn/van-ban/xem-truoc-file-3aab3bf4-1488-8600-5f5b-bd7c2ee7fb33",
+      "valid_from": "2025-09-15",
+      "valid_to": null,
+      "note": "Ô tô chở hàng có khối lượng chuyên chở cho phép trên 3,5 tấn chỉ được lưu thông từ 22h00 đến 6h00 trên đường đô thị trong các phường; trừ quốc lộ và đường tỉnh (Điều 1 khoản 6). Xe chở vật liệu xây dựng, phế thải rời chỉ 20h-6h (khoản 5): không mã hóa được loại hàng, xem unresolved.",
+      "body": {
+        "vehicle": {"payload_t": [">", 3.5]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "22:00"]]},
+        "scope": {
+          "admin": {"province": "Hà Tĩnh", "units": ["Phường Thành Sen", "Phường Trần Phú", "Phường Hà Huy Tập", "Phường Bắc Hồng Lĩnh", "Phường Nam Hồng Lĩnh", "Phường Sông Trí", "Phường Hải Ninh", "Phường Hoành Sơn", "Phường Vũng Áng"], "except_refs": ["QL", "ĐT"]}
+        }
+      }
+    },
+    {
+      "id": "hue_trungtam_35t_caodiem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo 93/TB-UBND của UBND TP Huế (4/2026), kết luận của Phó Chủ tịch Hoàng Hải Minh",
+      "source": "https://thuonghieucongluan.com.vn/hue-phan-luong-giao-thong-giam-un-tac-nhieu-tuyen-duong-a312733.html https://moc.gov.vn/vn/tin-tuc/1232/93007/tp--hue--tap-trung-cac-giai-phap-phan-luong--giam-un-tac-giao-thong.aspx",
+      "valid_from": "2026-04-30",
+      "valid_to": null,
+      "note": "Cấm xe tải ≥3,5 tấn vào trung tâm, nội đô (Phú Xuân, Thuận Hóa cũ) 6h-8h và 16h30-18h30; chỉ được đi vành đai QL1 (cầu vượt Thủy Dương) - ĐT28 - ĐT10A - cầu Chợ Dinh - Nguyễn Gia Thiều - Tăng Bạt Hổ - QL1 (Lê Duẩn). Biển đặt tại: QL1/Nguyễn Văn Linh, QL1/cầu vượt Thủy Dương, các nút trên ĐT28 và ĐT10A, Nguyễn Gia Thiều, Tăng Bạt Hổ/Đinh Tiên Hoàng và Lê Duẩn, cầu Nguyễn Hoàng/Kim Long và Bùi Thị Xuân, Lê Ngô Cát/Huyền Trân Công Chúa. Văn bản không nói khối lượng toàn bộ hay chuyên chở: chọn khối lượng toàn bộ (cách hiểu chặt hơn). Mốc 30/4/2026 là hạn hoàn thành, chưa thấy tin xác nhận đã cắm biển. Không có ranh giới vùng bằng tên đường nên dùng 7 phường mới phủ hai quận cũ (Phú Xuân, Kim Long, Hương An, Thuận Hóa, An Cựu, Vỹ Dạ, Thủy Xuân; tên sau 1/7/2025 theo NQ 1675/NQ-UBTVQH15); các phường này có thể rộng hơn vùng thực tế. QL1 xuyên trung tâm (Hùng Vương, Hà Nội, cầu Phú Xuân, Lê Duẩn) không được miễn vì biển chặn ngay trên QL1. Đường vành đai và QL1 tránh Huế được miễn qua exempt.",
+      "body": {
+        "vehicle": {"gross_t": [">=", 3.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "08:00"], ["16:30", "18:30"]]},
+        "scope": {
+          "bbox": [107.48, 16.38, 107.66, 16.53],
+          "admin": {"province": "Huế", "units": ["Phường Phú Xuân", "Phường Kim Long", "Phường Hương An", "Phường Thuận Hóa", "Phường An Cựu", "Phường Vỹ Dạ", "Phường Thủy Xuân"]}
+        },
+        "exempt": {
+          "routes": [
+            {"ref": "ĐT28"},
+            {"ref": "ĐT10A"},
+            {"name": "Cầu Chợ Dinh"},
+            {"name": "Nguyễn Gia Thiều"},
+            {"name": "Tăng Bạt Hổ"},
+            {"name": "Lê Duẩn", "from": "Tăng Bạt Hổ", "to": "Lý Thái Tổ"},
+            {"name": "Quốc lộ 1 - Đường tránh Thành phố Huế"},
+            {"name": "Kim Phụng"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "hue_ql49_somi_ngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Thông báo của Sở Xây dựng Huế gửi IOC (không rõ số), theo Thông báo 93/TB-UBND TP Huế",
+      "source": "https://baophapluat.vn/cam-xe-so-mi-ro-mooc-va-xe-keo-ro-mooc-luu-thong-ban-ngay-tren-quoc-lo-49-tai-hue.html https://thuonghieucongluan.com.vn/hue-phan-luong-giao-thong-giam-un-tac-nhieu-tuyen-duong-a312733.html https://nhandan.vn/ocop/thanh-pho-hue-dung-de-noi-lo-cua-quoc-lo-49-lay-sang-duong-ho-chi-minh-post958708.html",
+      "valid_from": "2026-04-10",
+      "valid_to": null,
+      "note": "QL49 từ đường Hồ Chí Minh đến đường tránh Huế: xe sơ mi rơ moóc và xe kéo rơ moóc chỉ chạy 19h-5h. 19h-24h một chiều từ đường tránh Huế lên nút giao đường Hồ Chí Minh; 0h-5h chiều ngược lại (không mã hóa được hướng). Là thí điểm 1 tháng đến 10/5/2026; bài báo 27/4/2026 vẫn mô tả đang áp dụng, chưa thấy tin gia hạn hay bỏ, nên để độ tin cậy thấp. 'Xe kéo rơ moóc' được gộp vào kind tractor.",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["05:00", "19:00"]]},
+        "scope": {
+          "bbox": [107.25, 16.22, 107.58, 16.40],
+          "routes": [{"ref": "QL49", "from": "Đường Hồ Chí Minh", "to": "Đường tránh Huế"}]
+        }
+      }
+    },
+    {
+      "id": "dng_trungtam_tren25t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án điều tiết xe tải vào trung tâm TP Đà Nẵng của UBND TP (2019, không rõ số)",
+      "source": "https://viettimes.vn/da-nang-tu-16-8-se-han-che-xe-tai-vao-trung-tam-tp-360798.html",
+      "valid_from": "2019-09-16",
+      "valid_to": null,
+      "note": "Xe tải trên 2,5 tấn (tải trọng hàng hóa) cấm đi từ đường bao vào vùng trung tâm. Bài báo không ghi giờ cho câu này: các trục chính trong vùng chỉ mở 22h-6h (quy tắc dng_trungtam_truc_dem), các đường nhánh cấm cả ngày, nên mã hóa là cấm suốt ngày. Đường bao không thuộc vùng. Trong OSM Đà Nẵng tên đường có tiền tố 'Đường ' (ví dụ 'Đường Lý Thái Tông'), cần chuẩn hóa khi khớp tên. Văn bản là phương án theo công văn, không phải văn bản quy phạm. Task 9 (đối chiếu OSM 2026-10-22): thêm 'Cầu vượt Ngã ba Huế' vào ranh giới để nối Hoàng Thị Loan với Điện Biên Phủ (OSM để khoảng hở 560 m qua nút giao); vùng dựng được 11,2 km².",
+      "body": {
+        "vehicle": {"payload_t": [">", 2.5]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.15, 16.02, 108.24, 16.12],
+          "zone": {"boundary_names": ["Nguyễn Tất Thành", "Lý Thái Tông", "Hoàng Thị Loan", "Cầu vượt Ngã ba Huế", "Điện Biên Phủ", "Nguyễn Tri Phương", "Nguyễn Hữu Thọ", "Xô Viết Nghệ Tĩnh", "2 Tháng 9", "Bạch Đằng", "3 Tháng 2"], "seed": [16.0700, 108.2150], "area_km2": [6, 35]}
+        }
+      }
+    },
+    {
+      "id": "dng_trungtam_truc_dem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án điều tiết xe tải vào trung tâm TP Đà Nẵng của UBND TP (2019, không rõ số)",
+      "source": "https://viettimes.vn/da-nang-tu-16-8-se-han-che-xe-tai-vao-trung-tam-tp-360798.html",
+      "valid_from": "2019-09-16",
+      "valid_to": null,
+      "note": "Các trục được mở cho xe trên 2,5 tấn từ 22h đến 6h (cấm 6h-22h); xe từ trục không được rẽ vào đường nhánh. Danh sách theo VietTimes 2019; nghiên cứu trước còn ghi Quang Trung, Trần Thị Lý (các nguồn lệch nhau, chưa đưa vào).",
+      "body": {
+        "vehicle": {"payload_t": [">", 2.5]},
+        "action": "open",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["22:00", "06:00"]]},
+        "scope": {
+          "bbox": [108.15, 16.02, 108.24, 16.12],
+          "names": ["Đống Đa", "Trần Cao Vân", "Tôn Thất Đạm", "Hà Huy Tập", "Hà Khê", "Duy Tân", "Lê Thanh Nghị", "30 Tháng 4"]
+        }
+      }
+    },
+    {
+      "id": "dng_trungtam_15_25t_gio",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án điều tiết xe tải vào trung tâm TP Đà Nẵng của UBND TP (2019, không rõ số)",
+      "source": "https://viettimes.vn/da-nang-tu-16-8-se-han-che-xe-tai-vao-trung-tam-tp-360798.html",
+      "valid_from": "2019-09-16",
+      "valid_to": null,
+      "note": "Xe tải từ 1,5 đến 2,5 tấn cấm từ đường bao vào vùng 6h30-8h30, 11h-12h, 16h-19h. Xe dưới 1,5 tấn không bị hạn chế. Cùng vùng với dng_trungtam_tren25t. Task 9 (đối chiếu OSM 2026-10-22): thêm 'Cầu vượt Ngã ba Huế' vào ranh giới để nối Hoàng Thị Loan với Điện Biên Phủ (OSM để khoảng hở 560 m qua nút giao); vùng dựng được 11,2 km².",
+      "body": {
+        "vehicle": {"payload_t": [[">=", 1.5], ["<=", 2.5]], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:30", "08:30"], ["11:00", "12:00"], ["16:00", "19:00"]]},
+        "scope": {
+          "bbox": [108.15, 16.02, 108.24, 16.12],
+          "zone": {"boundary_names": ["Nguyễn Tất Thành", "Lý Thái Tông", "Hoàng Thị Loan", "Cầu vượt Ngã ba Huế", "Điện Biên Phủ", "Nguyễn Tri Phương", "Nguyễn Hữu Thọ", "Xô Viết Nghệ Tĩnh", "2 Tháng 9", "Bạch Đằng", "3 Tháng 2"], "seed": [16.0700, 108.2150], "area_km2": [6, 35]}
+        }
+      }
+    },
+    {
+      "id": "dng_ql1_hoakhanh_105t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án tổ chức giao thông QL1A qua Đà Nẵng, UBND TP Đà Nẵng phê duyệt (không rõ số), áp dụng từ 20/11/2024",
+      "source": "https://baodanang.vn/han-che-toc-do-cam-xe-khach-tu-29-cho-xe-tai-tren-10-5-tan-theo-khung-gio-o-mot-so-tuyen-duong-3161088.html",
+      "valid_from": "2024-11-20",
+      "valid_to": null,
+      "note": "QL1A Km922+070 (cổng chính KCN Hòa Khánh) - Km927+400 (Ngã ba Huế): cấm ô tô tải có khối lượng chuyên chở trên 10,5 tấn 5h-22h. Trong OSM đoạn này là 'Đường Tôn Đức Thắng' và phần nam 'Đường Nguyễn Lương Bằng'; bbox cắt ở vĩ độ 16.093 để xấp xỉ điểm Km922 (5,3 km tính từ Ngã ba Huế). Bài báo không nói rõ chỉ áp dụng một chiều. Task 9 (đối chiếu OSM 2026-10-22): 'Cổng chính KCN Hòa Khánh' không có trong OSM; bbox đã cắt ở vĩ độ 16.093 để xấp xỉ mốc này nên dùng toàn bộ Nguyễn Lương Bằng trong bbox.",
+      "body": {
+        "vehicle": {"payload_t": [">", 10.5]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["05:00", "22:00"]]},
+        "scope": {
+          "bbox": [108.13, 16.05, 108.18, 16.093],
+          "routes": [
+            {"name": "Tôn Đức Thắng"},
+            {"name": "Nguyễn Lương Bằng"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "dng_ql1_hoakhanh_somi",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án tổ chức giao thông QL1A qua Đà Nẵng, UBND TP Đà Nẵng phê duyệt (không rõ số), áp dụng từ 20/11/2024",
+      "source": "https://baodanang.vn/han-che-toc-do-cam-xe-khach-tu-29-cho-xe-tai-tren-10-5-tan-theo-khung-gio-o-mot-so-tuyen-duong-3161088.html",
+      "valid_from": "2024-11-20",
+      "valid_to": null,
+      "note": "Cùng đoạn với dng_ql1_hoakhanh_105t: cấm xe sơ mi rơ moóc và xe kéo rơ moóc 5h-22h (gộp vào kind tractor). Task 9 (đối chiếu OSM 2026-10-22): 'Cổng chính KCN Hòa Khánh' không có trong OSM; bbox đã cắt ở vĩ độ 16.093 để xấp xỉ mốc này nên dùng toàn bộ Nguyễn Lương Bằng trong bbox.",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["05:00", "22:00"]]},
+        "scope": {
+          "bbox": [108.13, 16.05, 108.18, 16.093],
+          "routes": [
+            {"name": "Tôn Đức Thắng"},
+            {"name": "Nguyễn Lương Bằng"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "dng_ngoquyen_somi_chieu",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Văn bản của Chủ tịch UBND TP Đà Nẵng ngày 27/9/2018 (không rõ số)",
+      "source": "https://baodautu.vn/vi-sao-da-nang-tang-thoi-gian-cam-duong-tren-duong-ngo-quyen-d88578.html",
+      "valid_from": "2018-10-16",
+      "valid_to": null,
+      "note": "Trục Ngô Quyền - Ngũ Hành Sơn (đường vào cảng Tiên Sa): cấm xe sơ mi rơ moóc, xe kéo rơ moóc 16h30-20h (kéo dài từ 16h30-18h30). Tin năm 2018, không rõ còn áp dụng năm 2026. Trong OSM là 'Đường Ngô Quyền', 'Đường Ngũ Hành Sơn' (QL14B).",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["16:30", "20:00"]]},
+        "scope": {
+          "bbox": [108.228, 16.035, 108.245, 16.085],
+          "names": ["Ngô Quyền", "Ngũ Hành Sơn"]
+        }
+      }
+    },
+    {
+      "id": "dng_dt603b_hoian_somi",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Công văn UBND tỉnh Quảng Nam (PCT Trần Nam Hưng ký, 2/2025, không rõ số) điều chỉnh tổ chức giao thông ĐT603B và ĐT619 (Võ Chí Công)",
+      "source": "https://baophapluat.vn/quang-nam-bo-lenh-cam-xe-5-tan-tren-tuyen-cao-toc-ven-bien-post541191.html",
+      "valid_from": "2025-03-01",
+      "valid_to": null,
+      "note": "Đoạn 1: ĐT603B từ giáp Đà Nẵng cũ đến đầu Võ Chí Công, rồi Võ Chí Công đến cầu Cửa Đại (Hội An): cấm xe đầu kéo sơ mi rơ moóc và xe kéo rơ moóc. Bài báo không ghi giờ cho lệnh cấm này nên mã hóa cả ngày. Ngày bắt đầu lấy theo ngày đăng báo. Nay thuộc TP Đà Nẵng (sáp nhập 7/2025); chưa thấy Đà Nẵng ban hành lại. Trong OSM, ĐT603B là 'Võ Nguyên Giáp' và 'Lạc Long Quân'.",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor"]]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.28, 15.86, 108.38, 15.97],
+          "routes": [
+            {"ref": "ĐT603B"},
+            {"name": "Võ Chí Công", "to": "Cầu Cửa Đại"},
+            {"name": "Cầu Cửa Đại"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "dng_dt603b_hoian_10t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Công văn UBND tỉnh Quảng Nam (PCT Trần Nam Hưng ký, 2/2025, không rõ số) điều chỉnh tổ chức giao thông ĐT603B và ĐT619 (Võ Chí Công)",
+      "source": "https://baophapluat.vn/quang-nam-bo-lenh-cam-xe-5-tan-tren-tuyen-cao-toc-ven-bien-post541191.html",
+      "valid_from": "2025-03-01",
+      "valid_to": null,
+      "note": "Đoạn 1 như dng_dt603b_hoian_somi: xe tải chở trên 10 tấn cấm 5h-22h; 22h-5h được đi, tối đa 50 km/h. Đoạn 2 và 3 (cầu Cửa Đại - Chu Lai) cho mọi xe, xe đầu kéo tối đa 50 km/h. 'Chở trên 10 tấn' hiểu là khối lượng chuyên chở.",
+      "body": {
+        "vehicle": {"payload_t": [">", 10]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["05:00", "22:00"]]},
+        "scope": {
+          "bbox": [108.28, 15.86, 108.38, 15.97],
+          "routes": [
+            {"ref": "ĐT603B"},
+            {"name": "Võ Chí Công", "to": "Cầu Cửa Đại"},
+            {"name": "Cầu Cửa Đại"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_cam_xetai_canngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026 (theo QĐ 2104/QĐ-UBND phường Nghĩa Lộ) và TB 482/TB-SXD ngày 15/8/2026 (theo QĐ 03/2026/QĐ-UBND phường Cẩm Thành), Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Cấm ô tô tải (và ô tô khách) đi lại, không ghi giờ: Tôn Đức Thắng (Bà Triệu - Quang Trung, phường Nghĩa Lộ); Duy Tân; Ngô Quyền và Nguyễn Bá Loan (Lê Trung Đình - Nguyễn Nghiêm, phường Cẩm Thành). Pickup/van loại theo NĐ 241/2026. valid_from lấy theo ngày thông báo sớm nhất. Task 9 (đối chiếu OSM 2026-10-22): bỏ 'Duy Tân' (không có trong OSM ở Quảng Ngãi) và 'Tôn Đức Thắng (Bà Triệu - Quang Trung)' (Tôn Đức Thắng trong OSM kết thúc tại Quang Trung; đoạn tới Bà Triệu, khoảng 120 m, không mang tên này).",
+      "body": {
+        "vehicle": {"kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.77, 15.09, 108.83, 15.14],
+          "routes": [
+            {"name": "Ngô Quyền", "from": "Lê Trung Đình", "to": "Nguyễn Nghiêm"},
+            {"name": "Nguyễn Bá Loan", "from": "Lê Trung Đình", "to": "Nguyễn Nghiêm"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_5t_6_18",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026 và TB 482/TB-SXD ngày 15/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Ô tô tải có tải trọng từ 5 tấn (theo giấy chứng nhận kiểm định, hiểu là khối lượng chuyên chở) cấm 6h-18h. Nghĩa Lộ: Hùng Vương (ranh giới Cẩm Thành - nút Hùng Vương/Trần Hưng Đạo/Trần Toại), Trương Định (Hùng Vương - Hai Bà Trưng), Quang Trung (Hai Bà Trưng - ranh giới Cẩm Thành), Võ Tùng (Bà Triệu - Cẩm Thành), Mạc Đĩnh Chi, Trần Cẩm, Trần Quang Diệu. Cẩm Thành: Hùng Vương (Phan Đình Phùng - ranh giới Nghĩa Lộ), Nguyễn Tự Tân (Quang Trung - Phan Bội Châu), Quang Trung (ranh giới Nghĩa Lộ - Lê Lợi), Lê Khiết, Nguyễn Thị Minh Khai, Phạm Xuân Hòa, Lê Đình Cẩn, Trần Cẩm, Võ Tùng (Cẩm Thành - Lê Trung Đình). Điểm 'ranh giới phường' không định vị được bằng tên đường: hai đoạn nối nhau nên ghép thành đoạn liền. Task 9 (đối chiếu OSM 2026-10-22): Trương Định và Quang Trung trong OSM kết thúc sát Hùng Vương (26 m) và Hai Bà Trưng (4 m) mà không chung nút, nên bỏ đầu mút đó (đoạn chạy tới đầu đường). Bỏ 'Trần Cẩm' và 'Phạm Xuân Hòa' (không có trong OSM; chỉ có hẻm mang tên Phạm Xuân Hòa).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 5]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "18:00"]]},
+        "scope": {
+          "bbox": [108.77, 15.09, 108.83, 15.14],
+          "routes": [
+            {"name": "Hùng Vương", "from": "Phan Đình Phùng", "to": "Trần Toại"},
+            {"name": "Trương Định", "to": "Hai Bà Trưng"},
+            {"name": "Quang Trung", "to": "Lê Lợi"},
+            {"name": "Võ Tùng", "from": "Bà Triệu", "to": "Lê Trung Đình"},
+            {"name": "Mạc Đĩnh Chi"},
+            {"name": "Trần Quang Diệu"},
+            {"name": "Nguyễn Tự Tân", "from": "Quang Trung", "to": "Phan Bội Châu"},
+            {"name": "Lê Khiết"},
+            {"name": "Nguyễn Thị Minh Khai"},
+            {"name": "Lê Đình Cẩn"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_tqt_nguyenvanlinh_5t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 482/TB-SXD ngày 15/8/2026 (theo CV 1563/UBND-KTHTĐT phường Trương Quang Trọng)",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Phường Trương Quang Trọng: Nguyễn Văn Linh cấm ô tô tải có trọng tải từ 5 tấn 6h-18h. Thông báo không giới hạn đoạn; bbox giới hạn trong phường (đoạn QL24B/Nguyễn Văn Linh phía bắc sông Trà Khúc).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 5]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "18:00"]]},
+        "scope": {
+          "bbox": [108.79, 15.135, 108.81, 15.17],
+          "names": ["Nguyễn Văn Linh"]
+        }
+      }
+    },
+    {
+      "id": "qng_7t_6_18",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026 và TB 482/TB-SXD ngày 15/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Ô tô tải có tải trọng từ 7 tấn cấm 6h-18h: Trương Quang Trọng (Nghĩa Lộ); Phan Đình Phùng (Quang Trung - Trần Hưng Đạo), Nguyễn Nghiêm và Trần Hưng Đạo (Quang Trung - nút Trần Hưng Đạo/Nguyễn Công Phương/Nguyễn Nghiêm/Phan Chu Trinh), Phan Chu Trinh (Cẩm Thành).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 7]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "18:00"]]},
+        "scope": {
+          "bbox": [108.77, 15.09, 108.83, 15.14],
+          "routes": [
+            {"name": "Trương Quang Trọng"},
+            {"name": "Phan Đình Phùng", "from": "Quang Trung", "to": "Trần Hưng Đạo"},
+            {"name": "Nguyễn Nghiêm", "from": "Quang Trung", "to": "Nguyễn Công Phương"},
+            {"name": "Trần Hưng Đạo", "from": "Quang Trung", "to": "Nguyễn Công Phương"},
+            {"name": "Phan Chu Trinh"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_10t_6_18",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026 và TB 482/TB-SXD ngày 15/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Ô tô tải có tải trọng từ 10 tấn cấm 6h-18h: Nguyễn Đình Chiểu; Phan Bội Châu (Hai Bà Trưng - ranh giới Cẩm Thành, nối tiếp đoạn Trần Hưng Đạo - ranh giới Nghĩa Lộ); Nguyễn Du (Cẩm Thành). Task 9 (đối chiếu OSM 2026-10-22): Phan Bội Châu tách tại Hùng Vương (OSM đứt tại nút này).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 10]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "18:00"]]},
+        "scope": {
+          "bbox": [108.77, 15.09, 108.83, 15.14],
+          "routes": [
+            {"name": "Nguyễn Đình Chiểu"},
+            {"name": "Phan Bội Châu", "from": "Hai Bà Trưng", "to": "Hùng Vương"},
+            {"name": "Phan Bội Châu", "from": "Hùng Vương", "to": "Trần Hưng Đạo"},
+            {"name": "Nguyễn Du"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_10t_6_21",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf",
+      "valid_from": "2026-08-17",
+      "valid_to": null,
+      "note": "Ô tô tải có tải trọng từ 10 tấn cấm 6h-21h: Nguyễn Công Phương; Chu Văn An (tại vòng xoay Ngã 5 mới, hướng về trung tâm phường; hướng không mã hóa được nên cấm cả đường trong bbox).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 10]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "21:00"]]},
+        "scope": {
+          "bbox": [108.78, 15.105, 108.80, 15.135],
+          "names": ["Nguyễn Công Phương", "Chu Văn An"]
+        }
+      }
+    },
+    {
+      "id": "qng_10t_canngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026 và TB 482/TB-SXD ngày 15/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Ô tô tải có tải trọng từ 10 tấn cấm đi lại (không ghi giờ): An Dương Vương (Trương Định - Trần Cao Vân); Lê Trung Đình (Nguyễn Du - Quang Trung); Phạm Văn Đồng (Nguyễn Nghiêm - Lê Trung Đình).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 10]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.77, 15.09, 108.83, 15.14],
+          "routes": [
+            {"name": "An Dương Vương", "from": "Trương Định", "to": "Trần Cao Vân"},
+            {"name": "Lê Trung Đình", "from": "Nguyễn Du", "to": "Quang Trung"},
+            {"name": "Phạm Văn Đồng", "from": "Nguyễn Nghiêm", "to": "Lê Trung Đình"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_5t_tonducthang_canngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf",
+      "valid_from": "2026-08-17",
+      "valid_to": null,
+      "note": "Cấm ô tô tải có tải trọng từ 5 tấn đi lại Tôn Đức Thắng đoạn Quang Trung - Trần Quốc Toản (không ghi giờ). Task 9 (đối chiếu OSM 2026-10-22): Tôn Đức Thắng tách tại Chu Văn An (OSM đứt tại nút này).",
+      "body": {
+        "vehicle": {"payload_t": [">=", 5]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.77, 15.12, 108.82, 15.14],
+          "routes": [{"name": "Tôn Đức Thắng", "from": "Quang Trung", "to": "Chu Văn An"}, {"name": "Tôn Đức Thắng", "from": "Chu Văn An", "to": "Trần Quốc Toản"}]
+        }
+      }
+    },
+    {
+      "id": "qng_oto_truongdinh_gio",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 485/TB-SXD ngày 17/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf",
+      "valid_from": "2026-08-17",
+      "valid_to": null,
+      "note": "Cấm mọi xe ô tô (gồm xe tải) Trương Định đoạn Nguyễn Bỉnh Khiêm - Nguyễn Tự Tân: 6h30-7h, 10h30-11h, 16h30-17h30, thứ Hai đến thứ Sáu; không áp dụng 1/6-31/8 hằng năm (giờ trường học). Không mã hóa được ngoại lệ mùa hè. Task 9 (đối chiếu OSM 2026-10-22): OSM ghi tên đường giao là 'Nguyễn Bình Khiêm' nên đổi 'from' theo OSM.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "when": {"daytypes": ["weekday"], "times": [["06:30", "07:00"], ["10:30", "11:00"], ["16:30", "17:30"]]},
+        "scope": {
+          "bbox": [108.78, 15.115, 108.79, 15.135],
+          "routes": [{"name": "Trương Định", "from": "Nguyễn Bình Khiêm", "to": "Nguyễn Tự Tân"}]
+        }
+      }
+    },
+    {
+      "id": "qng_oto_camthanh_gio_a",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 482/TB-SXD ngày 15/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Cấm mọi xe ô tô: Phan Chu Trinh (Phan Đình Phùng - nút Trần Hưng Đạo/Nguyễn Công Phương/Nguyễn Nghiêm) và Nguyễn Thị Minh Khai (hướng Hùng Vương → Nguyễn Tự Tân; hướng không mã hóa được) lúc 6h30-7h, 11h-11h30, 17h-17h30, thứ Hai đến thứ Sáu, trừ 1/6-31/8.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "when": {"daytypes": ["weekday"], "times": [["06:30", "07:00"], ["11:00", "11:30"], ["17:00", "17:30"]]},
+        "scope": {
+          "bbox": [108.79, 15.115, 108.81, 15.13],
+          "routes": [
+            {"name": "Phan Chu Trinh", "from": "Phan Đình Phùng", "to": "Trần Hưng Đạo"},
+            {"name": "Nguyễn Thị Minh Khai", "from": "Hùng Vương", "to": "Nguyễn Tự Tân"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "qng_oto_camthanh_gio_b",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TB 482/TB-SXD ngày 15/8/2026, Sở Xây dựng Quảng Ngãi",
+      "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf",
+      "valid_from": "2026-08-15",
+      "valid_to": null,
+      "note": "Cấm mọi xe ô tô Nguyễn Tự Tân (Phan Đình Phùng - Nguyễn Thị Minh Khai) lúc 6h30-7h, 9h30-10h30, 16h-17h, thứ Hai đến thứ Sáu, trừ 1/6-31/8.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "when": {"daytypes": ["weekday"], "times": [["06:30", "07:00"], ["09:30", "10:30"], ["16:00", "17:00"]]},
+        "scope": {
+          "bbox": [108.79, 15.12, 108.81, 15.13],
+          "routes": [{"name": "Nguyễn Tự Tân", "from": "Phan Đình Phùng", "to": "Nguyễn Thị Minh Khai"}]
+        }
+      }
+    },
+    {
+      "id": "gl_quynhon_thd_hv_35t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Quy định của UBND tỉnh Bình Định cũ, hiệu lực 1/6/2015 (không rõ số)",
+      "source": "https://baophapluat.vn/binh-dinh-tai-xe-xe-rao-cho-xe-tai-luu-thong-vao-gio-cam-post211493.html",
+      "valid_from": "2015-06-01",
+      "valid_to": null,
+      "note": "Trần Hưng Đạo - Hùng Vương, Km2+200 - Km5+500 (Ngã 5 Đống Đa - Ngã 3 Ông Thọ), Quy Nhơn: ô tô có tải trọng trên 3,5 tấn cấm 6h30-7h30 và 16h30-18h. Nguồn là báo năm 2016; không tìm thấy văn bản bãi bỏ hay xác nhận còn áp dụng sau sáp nhập Bình Định vào Gia Lai. Điểm 'Ngã 3 Ông Thọ' có thể không định vị được; bbox đã cắt quanh Quy Nhơn.",
+      "body": {
+        "vehicle": {"payload_t": [">", 3.5]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:30", "07:30"], ["16:30", "18:00"]]},
+        "scope": {
+          "bbox": [109.16, 13.76, 109.235, 13.80],
+          "routes": [
+            {"name": "Trần Hưng Đạo", "from": "Ngã 5 Đống Đa", "to": "Hùng Vương"},
+            {"name": "Hùng Vương", "to": "Ngã 3 Ông Thọ"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "kh_khanhle_5t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Phương án thông xe có điều kiện đèo Khánh Lê (QL27C) của Sở Xây dựng Khánh Hòa, từ 24/12/2025 (không rõ số)",
+      "source": "https://baovanhoa.vn/doi-song/thong-xe-han-che-qua-deo-khanh-le-tu-ngay-2412-191183.html",
+      "valid_from": "2025-12-24",
+      "valid_to": null,
+      "note": "Sau sạt lở 11/2025: chỉ người dân, xe có trọng tải dưới 5 tấn và ô tô chở người đến 16 chỗ được qua đèo 6h-17h; xe từ 5 tấn đi QL27. Là phương án tạm sau thiên tai, không thấy tin gỡ bỏ hay thông xe hoàn toàn trong năm 2026. 'Trọng tải' hiểu là khối lượng chuyên chở.",
+      "body": {
+        "vehicle": {"payload_t": [">=", 5]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.70, 12.17, 108.82, 12.26],
+          "names": ["Đèo Khánh Lê"]
+        }
+      }
+    },
+    {
+      "id": "kh_khanhle_dem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Phương án thông xe có điều kiện đèo Khánh Lê (QL27C) của Sở Xây dựng Khánh Hòa, từ 24/12/2025 (không rõ số)",
+      "source": "https://baovanhoa.vn/doi-song/thong-xe-han-che-qua-deo-khanh-le-tu-ngay-2412-191183.html",
+      "valid_from": "2025-12-24",
+      "valid_to": null,
+      "note": "Đóng điểm thông xe qua đèo từ 17h đến 6h sáng hôm sau, mọi phương tiện. Cùng tình trạng với kh_khanhle_5t.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["17:00", "06:00"]]},
+        "scope": {
+          "bbox": [108.70, 12.17, 108.82, 12.26],
+          "names": ["Đèo Khánh Lê"]
+        }
+      }
+    },
+    {
+      "id": "ld_prenn_cam_xetai",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Văn bản hỏa tốc của UBND tỉnh Lâm Đồng (1/2024, thông xe đèo Prenn trừ xe tải); TB 474/TB-SXD ngày 4/12/2025 của Sở Xây dựng Lâm Đồng",
+      "source": "https://nhandan.vn/thong-xe-tuyen-deo-prenn-thanh-pho-da-lat-tu-sang-311-post794457.html https://nhandan.vn/ocop/video-deo-prenn-mo-luu-thong-tam-trong-ba-ngay-tiep-tuc-cam-xe-tai-do-nguy-co-sat-lo-post928259.html",
+      "valid_from": "2024-01-31",
+      "valid_to": null,
+      "note": "Đèo Prenn (QL20 vào Đà Lạt) mở cho mọi phương tiện trừ xe tải từ 31/1/2024; sau sạt lở 12/2025 xe tải vẫn bị cấm, xe tải đi đèo Mimosa. Không thấy thông báo nào năm 2026 cho xe tải đi lại. Pickup/van loại theo NĐ 241/2026. Trong OSM tên là 'Đèo Prenn'.",
+      "body": {
+        "vehicle": {"kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "bbox": [108.43, 11.86, 108.48, 11.93],
+          "names": ["Đèo Prenn"]
+        }
+      }
+    },
+    {
+      "id": "ld_dalat_15t_caodiem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án tổ chức giao thông trung tâm Đà Lạt của Sở Xây dựng Lâm Đồng, công bố 24/7/2026, hiệu lực 1/8/2026 (VietnamPlus nhắc TB 934/TB-SXD, chưa đọc văn bản)",
+      "source": "https://baolamdong.vn/lam-dong-han-che-xe-tren-29-cho-tai-mot-so-khu-vuc-trung-tam-da-lat-455480.html https://tienphong.vn/xe-tren-29-cho-va-xe-tai-luu-y-gi-khi-vao-trung-tam-da-lat-tu-ngay-18-post1862210.tpo https://cafef.vn/tu-1-8-da-lat-co-thay-doi-moi-du-khach-va-nguoi-dan-can-nam-ro-188260731150444589.chn",
+      "valid_from": "2026-08-01",
+      "valid_to": null,
+      "note": "Xe tải từ 1,5 tấn trở lên hạn chế lưu thông 6h-8h, 10h-12h, 16h-18h hằng ngày trên 4 'cặp tuyến': Ngô Quyền - Hai Bà Trưng, La Sơn Phu Tử - Hai Bà Trưng, Ba Tháng Hai - Trần Phú, Đặng Thùy Trâm - Hoàng Văn Thụ. Báo không nói cấm cả hai đường, chỉ một đoạn hay chỉ hướng rẽ: chọn cách hiểu chặt hơn là cả 7 đường trong bbox trung tâm. Báo không nói ngưỡng theo khối lượng gì: chọn khối lượng toàn bộ (chặt hơn). Ba Tháng Hai trong OSM là 'Ba Tháng Hai'; Đặng Thùy Trâm chưa thấy trong OSM. Task 9 (đối chiếu OSM 2026-10-22): OSM viết 'Đặng Thuỳ Trâm' (dấu kiểu cũ) nên đổi tên theo OSM.",
+      "body": {
+        "vehicle": {"gross_t": [">=", 1.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "08:00"], ["10:00", "12:00"], ["16:00", "18:00"]]},
+        "scope": {
+          "bbox": [108.41, 11.93, 108.45, 11.96],
+          "names": ["Ngô Quyền", "Hai Bà Trưng", "La Sơn Phu Tử", "Ba Tháng Hai", "Trần Phú", "Đặng Thuỳ Trâm", "Hoàng Văn Thụ"]
+        }
+      }
+    },
+    {
+      "id": "ld_dalat_35t_6_21",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Phương án của UBND 4 phường Xuân Hương, Lâm Viên, Cam Ly, Xuân Trường (3/2026), gắn với việc đóng sân bay Liên Khương",
+      "source": "https://www.sggp.org.vn/lam-dong-giam-phuong-tien-tai-trong-lon-vao-khu-trung-tam-da-lat-post841990.html",
+      "valid_from": "2026-03-09",
+      "valid_to": null,
+      "note": "Xe tải từ 3,5 tấn cấm 6h-21h trên 15 tuyến trung tâm Đà Lạt. Biện pháp gắn với thời gian đóng sân bay Liên Khương (từ 4/3/2026, khoảng 8 tháng) nên có thể chỉ tạm thời; bài 24/7/2026 về phương án từ 1/8 không nhắc lại. Ngưỡng không rõ cơ sở: chọn khối lượng toàn bộ.",
+      "body": {
+        "vehicle": {"gross_t": [">=", 3.5]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "21:00"]]},
+        "scope": {
+          "bbox": [108.42, 11.93, 108.46, 11.98],
+          "names": ["Trần Phú", "Hoàng Văn Thụ", "Hồ Tùng Mậu", "Bà Huyện Thanh Quan", "Trần Quốc Toản", "Ba Tháng Hai", "Hải Thượng", "Hoàng Diệu", "Hai Bà Trưng", "Phan Đình Phùng", "Nguyễn Công Trứ", "Bùi Thị Xuân", "Phù Đổng Thiên Vương", "Trần Nhân Tông", "Trần Lê"]
+        }
+      }
+    }
+  ],
+  "unresolved": [
+    {"place": "Nghệ An (Vinh cũ)", "what": "Xe tải từ 4 tấn chuyên chở không giao nhận hàng tại Vinh cấm vào thành phố 5h-24h, phải đi QL1A tuyến tránh Vinh (QĐ 70/2016 Điều 3 khoản 4)", "why": "Điều kiện theo mục đích chuyến đi (xe đi qua) và phạm vi 'thành phố Vinh' cũ không mã hóa được trong vehicle/scope", "source": "https://caselaw.vn/van-ban-phap-luat/138289-quyet-dinh-so-70-2016-qd-ubnd-ngay-06-12-2016-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an"},
+    {"place": "Nghệ An (Vinh cũ)", "what": "Cấm mọi xe tải trên đường mương thoát nước số 1 (Nguyễn Thái Học - Hồ Thành) và mương thoát nước số 3", "why": "Đường không có tên định vị được", "source": "https://caselaw.vn/van-ban-phap-luat/138289-quyet-dinh-so-70-2016-qd-ubnd-ngay-06-12-2016-quy-dinh-ve-tuyen-duong-thoi-gian-han-che-luu-thong-cua-phuong-tien-tham-gia-giao-thong-tren-dia-ban-thanh-pho-vinh-tinh-nghe-an"},
+    {"place": "Hà Tĩnh (các phường)", "what": "Xe chở vật liệu xây dựng, phế thải rời, xe vệ sinh môi trường chỉ hoạt động 20h-6h (QĐ 53/2025 Điều 12 khoản 5)", "why": "Không mã hóa được loại hàng", "source": "https://luatvietnam.vn/van-ban/xem-truoc-file-3aab3bf4-1488-8600-5f5b-bd7c2ee7fb33"},
+    {"place": "Thanh Hóa", "what": "QĐ 136/2025/QĐ-UBND (hiệu lực 15/11/2025) quy định giờ hoạt động xe vệ sinh môi trường và xe chở vật liệu xây dựng, phế thải rời trong đô thị; không tìm thấy quy định giờ hay vùng cấm cho xe tải nói chung", "why": "Chỉ áp cho loại hàng; chưa đọc được khung giờ (vbpl.vn trả về trang chặn); nguồn chỉ thấy qua kết quả tìm kiếm, chưa mở được", "source": "https://vbpl.moj.gov.vn/TW/Lists/vbpq/Attachments/184112/136.2025.QĐ-UBND.doc"},
+    {"place": "Quảng Trị (Đồng Hới)", "what": "Xe tải chở trên 10 tấn không vào trung tâm Đồng Hới, đi tuyến tránh 24/24, từ 15/8/2019", "why": "'Trung tâm' không có ranh giới đường; tin từ 2019, chưa thấy xác nhận còn áp dụng. Các tuyến cấm theo giờ (Hai Bà Trưng, Thanh Niên, Lê Trực, Mẹ Suốt) trong bản nghiên cứu trước không tìm lại được nguồn", "source": "https://www.sggp.org.vn/phan-luong-xe-tai-hang-nang-nham-dam-bao-tinh-mang-nguoi-dan-post524913.html"},
+    {"place": "Huế (Hai Bà Trưng)", "what": "Cấm ô tô tải trên 5 tấn đoạn Ngô Quyền - Nguyễn Huệ (thí điểm từ 3/2023, gắn với phố đi bộ)", "why": "Thí điểm 1-6 tháng, không rõ đã thành chính thức; không có giờ", "source": "https://www.sggp.org.vn/nguoi-dan-buc-xuc-viec-cam-xe-tai-xe-khach-vao-duong-hai-ba-trung-lanh-dao-tp-hue-tra-loi-ra-sao-post683128.html"},
+    {"place": "Huế (cửa Đông Ba, Thái Phiên nối dài)", "what": "Xe tải dưới 5 tấn qua cửa Đông Ba một chiều 6h-20h; Thái Phiên nối dài (Mang Cá - Đinh Tiên Hoàng) hai chiều hoặc một chiều ra 6h-20h", "why": "Quy tắc theo chiều đi, không mã hóa được", "source": "https://thuonghieucongluan.com.vn/hue-phan-luong-giao-thong-giam-un-tac-nhieu-tuyen-duong-a312733.html"},
+    {"place": "Quảng Ngãi (Nghĩa Lộ, Cẩm Thành)", "what": "Cấm ô tô một chiều theo giờ: Trần Hưng Đạo (Tây → Đông, Phan Bội Châu - Ngã 5 cũ, 16h30-17h30); Mạc Đĩnh Chi (Nguyễn Cư Trinh → Phan Bội Châu, 11h-11h30, 17h-17h30 ngày thường); cấm xe ≥10 tấn rẽ phải Lê Lợi → Phan Đình Phùng; cấm dừng đỗ xe ≥3,5 tấn trên một số tuyến", "why": "Quy tắc theo chiều, rẽ, hoặc dừng đỗ", "source": "https://sxd.quangngai.gov.vn/upload/2006772/20260817/485_TB-SXD_41c53.pdf https://sxd.quangngai.gov.vn/upload/2006772/20260815/482_TB-SXD_b77af.pdf"},
+    {"place": "Đắk Lắk (Buôn Ma Thuột cũ)", "what": "Biển cấm rẽ phải với xe tải trên 3,5 tấn đổi từ 6h-22h thành 6h-8h và 16h30-19h (10/2025)", "why": "Bài báo không nêu nút giao nào; quy tắc cấm rẽ. Các biển ≥10 tấn trên Nguyễn Tất Thành, Đinh Tiên Hoàng, Lê Duẩn trong bản nghiên cứu trước không tìm lại được nguồn", "source": "https://daibieunhandan.vn/dak-lak-hoan-thien-to-chuc-giao-thong-do-thi-thanh-pho-buon-ma-thuot-cu-10390493.html"},
+    {"place": "Lâm Đồng (đèo Bảo Lộc, QL20)", "what": "Mỗi dịp lễ (30/4, 2/9) Sở GTVT/Sở Xây dựng thường cấm xe tải có tổng trọng tải trên 20 tấn qua đèo theo chiều, thường 10h-17h", "why": "Lệnh tạm thời theo từng dịp; chưa thấy thông báo nào cho năm 2026", "source": "https://nhandan.vn/cam-xe-tai-tren-20-tan-luu-thong-theo-khung-gio-qua-deo-bao-loc-dip-le-29-post827776.html"},
+    {"place": "Lâm Đồng (cầu Đơn Dương, QL27)", "what": "Cấm xe trên 20 tấn từ 4/12/2025, đi vòng đèo Ngoạn Mục - ĐT729 - ĐT720; đã cho xe từ 20 tấn đi lại từ 8/6/2026", "why": "Đã hết hiệu lực, ghi lại để không dùng nhầm", "source": "https://www.vietnamplus.vn/lam-dong-cho-phep-xe-trong-tai-lon-qua-cau-don-duong-tren-quoc-lo-27-post1115118.vnp"},
+    {"place": "Đà Nẵng (hầm và đèo Hải Vân), Gia Lai (Cù Mông), Đắk Lắk/Khánh Hòa (Đèo Cả), Quảng Ngãi (Lò Xo, Violak, Măng Đen), Lâm Đồng (Mimosa, Ngoạn Mục)", "what": "Không tìm thấy lệnh cấm thường xuyên với xe tải nặng hay container; chỉ có đóng đường tạm khi sạt lở, gió bão", "why": "Không có quy tắc để mã hóa; hàng nguy hiểm qua hầm không thuộc phạm vi; nguồn (đóng hầm tạm do gió) chỉ thấy qua kết quả tìm kiếm", "source": "https://www.sggp.org.vn/tam-dong-cua-ham-hai-van-3-tieng-do-gio-lon-mot-xe-tai-lat-tren-duong-post765542.html"},
+    {"place": "Gia Lai", "what": "QĐ 40/2025/QĐ-UBND (hiệu lực 13/6/2025) cho ô tô chở hàng hoạt động trên đường đô thị theo phương án tổ chức giao thông, không đặt giờ hay ngưỡng; Pleiku (≥10 tấn đi tránh) không tìm lại được nguồn", "why": "Không có quy tắc cụ thể", "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-40-2025-qd-ubnd-gia-lai-quy-dinh-van-tai-duong-bo-va-phuong-tien-ho-tro-nguoi-khuyet-tat-401927-d1.html"}
+  ]
+}

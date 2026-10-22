@@ -1,0 +1,302 @@
+{
+  "area": "hanoi",
+  "researched_at": "2026-10-21",
+  "rules": [
+    {
+      "id": "hn_zone_lt2t_peak",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 01/2026/QĐ-UBND (Điều 2 khoản 4, Điều 4, Điều 5 khoản 2 điểm a), sửa bởi QĐ 52/2026/QĐ-UBND (Điều 1, Điều 2, Điều 5)",
+      "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-01-2026-qd-ubnd-ha-noi-quy-dinh-hoat-dong-phuong-tien-giao-thong-duong-bo-423081-d1.html https://luatvietnam.vn/giao-thong/quyet-dinh-52-2026-qd-ubnd-ha-noi-sua-doi-bo-sung-quyet-dinh-01-2026-qd-ubnd-ve-giao-thong-duong-bo-433443-d1.html",
+      "valid_from": "2026-04-30",
+      "valid_to": null,
+      "note": "Xe ô tô tải khối lượng toàn bộ dưới 2 tấn chỉ được hoạt động ngoài giờ cao điểm (6h00–9h00, 16h00–19h30 hàng ngày) trong phạm vi hạn chế. Vùng có từ 15/1/2026 (QĐ 01); dạng mã hóa ở đây là sau QĐ 52 (hiệu lực 30/4/2026): (1) Điều 5 QĐ 52 đổi 'xe ô tô tải thông dụng' thành 'các loại xe ô tô tải', nên xe tải tự đổ (xe ben), tải VAN, tải chuyên dùng đều thuộc diện; (2) điểm g mới: 'các loại xe ô tô tải pickup được phép hoạt động 24/24h' nên loại pickup; (3) bổ sung tuyến được đi Thanh Lâm, CN3, CN4, CN5. Xe van: NĐ 241/2026 (từ 1/7/2026) cho tải VAN và pickup cabin kép ≤3,5 t tổ chức giao thông như ô tô con 'trừ trường hợp cơ quan có thẩm quyền có quy định hạn chế riêng'; QĐ 01/52 là quy định riêng nên giữ van trong diện hạn chế (cách hiểu chặt hơn). Ngoài khung giờ có thể xin Công an TP chấp thuận bằng văn bản (không mã hóa). Các tuyến trong exempt lấy từ Điều 4 khoản 2 (a, b, c) đã sửa: hiểu là xe được đi các đoạn này trong khu hạn chế không bị khung giờ Điều 5. Ranh giới: xem note của hn_zone_ge2t_day. Task 9 (đối chiếu OSM 2026-10-22), ranh giới: 'Đường 70' không có tên trong OSM, dùng đoạn ref ĐT.70 (Phương Canh - ngõ 6 Miêu Nha) cùng 'Miêu Nha' và 'Cầu vượt Tây Mỗ'. 'Đại lộ Thăng Long' bị bỏ vì các đường gom mang tên này chạy sâu 4 km vào trong vùng, còn Hoàng Tùng (VĐ3,5) dừng cách ĐLTL 350 m; thay bằng chuỗi Cầu vượt Cầu Cốc - Đại Việt - Cầu vượt đường sắt Đại Việt 2 - Thiên Phúc nối Đường 70 với Hoàng Tùng, nên một dải khoảng 0,5 km² giữa ĐLTL và chuỗi này nằm ngoài vùng. Đoạn VĐ3,5 Hoàng Tùng - La Khê trong OSM tên 'Dương Nội'; Lê Trọng Tấn chỉ lấy đoạn Vòng xuyến La Khê - Quang Trung (một Lê Trọng Tấn khác ở Thanh Xuân nằm trong vùng). 'Vành đai 3' là cao tốc ref CT.37: lấy đoạn từ nhánh đi Pháp Vân - Cầu Giẽ tới chỗ tách cao tốc Hà Nội - Bắc Giang (gồm cầu Thanh Trì, nên bỏ mục 'Cầu Thanh Trì'). Thêm 'Cầu vượt Vĩnh Ngọc' và 'Cầu vượt Đường sắt Bắc Hồng - Văn Điển' để khép các chỗ hở giữa Trường Sa, Hoàng Sa và Võ Văn Kiệt (phía bắc sông Hồng). Vùng dựng được 229,0 km². Ngoại lệ: Nguyễn Văn Cừ bắt đầu từ 'Vòng xoay Cầu vượt Nút giao Long Biên'; Ngô Gia Khảm chỉ lấy từ Nguyễn Văn Cừ (có một Ngô Gia Khảm khác ở Hà Đông); 'Bắc Thăng Long - Vực Dê' theo tên OSM là 'Bắc Thăng Long - Hải Bối' + 'Cầu Phương Trạch' + 'Đường 6' (Cầu Phương Trạch - Phương Trạch); Phương Trạch bắt đầu từ 'Đường 6'; Tam Trinh lấy từ Tân Mai tới Đỗ Mười (chợ đầu mối Đền Lừ là mốc, Đỗ Mười là đường dưới VĐ3); Đại lộ Thăng Long dùng toàn tên (cả đường chính 'Đại lộ Thăng Long (Láng - Hoà Lạc)'), vì phần phía tây Đường 70 nằm ngoài vùng; 'Vành đai 3 trên cao' là ref CT.37. Phạm Hùng và Khuất Duy Tiến (sửa vòng 1): Điều 4.2.c chỉ miễn đoạn tiếp đất từ Vành đai 3 trên cao đi Đại lộ Thăng Long. Trong OSM các nhánh lên xuống (motorway_link) nối CT.37 với mặt đất chạm Phạm Hùng tại (21,0076; 105,7905) và Khuất Duy Tiến tại (21,0029; 105,7943), cách nút Trung Hòa (ĐLTL) khoảng 290 m và 340 m. Khuất Duy Tiến dùng 'from' là nhánh 'Lối xuống Trần Duy Hưng' (chạm Khuất Duy Tiến tại điểm tiếp đất); nhánh trên Phạm Hùng không có tên nên dùng 'Tú Mỡ', đường giao cách điểm tiếp đất 20 m. Mỗi đoạn khoảng 850 m cộng hai chiều. Bản trước của Task 9 miễn cả hai tuyến (426 đoạn, khoảng 11,6 km), rộng hơn văn bản; đã thu hẹp lại.",
+      "body": {
+        "vehicle": {"gross_t": ["<", 2], "kind": ["not_in", ["pickup"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "09:00"], ["16:00", "19:30"]]},
+        "scope": {
+          "zone": {
+            "boundary_names": ["Phạm Văn Đồng", "Hồ Tùng Mậu", "Cầu Diễn", "Xuân Phương", {"ref": "ĐT.70", "from": "Đường Phương Canh", "to": "Ngõ 6 Phố Miêu Nha"}, "Miêu Nha", "Cầu vượt Tây Mỗ", "Cầu vượt Cầu Cốc", "Đại Việt", "Cầu vượt đường sắt Đại Việt 2", "Thiên Phúc", "Hoàng Tùng", "Dương Nội", {"name": "Lê Trọng Tấn", "from": "Vòng xuyến La Khê", "to": "Quang Trung"}, "Văn Khê", "Phúc La", "Cầu Bươu", "Phan Trọng Tuệ", "Ngọc Hồi", {"ref": "CT.37", "from": "Đi Cao tốc Pháp Vân - Cầu Giẽ", "to": "Đường cao tốc Hà Nội - Bắc Giang"}, "Nguyễn Văn Linh", "Lý Sơn", "Cầu Đông Trù", "Trường Sa", "Cầu vượt Vĩnh Ngọc", "Hoàng Sa", "Cầu vượt Đường sắt Bắc Hồng - Văn Điển", "Võ Văn Kiệt", "Cầu Thăng Long"],
+            "seed": [21.0288, 105.8525],
+            "area_km2": [120, 400]
+          },
+          "bbox": [105.70, 20.93, 105.96, 21.15]
+        },
+        "exempt": {
+          "routes": [
+            {"name": "Nguyễn Văn Cừ", "from": "Vòng xoay Cầu vượt Nút giao Long Biên", "to": "Nguyễn Sơn"},
+            {"name": "Ngọc Lâm", "from": "Nguyễn Văn Cừ", "to": "Ngô Gia Khảm"},
+            {"name": "Ngô Gia Khảm", "from": "Nguyễn Văn Cừ"},
+            {"name": "Bắc Thăng Long - Hải Bối"},
+            {"name": "Cầu Phương Trạch"},
+            {"name": "Đường 6", "from": "Cầu Phương Trạch", "to": "Phương Trạch"},
+            {"name": "Phương Trạch", "from": "Đường 6", "to": "Hoàng Sa"},
+            {"name": "Cổ Linh"},
+            {"name": "Đàm Quang Trung"},
+            {"name": "Huỳnh Tấn Phát", "from": "Cổ Linh", "to": "Nguyễn Văn Linh"},
+            {"name": "Tam Trinh", "from": "Tân Mai", "to": "Đỗ Mười"},
+            {"name": "Đại lộ Thăng Long"},
+            {"name": "Đại lộ Thăng Long (Láng - Hoà Lạc)"},
+            {"ref": "CT.37"},
+            {"name": "Phạm Hùng", "from": "Tú Mỡ", "to": "Đại lộ Thăng Long"},
+            {"name": "Khuất Duy Tiến", "from": "Lối xuống Trần Duy Hưng", "to": "Đại lộ Thăng Long"},
+            {"name": "Thanh Lâm"},
+            {"name": "CN3"},
+            {"name": "CN4"},
+            {"name": "CN5"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "hn_zone_ge2t_day",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 01/2026/QĐ-UBND (Điều 4, Điều 5 khoản 2 điểm b), sửa bởi QĐ 52/2026/QĐ-UBND (Điều 1, Điều 2, Điều 5)",
+      "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-01-2026-qd-ubnd-ha-noi-quy-dinh-hoat-dong-phuong-tien-giao-thong-duong-bo-423081-d1.html https://luatvietnam.vn/giao-thong/quyet-dinh-52-2026-qd-ubnd-ha-noi-sua-doi-bo-sung-quyet-dinh-01-2026-qd-ubnd-ve-giao-thong-duong-bo-433443-d1.html https://xaydungchinhsach.chinhphu.vn/quyet-dinh-01-2026-qd-ubnd-quy-dinh-hoat-dong-cua-phuong-tien-giao-thong-duong-bo-tren-dia-ban-ha-noi-119260104191512937.htm",
+      "valid_from": "2026-04-30",
+      "valid_to": null,
+      "note": "Xe ô tô tải khối lượng toàn bộ từ 2 tấn trở lên chỉ được hoạt động 21h00–06h00 trong phạm vi hạn chế, tức cấm 06h00–21h00 mọi ngày. Ngưỡng tính theo khối lượng toàn bộ (Điều 2 khoản 2 dẫn TT 12/2025/TT-BXD). Ngoài giờ: xe 2–<10 t xin Công an TP, xe ≥10 t xin Sở Xây dựng (không mã hóa). Đầu kéo/container: TT 53/2024 xếp 'ô tô đầu kéo' thành loại riêng, không phải 'ô tô tải', và QĐ 01/52 không nêu tên; ở đây áp theo khối lượng toàn bộ (luôn ≥2 t) nên đầu kéo, container bị cấm ban ngày (cách hiểu chặt hơn). Xe ben (ô tô tải tự đổ, Phụ lục IV TT 53) và tải VAN thuộc 'các loại xe ô tô tải'. Pickup được 24/24 từ 30/4/2026. Ranh giới (Điều 4 khoản 1, đọc nguyên văn): Phạm Văn Đồng → Cầu Diễn, Hồ Tùng Mậu (từ ngã tư Phạm Văn Đồng – Phạm Hùng đến ngã ba Cầu Diễn – Xuân Phương) → Xuân Phương → Đường 70 → đường gom phải Đại lộ Thăng Long → nút giao An Khánh → đường gom trái Đại lộ Thăng Long → Hoàng Tùng (Vành đai 3,5) → Lê Trọng Tấn (Hà Đông) → Văn Khê → Phúc La → Cầu Bươu → Phan Trọng Tuệ – Ngọc Hồi (từ ngã ba Phan Trọng Tuệ đến ngã tư Pháp Vân) → Vành đai 3 (từ ngã tư Giải Phóng – Pháp Vân đến Nguyễn Văn Linh) → Nguyễn Văn Linh → cầu vượt nút giao Trung tâm quận Long Biên → Lý Sơn → cầu Đông Trù → Trường Sa → Hoàng Sa → Võ Văn Kiệt (từ ngã tư Hoàng Sa đến cầu Thăng Long) → cầu Thăng Long. Tên OSM có thể khác: 'Hoàng Tùng' có thể là 'Vành đai 3.5'/'Vành đai 3,5'; 'Đường 70' có thể là 'ĐT70'/'Tỉnh lộ 70'; đường gom Đại lộ Thăng Long có thể không tên hoặc mang tên 'Đại lộ Thăng Long' (đoạn biên chỉ từ Đường 70 đến nút An Khánh; đoạn Phạm Hùng → Đường 70 là tuyến được đi); 'Vành đai 3' đoạn Pháp Vân → cầu Thanh Trì có thể là 'Đường Vành đai 3'/'Đường dẫn cầu Thanh Trì'; có một 'Lê Trọng Tấn' khác ở Thanh Xuân (nằm trong vùng) – chỉ đoạn Hà Đông là biên. Vành đai 3 trên cao trong OSM có thể chỉ mang tên 'Vành đai 3'. 'Bắc Thăng Long - Vực Dê' có báo gọi là 'Đường 6'. Vị trí Thanh Lâm, CN3, CN4, CN5 (QĐ 52 bổ sung) chưa xác định. Mốc 'Chợ đầu mối Đền Lừ' và 'cầu vượt nút giao Trung tâm quận Long Biên' (thay bằng Nguyễn Văn Linh) là cách hiểu của người tra cứu. Task 9 (đối chiếu OSM 2026-10-22), ranh giới: 'Đường 70' không có tên trong OSM, dùng đoạn ref ĐT.70 (Phương Canh - ngõ 6 Miêu Nha) cùng 'Miêu Nha' và 'Cầu vượt Tây Mỗ'. 'Đại lộ Thăng Long' bị bỏ vì các đường gom mang tên này chạy sâu 4 km vào trong vùng, còn Hoàng Tùng (VĐ3,5) dừng cách ĐLTL 350 m; thay bằng chuỗi Cầu vượt Cầu Cốc - Đại Việt - Cầu vượt đường sắt Đại Việt 2 - Thiên Phúc nối Đường 70 với Hoàng Tùng, nên một dải khoảng 0,5 km² giữa ĐLTL và chuỗi này nằm ngoài vùng. Đoạn VĐ3,5 Hoàng Tùng - La Khê trong OSM tên 'Dương Nội'; Lê Trọng Tấn chỉ lấy đoạn Vòng xuyến La Khê - Quang Trung (một Lê Trọng Tấn khác ở Thanh Xuân nằm trong vùng). 'Vành đai 3' là cao tốc ref CT.37: lấy đoạn từ nhánh đi Pháp Vân - Cầu Giẽ tới chỗ tách cao tốc Hà Nội - Bắc Giang (gồm cầu Thanh Trì, nên bỏ mục 'Cầu Thanh Trì'). Thêm 'Cầu vượt Vĩnh Ngọc' và 'Cầu vượt Đường sắt Bắc Hồng - Văn Điển' để khép các chỗ hở giữa Trường Sa, Hoàng Sa và Võ Văn Kiệt (phía bắc sông Hồng). Vùng dựng được 229,0 km². Ngoại lệ: Nguyễn Văn Cừ bắt đầu từ 'Vòng xoay Cầu vượt Nút giao Long Biên'; Ngô Gia Khảm chỉ lấy từ Nguyễn Văn Cừ (có một Ngô Gia Khảm khác ở Hà Đông); 'Bắc Thăng Long - Vực Dê' theo tên OSM là 'Bắc Thăng Long - Hải Bối' + 'Cầu Phương Trạch' + 'Đường 6' (Cầu Phương Trạch - Phương Trạch); Phương Trạch bắt đầu từ 'Đường 6'; Tam Trinh lấy từ Tân Mai tới Đỗ Mười (chợ đầu mối Đền Lừ là mốc, Đỗ Mười là đường dưới VĐ3); Đại lộ Thăng Long dùng toàn tên (cả đường chính 'Đại lộ Thăng Long (Láng - Hoà Lạc)'), vì phần phía tây Đường 70 nằm ngoài vùng; 'Vành đai 3 trên cao' là ref CT.37. Phạm Hùng và Khuất Duy Tiến (sửa vòng 1): Điều 4.2.c chỉ miễn đoạn tiếp đất từ Vành đai 3 trên cao đi Đại lộ Thăng Long. Trong OSM các nhánh lên xuống (motorway_link) nối CT.37 với mặt đất chạm Phạm Hùng tại (21,0076; 105,7905) và Khuất Duy Tiến tại (21,0029; 105,7943), cách nút Trung Hòa (ĐLTL) khoảng 290 m và 340 m. Khuất Duy Tiến dùng 'from' là nhánh 'Lối xuống Trần Duy Hưng' (chạm Khuất Duy Tiến tại điểm tiếp đất); nhánh trên Phạm Hùng không có tên nên dùng 'Tú Mỡ', đường giao cách điểm tiếp đất 20 m. Mỗi đoạn khoảng 850 m cộng hai chiều. Bản trước của Task 9 miễn cả hai tuyến (426 đoạn, khoảng 11,6 km), rộng hơn văn bản; đã thu hẹp lại.",
+      "body": {
+        "vehicle": {"gross_t": [">=", 2], "kind": ["not_in", ["pickup"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "21:00"]]},
+        "scope": {
+          "zone": {
+            "boundary_names": ["Phạm Văn Đồng", "Hồ Tùng Mậu", "Cầu Diễn", "Xuân Phương", {"ref": "ĐT.70", "from": "Đường Phương Canh", "to": "Ngõ 6 Phố Miêu Nha"}, "Miêu Nha", "Cầu vượt Tây Mỗ", "Cầu vượt Cầu Cốc", "Đại Việt", "Cầu vượt đường sắt Đại Việt 2", "Thiên Phúc", "Hoàng Tùng", "Dương Nội", {"name": "Lê Trọng Tấn", "from": "Vòng xuyến La Khê", "to": "Quang Trung"}, "Văn Khê", "Phúc La", "Cầu Bươu", "Phan Trọng Tuệ", "Ngọc Hồi", {"ref": "CT.37", "from": "Đi Cao tốc Pháp Vân - Cầu Giẽ", "to": "Đường cao tốc Hà Nội - Bắc Giang"}, "Nguyễn Văn Linh", "Lý Sơn", "Cầu Đông Trù", "Trường Sa", "Cầu vượt Vĩnh Ngọc", "Hoàng Sa", "Cầu vượt Đường sắt Bắc Hồng - Văn Điển", "Võ Văn Kiệt", "Cầu Thăng Long"],
+            "seed": [21.0288, 105.8525],
+            "area_km2": [120, 400]
+          },
+          "bbox": [105.70, 20.93, 105.96, 21.15]
+        },
+        "exempt": {
+          "routes": [
+            {"name": "Nguyễn Văn Cừ", "from": "Vòng xoay Cầu vượt Nút giao Long Biên", "to": "Nguyễn Sơn"},
+            {"name": "Ngọc Lâm", "from": "Nguyễn Văn Cừ", "to": "Ngô Gia Khảm"},
+            {"name": "Ngô Gia Khảm", "from": "Nguyễn Văn Cừ"},
+            {"name": "Bắc Thăng Long - Hải Bối"},
+            {"name": "Cầu Phương Trạch"},
+            {"name": "Đường 6", "from": "Cầu Phương Trạch", "to": "Phương Trạch"},
+            {"name": "Phương Trạch", "from": "Đường 6", "to": "Hoàng Sa"},
+            {"name": "Cổ Linh"},
+            {"name": "Đàm Quang Trung"},
+            {"name": "Huỳnh Tấn Phát", "from": "Cổ Linh", "to": "Nguyễn Văn Linh"},
+            {"name": "Tam Trinh", "from": "Tân Mai", "to": "Đỗ Mười"},
+            {"name": "Đại lộ Thăng Long"},
+            {"name": "Đại lộ Thăng Long (Láng - Hoà Lạc)"},
+            {"ref": "CT.37"},
+            {"name": "Phạm Hùng", "from": "Tú Mỡ", "to": "Đại lộ Thăng Long"},
+            {"name": "Khuất Duy Tiến", "from": "Lối xuống Trần Duy Hưng", "to": "Đại lộ Thăng Long"},
+            {"name": "Thanh Lâm"},
+            {"name": "CN3"},
+            {"name": "CN4"},
+            {"name": "CN5"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "hn_vd3_pilot_ge10t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Công văn 6774/UBND-ĐT ngày 23/12/2025 của UBND TP Hà Nội (thí điểm), phương án phân luồng của Sở Xây dựng",
+      "source": "https://media.chinhphu.vn/tu-1-1-2026-han-che-xe-tai-luu-thong-huong-vao-vanh-dai-3-gio-cao-diem-102251224153349936.htm https://cafef.vn/ha-noi-han-che-xe-tai-nang-vao-vanh-dai-3-tren-cao-tai-xe-can-luu-y-gi-188251224095405043.chn https://24hmoney.vn/news/ha-noi-thi-diem-han-che-oto-tai-container-tren-mot-so-tuyen-duong-c27a2708259.html",
+      "valid_from": "2026-01-01",
+      "valid_to": "2026-03-31",
+      "note": "Thí điểm 3 tháng: cấm ô tô tải khối lượng toàn bộ từ 10 t trở lên đi theo hướng lên Vành đai 3 trên cao trên Hồ Tùng Mậu/QL32 (từ ngã tư Lê Đức Thọ – Hồ Tùng Mậu đến nút Hồ Tùng Mậu – Phạm Hùng) và Đại lộ Thăng Long (từ nút Đường 70 – Đại lộ Thăng Long đến nút Khuất Duy Tiến/Trung Hòa) trong giờ cao điểm. Chỉ chiều đi về phía Vành đai 3; chiều ngược lại không cấm – định dạng không có hướng nên rule cấm cả hai chiều. Khung giờ: chinhphu.vn ghi 6h30–9h và 16h30–19h30, nhiều báo khác ghi 6h–9h và 16h–20h; lấy khung rộng hơn. Không tìm được tin gia hạn hay chính thức hóa sau 31/3/2026 (xem unresolved).",
+      "body": {
+        "vehicle": {"gross_t": [">=", 10]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "09:00"], ["16:00", "20:00"]]},
+        "scope": {
+          "routes": [
+            {"name": "Hồ Tùng Mậu", "from": "Lê Đức Thọ", "to": "Phạm Hùng"},
+            {"name": "Đại lộ Thăng Long", "from": "Đường 70", "to": "Khuất Duy Tiến"}
+          ],
+          "bbox": [105.74, 20.99, 105.81, 21.05]
+        }
+      }
+    },
+    {
+      "id": "hn_vd3_pilot_tractor",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Công văn 6774/UBND-ĐT ngày 23/12/2025 của UBND TP Hà Nội (thí điểm), phương án phân luồng của Sở Xây dựng",
+      "source": "https://media.chinhphu.vn/tu-1-1-2026-han-che-xe-tai-luu-thong-huong-vao-vanh-dai-3-gio-cao-diem-102251224153349936.htm https://cafef.vn/ha-noi-han-che-xe-tai-nang-vao-vanh-dai-3-tren-cao-tai-xe-can-luu-y-gi-188251224095405043.chn",
+      "valid_from": "2026-01-01",
+      "valid_to": "2026-03-31",
+      "note": "Phần xe container và xe đầu kéo của cùng đợt thí điểm (hn_vd3_pilot_ge10t), không phụ thuộc khối lượng. Chỉ chiều về Vành đai 3 trên cao; rule cấm cả hai chiều vì định dạng không có hướng. Không rõ còn áp dụng sau 31/3/2026.",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor", "container"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "09:00"], ["16:00", "20:00"]]},
+        "scope": {
+          "routes": [
+            {"name": "Hồ Tùng Mậu", "from": "Lê Đức Thọ", "to": "Phạm Hùng"},
+            {"name": "Đại lộ Thăng Long", "from": "Đường 70", "to": "Khuất Duy Tiến"}
+          ],
+          "bbox": [105.74, 20.99, 105.81, 21.05]
+        }
+      }
+    },
+    {
+      "id": "hn_cau_thang_long_tram_can_dot1",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo của Sở Xây dựng Hà Nội ngày 10/9/2026 (không rõ số), thi công trạm cân phía Bắc cầu Thăng Long giai đoạn 2",
+      "source": "https://cafef.vn/cau-thang-long-han-che-xe-tai-xe-khach-tu-ngay-15-9-188260910123046979.chn https://lsvn.vn/nguoi-dan-luu-y-cac-loai-xe-bi-cam-qua-cau-thang-long-tu-15-9-a178951.html",
+      "valid_from": "2026-09-15",
+      "valid_to": "2026-10-08",
+      "note": "Cấm ô tô tải khối lượng toàn bộ từ 2 t trở lên (và xe khách từ 16 chỗ, trừ xe buýt) qua cầu Thăng Long 5h00–24h00 hàng ngày. Xe từ phía Bắc đi phía Nam được phân luồng qua cầu Thanh Trì hoặc cầu Vĩnh Thịnh. Từ 9/10/2026 khung giờ đổi thành 5h–22h (rule hn_cau_thang_long_tram_can_dot2), nên valid_to đặt 8/10. Báo không nói rõ một chiều hay hai chiều; hiểu là cả hai chiều. Pickup không được nêu loại trừ nên vẫn tính (cách hiểu chặt).",
+      "body": {
+        "vehicle": {"gross_t": [">=", 2]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["05:00", "24:00"]]},
+        "scope": {
+          "names": ["Cầu Thăng Long"],
+          "bbox": [105.775, 21.08, 105.81, 21.125]
+        }
+      }
+    },
+    {
+      "id": "hn_cau_thang_long_tram_can_dot2",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo của Sở Xây dựng Hà Nội ngày 7/10/2026 (không rõ số), điều chỉnh phân luồng cầu Thăng Long",
+      "source": "https://tuoitre.vn/ha-noi-tiep-tuc-cam-xe-tai-xe-khach-len-cau-thang-long-theo-khung-gio-100261007164418777.htm https://hanoionline.vn/dieu-chinh-phan-luong-giao-thong-qua-cau-thang-long-tu-ngay-16-10-2462610160935084.htm",
+      "valid_from": "2026-10-09",
+      "valid_to": "2026-11-10",
+      "note": "Từ 9/10 đến 10/11/2026: cấm ô tô tải khối lượng toàn bộ từ 2 t trở lên (và xe khách từ 16 chỗ, trừ xe buýt) qua cầu Thăng Long 5h–22h hàng ngày. Thêm từ 16/10: mọi ô tô không được rẽ phải từ đường gom phía Bắc (trước cổng B KCN Thăng Long) lên cầu, 5h–22h; xe từ đường gom/Đường 6 đi vòng Anh Dũng – B2 – Hoàng Sa – Võ Văn Kiệt (lượt rẽ này không mã hóa được). Hai chiều (hiểu theo 'qua cầu').",
+      "body": {
+        "vehicle": {"gross_t": [">=", 2]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["05:00", "22:00"]]},
+        "scope": {
+          "names": ["Cầu Thăng Long"],
+          "bbox": [105.775, 21.08, 105.81, 21.125]
+        }
+      }
+    },
+    {
+      "id": "hn_tu_lien_nghi_tam_yen_phu",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo 1536/TB-SXD của Sở Xây dựng Hà Nội (thi công cầu Tứ Liên, dự án thành phần 2, giai đoạn 3)",
+      "source": "https://voh.com.vn/giao-thong/ha-noi-cam-xe-khach-tren-16-cho-va-xe-tai-qua-khu-vuc-thi-cong-cau-tu-lien-tu-21102026-673992.html https://baophapluat.vn/ha-noi-phan-luong-nhieu-tuyen-duong-tu-ngay-21-10-de-thi-cong-cau-tu-lien.html https://vovgiaothong.vn/newsaudio/ban-tin-nha-chuc-trach-thong-bao-ngay-20-10-d56153.html",
+      "valid_from": "2026-10-21",
+      "valid_to": null,
+      "note": "Cấm xe tải (không nêu ngưỡng khối lượng) và xe khách trên 16 chỗ trên tuyến Nghi Tàm và phố Yên Phụ nhỏ, đoạn từ Khách sạn Thắng Lợi đến đường Thanh Niên, 'đến khi có thông báo thay thế'; trừ xe phục vụ thi công. Không nêu khung giờ nên coi là cả ngày. Văn bản nói 'phố Yên Phụ nhỏ' (đường nhỏ song song), không rõ có gồm trục đê Yên Phụ chính; rule dùng tên 'Yên Phụ' nên có thể cấm rộng hơn thực tế. Kèm thay đổi chiều: Yên Phụ nhỏ một chiều về Thanh Niên, Nghi Tàm một chiều từ ngõ 276 (không mã hóa được). Nằm trong vùng QĐ 01, nên phần tăng thêm là cấm cả ban đêm và cấm xe dưới 2 t. Task 9 (đối chiếu OSM 2026-10-22): 'Khách sạn Thắng Lợi' là mốc, không có trong OSM; đổi 'from' thành 'Yên Hoa', đường giao ở đầu bắc phố Yên Phụ gần khách sạn nhất. OSM tách 'Phố Yên Phụ' (phố nhỏ) khỏi 'Đường Yên Phụ' nên đoạn chỉ phủ phố Yên Phụ nhỏ.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "scope": {
+          "routes": [
+            {"name": "Nghi Tàm"},
+            {"name": "Yên Phụ", "from": "Yên Hoa", "to": "Thanh Niên"}
+          ],
+          "bbox": [105.825, 21.038, 105.855, 21.075]
+        }
+      }
+    },
+    {
+      "id": "hn_cau_xay_dt422",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án phân luồng của Sở Xây dựng Hà Nội (không rõ số), sửa chữa cầu Xây Km5+900 đường 422, xã Ô Diên",
+      "source": "https://bnews.vn/ha-noi-tu-ngay-19-10-phan-luong-giao-thong-phuc-vu-sua-chua-cau-xay-tren-duong-422/440925.html",
+      "valid_from": "2026-10-19",
+      "valid_to": null,
+      "note": "Từ 19/10/2026: xe tải 'tải trọng từ 1,5 tấn trở lên' và xe khách trên 9 chỗ không được qua khu vực cầu Xây (Km5+900 ĐT422, xã Ô Diên); phải đi vòng Km3+550 ĐT422 – Phan Xích – QL32, hoặc Km4+400 ĐT422 – Nhánh 422 – Tây Tựu – Đường 70 – QL32 (Trạm Trôi). Xe tải dưới 1,5 t, ô tô con đến 7 chỗ đi đường tạm/đường dân sinh. Trong thời gian phá dỡ cầu cũ, cấm mọi phương tiện qua cầu cũ. Báo không nói 1,5 t là tải trọng hay khối lượng toàn bộ: dùng khối lượng toàn bộ (cách hiểu chặt hơn). Không có ngày kết thúc. Nếu OSM không có way tên 'Cầu Xây', cần định vị theo Km5+900 ĐT422.",
+      "body": {
+        "vehicle": {"gross_t": [">=", 1.5]},
+        "action": "close",
+        "scope": {
+          "names": ["Cầu Xây"],
+          "bbox": [105.62, 21.05, 105.72, 21.15]
+        }
+      }
+    },
+    {
+      "id": "hn_cau_long_bien_no_cars",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án tổ chức giao thông cầu Long Biên (biển cấm ô tô hai đầu cầu); khôi phục từ 28/5/2026 theo thông báo Sở Xây dựng",
+      "source": "https://vov.vn/tin-24h/bat-chap-bien-cam-o-to-ngang-nhien-di-vao-cau-long-bien-1063326.vov https://nhandan.vn/khoi-phuc-phuong-an-to-chuc-giao-thong-tren-cau-long-bien-tu-285-post964788.html",
+      "valid_from": null,
+      "valid_to": null,
+      "note": "Phần đường bộ cầu Long Biên chỉ cho xe máy, xe thô sơ, người đi bộ; hai đầu cầu có biển cấm ô tô (VOV 2020). Từ 28/3 đến 27/5/2026 cấm toàn bộ phương tiện để sửa chữa; từ 0h 28/5/2026 khôi phục phương án cũ cho xe máy, xe thô sơ, người đi bộ (không nhắc ô tô). OSM nhiều khả năng đã có motor_vehicle=no.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "scope": {
+          "names": ["Cầu Long Biên"],
+          "bbox": [105.848, 21.035, 105.872, 21.05]
+        }
+      }
+    },
+    {
+      "id": "hn_cau_chuong_duong_gt05t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Thông báo hạn chế phương tiện qua cầu Chương Dương của Sở GTVT Hà Nội từ 8h30 ngày 10/9/2024 (bão Yagi), duy trì theo thông báo tháng 2/2025",
+      "source": "https://baodauthau.vn/ha-noi-dieu-chinh-to-chuc-giao-thong-qua-cau-chuong-duong-post174680.html",
+      "valid_from": "2024-09-10",
+      "valid_to": null,
+      "note": "Cấm xe tải có tải trọng trên 0,5 t (và xe khách, xe hợp đồng, xe du lịch trên 9 chỗ) qua cầu Chương Dương cả hai chiều, 'cho đến khi có thông báo thay thế'; thông báo 28/2/2025 vẫn duy trì cấm xe tải trên 0,5 t. Không tìm được tin năm 2026 xác nhận còn hay đã bỏ, nên để Thấp. Ngưỡng ghi là 'tải trọng' nên dùng payload_t. Cầu nằm trong vùng QĐ 01, nên phần tăng thêm là cấm ban đêm cho xe ≥2 t và cấm cả ngày cho xe nhỏ.",
+      "body": {
+        "vehicle": {"payload_t": [">", 0.5]},
+        "action": "close",
+        "scope": {
+          "names": ["Cầu Chương Dương"],
+          "bbox": [105.85, 21.025, 105.88, 21.045]
+        }
+      }
+    },
+    {
+      "id": "hn_lez_kv1_weekend_evening",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Đề án Vùng phát thải thấp trong Vành đai 1, phê duyệt bởi QĐ 3273/QĐ-UBND (2026); NQ 57/2025/NQ-HĐND",
+      "source": "https://tuoitre.vn/ha-noi-cong-bo-de-an-vung-phat-thai-thap-ap-dung-tu-ngay-1-7-100260630153418275.htm https://viettimes.vn/tu-17-phuong-tien-nao-duoc-di-vao-vung-phat-thai-thap-o-ha-noi-post202088.html https://danviet.vn/ha-noi-thong-qua-de-an-vung-phat-thai-thap-trong-vanh-dai-1-chi-han-che-phuong-tien-theo-khung-gio-tu-1-7-31-122026-d1435222.html",
+      "valid_from": "2026-07-01",
+      "valid_to": "2026-12-31",
+      "note": "Giai đoạn 1 vùng phát thải thấp (1/7–31/12/2026), khu vực 1 (khu đi bộ quanh hồ Hoàn Kiếm và chợ đêm, phường Hoàn Kiếm): cấm mọi xe cơ giới 19h–24h thứ Sáu, thứ Bảy, Chủ nhật (trừ xe ưu tiên). Có thứ Sáu nên liệt kê 'weekday' (bảo thủ: rule cũng cấm Thứ Hai–Thứ Năm). Danh sách 12 tuyến lấy từ VietTimes (ghi nguồn 'dự thảo đề án'): Tràng Tiền, Hàng Khay, Lê Thái Tổ, Hàng Đào, Hàng Ngang, Hàng Buồm, Mã Mây, Hàng Bạc, Hàng Mắm, Nguyễn Hữu Huân, Lý Thái Tổ, Ngô Quyền; ranh giới chính thức nằm trên bản đồ kèm QĐ 3273 mà chưa đọc được, nên để Thấp. Quy định xe tải giai đoạn 1 trong khu vực 1, 2 giống QĐ 01 (dưới 2 t ngoài giờ cao điểm; từ 2 t: 21h–6h), không mã hóa lại.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["19:00", "24:00"]]},
+        "scope": {
+          "names": ["Tràng Tiền", "Hàng Khay", "Lê Thái Tổ", "Hàng Đào", "Hàng Ngang", "Hàng Buồm", "Mã Mây", "Hàng Bạc", "Hàng Mắm", "Nguyễn Hữu Huân", "Lý Thái Tổ", "Ngô Quyền"],
+          "bbox": [105.844, 21.020, 105.862, 21.040]
+        }
+      }
+    }
+  ],
+  "unresolved": [
+    {"place": "Vùng hạn chế QĐ 01/2026 (Hà Nội)", "what": "Văn bản chấp thuận cho xe hoạt động ngoài khung giờ: xe <2 t trong giờ cao điểm và xe 2–<10 t ngoài 21h–6h do Công an TP chấp thuận; xe ≥10 t, xe chuyên dùng do Sở Xây dựng chấp thuận theo lộ trình cụ thể", "why": "Giấy phép theo từng xe, từng lộ trình; không phải quy tắc mạng lưới", "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-52-2026-qd-ubnd-ha-noi-sua-doi-bo-sung-quyet-dinh-01-2026-qd-ubnd-ve-giao-thong-duong-bo-433443-d1.html"},
+    {"place": "Vùng hạn chế QĐ 01/2026 (Hà Nội)", "what": "Ô tô tải chuyên dùng, ô tô chuyên dùng (xi téc xăng dầu/khí, chở xe, chở bùn, chở thủy hải sản sống, trộn/bơm bê tông, trộn vữa, quét đường, hút chất thải, cần cẩu, thang, khoan, kéo xe và tương tự) chỉ chạy 21h–6h bất kể khối lượng; xe tưới cây, bán hàng lưu động, nâng người, kiểm tra cầu cống: ngoài giờ cao điểm; xe chở rác: 19h30–6h; xe sự cố hạ tầng, cứu hộ, hút bùn: 24/24 khi có chấp thuận", "why": "Thuộc tính kind không có các loại xe chuyên dùng này; xe chuyên dùng ≥2 t đã bị rule hn_zone_ge2t_day bao, nhưng xe chuyên dùng <2 t thì chưa", "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-52-2026-qd-ubnd-ha-noi-sua-doi-bo-sung-quyet-dinh-01-2026-qd-ubnd-ve-giao-thong-duong-bo-433443-d1.html"},
+    {"place": "Vùng hạn chế QĐ 01/2026 (Hà Nội)", "what": "Đầu kéo, container (sơ mi rơ moóc) không được nêu tên trong QĐ 01/52; TT 53/2024 xếp ô tô đầu kéo riêng, không thuộc 'ô tô tải'", "why": "Không rõ đầu kéo bị cấm theo Điều 5 hay không; đã mã hóa theo khối lượng toàn bộ (cấm 6h–21h), cần hỏi Sở Xây dựng", "source": "https://hethongphapluat.com/circular-no-53-2024-tt-bgtvt-dated-november-15-2024-on-classification-of-road-vehicles-and-signs-for-recognition-of-motorized-vehicles-using-clean-green-fuel-and-eco-friendly-motorized-vehicles.html"},
+    {"place": "Vùng hạn chế QĐ 01/2026 (Hà Nội)", "what": "Xe tải VAN (và pickup cabin kép) khối lượng toàn bộ ≤3,5 t: NĐ 241/2026 (từ 1/7/2026) cho tổ chức giao thông như ô tô con, trừ khi địa phương có hạn chế riêng", "why": "Chưa có văn bản Hà Nội nói van ≤3,5 t có được chạy như xe con trong vùng không; rule hiện vẫn tính van là xe tải", "source": "https://nguoiquansat.vn/nhung-nguoi-di-xe-ban-tai-can-chu-y-thong-bao-quan-trong-nay-305687.html"},
+    {"place": "Vùng hạn chế QĐ 01/2026 (Hà Nội)", "what": "Vị trí các tuyến được đi Thanh Lâm, CN3, CN4, CN5 (QĐ 52/2026 bổ sung)", "why": "Văn bản không nêu phường hay khu công nghiệp; chưa xác định trên bản đồ", "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-52-2026-qd-ubnd-ha-noi-sua-doi-bo-sung-quyet-dinh-01-2026-qd-ubnd-ve-giao-thong-duong-bo-433443-d1.html"},
+    {"place": "Hồ Tùng Mậu, Đại lộ Thăng Long hướng lên Vành đai 3 trên cao", "what": "Thí điểm cấm xe ≥10 t, container, đầu kéo giờ cao điểm 1/1–31/3/2026: không tìm được tin gia hạn, chính thức hóa hay chấm dứt; cấm chỉ một chiều", "why": "Trạng thái sau 31/3/2026 chưa rõ; định dạng không có hướng", "source": "https://media.chinhphu.vn/tu-1-1-2026-han-che-xe-tai-luu-thong-huong-vao-vanh-dai-3-gio-cao-diem-102251224153349936.htm"},
+    {"place": "Vùng phát thải thấp Vành đai 1 (Hà Nội)", "what": "NQ 57/2025/NQ-HĐND Điều 11: từ 1/7/2026 đến 31/12/2027 cấm xe tải khối lượng toàn bộ trên 3.500 kg dùng nhiên liệu hóa thạch trong 9 phường (Hai Bà Trưng, Cửa Nam, Hoàn Kiếm, Ô Chợ Dừa, Văn Miếu - Quốc Tử Giám, Ba Đình, Giảng Võ, Ngọc Hà, Tây Hồ); nhưng Đề án (QĐ 3273/QĐ-UBND) thu hẹp giai đoạn 1 về khu vực 1, 2 phường Hoàn Kiếm và vẫn cho xe >3,5 t chạy 21h–6h. Từ 2027 (giai đoạn 2, khu vực 1–3 Hoàn Kiếm, Cửa Nam): cấm hoàn toàn xe tải >3,5 t", "why": "Hai nguồn mâu thuẫn cho năm 2026; chưa đọc được QĐ 3273 và bản đồ ranh giới; không có thuộc tính nhiên liệu", "source": "https://thuvienphapluat.vn/chinh-sach-phap-luat-moi/vn/ho-tro-phap-luat/chinh-sach-moi/107904/tu-01-7-2026-thi-diem-vung-phat-thai-thap-han-che-xe-xang-vao-vanh-dai-1-tai-ha-noi https://tuoitre.vn/ha-noi-cong-bo-de-an-vung-phat-thai-thap-ap-dung-tu-ngay-1-7-100260630153418275.htm"},
+    {"place": "Cầu Thăng Long", "what": "Từ 22/10 đến 15/12/2026, 22h–5h: rào nửa mặt đường mỗi chiều để sửa khe co giãn, thảm hai đầu cầu; xe đi chậm qua phần còn lại", "why": "Không cấm theo loại xe, chỉ giảm làn; không có rule cấm", "source": "https://vovgiaothong.vn/newsaudio/ban-tin-nha-chuc-trach-thong-bao-ngay-20-10-d56153.html"},
+    {"place": "Cầu Thăng Long", "what": "Từ 16/10 đến 10/11/2026, 5h–22h: mọi ô tô không được rẽ phải từ đường gom phía Bắc (trước cổng B KCN Thăng Long) lên cầu", "why": "Cấm lượt rẽ; định dạng không mã hóa lượt rẽ", "source": "https://hanoionline.vn/dieu-chinh-phan-luong-giao-thong-qua-cau-thang-long-tu-ngay-16-10-2462610160935084.htm"},
+    {"place": "Hầm chui, cầu vượt, cầu nhỏ ở Hà Nội", "what": "Giới hạn chiều cao, tải trọng cầu theo biển báo", "why": "Không có văn bản tập trung; dùng thẻ OSM maxheight, maxweight", "source": "biển báo tại hiện trường, không có văn bản tập trung"},
+    {"place": "Cầu Đuống (QL1B/QL1 cũ, Hà Nội)", "what": "Cầu mới dự kiến thông xe giữa tháng 9/2026, cầu cũ chuẩn bị tháo dỡ", "why": "Không tìm được phương án tổ chức giao thông hay hạn chế xe tải cho cầu mới", "source": "https://cafef.vn/sap-hop-long-cau-duong-moi-chuan-bi-thong-xe-sau-khoang-3-nam-thi-cong-188260804135710501.chn"},
+    {"place": "Toàn TP Hà Nội", "what": "Xe quá tải trọng, quá khổ, bánh xích, hàng siêu trường siêu trọng: chạy theo giấy phép lưu hành của Sở Xây dựng (Điều 24 TT 12/2025/TT-BXD)", "why": "Giấy phép theo từng chuyến", "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-01-2026-qd-ubnd-ha-noi-quy-dinh-hoat-dong-phuong-tien-giao-thong-duong-bo-423081-d1.html"},
+    {"place": "Toàn TP Hà Nội", "what": "Không tìm thấy quyết định riêng về giờ hoạt động xe chở vật liệu xây dựng, phế thải rời (khoản 4 Điều 44 Luật TTATGTĐB) như các tỉnh khác", "why": "Có thể chưa ban hành hoặc nằm trong văn bản khác; xe chở vật liệu là ô tô tải nên đã thuộc QĐ 01/52", "source": "https://luatvietnam.vn/giao-thong/quyet-dinh-01-2026-qd-ubnd-ha-noi-quy-dinh-hoat-dong-phuong-tien-giao-thong-duong-bo-423081-d1.html"}
+  ]
+}

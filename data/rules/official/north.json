@@ -1,0 +1,397 @@
+{
+  "area": "north",
+  "researched_at": "2026-10-21",
+  "rules": [
+    {
+      "id": "hp_kv1_tai_nho_ban_ngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "QĐ 11/2026/QĐ-UBND TP Hải Phòng (Quy định kèm theo, Điều 3 khoản 4 điểm a; Điều 6 khoản 1 điểm b)",
+      "source": "https://cdn.haiphong.gov.vn/gov-hpg/6326/tintuc/2026/2/2026-02-10-14-.signed639064815851805463.pdf https://sokhcn.haiphong.gov.vn/van-ban-quy-pham-phap-luat/quyet-dinh-so-11-2026-qd-ubnd-ngay-10-2-2026-cua-uy-ban-nhan-dan-thanh-pho-hai-phong-ban-hanh-qu-858589",
+      "valid_from": "2026-02-23",
+      "valid_to": null,
+      "note": "Đã đọc toàn văn (bản scan có dấu). Điều 6.1.b: xe ô tô chở hàng có khối lượng hàng hóa chuyên chở đến 1,5 tấn 'chỉ được phép hoạt động trên các tuyến đường giới hạn trong khu vực trung tâm thành phố từ 20 giờ 00 đến 06 giờ 00'. Văn bản không liệt kê 'tuyến đường giới hạn' (Điều 3.5 định nghĩa là tuyến hạn chế theo biển báo). Ở đây chọn cách đọc chặt hơn: áp cho mọi đường bên trong Khu vực 1. Đường bao không thuộc vùng. Pickup cabin kép và van được loại theo NĐ 241/2026. Lịch sử: từ 2017 Hải Phòng đã cắm biển cấm xe 0,5–1,5 t 6h–20h trên phố nội thành (logistics.gov.vn), nên cách đọc này khớp thực tế. Cần Sở Xây dựng xác nhận. Task 9 (đối chiếu OSM 2026-10-22): thêm 'Liên Phương' (nối đầu đông Bùi Viện với Đặng Kinh, OSM hở 440 m) và 'Cầu Niệm' (nối Trường Chinh với Nguyễn Văn Linh, hở 156 m) vào ranh giới; bỏ 'Đình Vũ' và 'Nguyễn Trường Tộ' vì trong OSM chúng nằm ngoài vòng ranh giới đã khép (Đình Vũ ở phía đông nút Chùa Vẽ - Đặng Kinh, Nguyễn Trường Tộ ở phía tây nam cầu Lãm Khê) và không giáp vùng. Vùng dựng được 33,9 km².",
+      "body": {
+        "vehicle": {"payload_t": ["<=", 1.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "20:00"]]},
+        "scope": {
+          "zone": {
+            "boundary_names": ["Hùng Vương", "Bạch Đằng", "Nguyễn Tri Phương", "Hoàng Diệu", "Lê Thánh Tông", "Chùa Vẽ", "Đặng Kinh", "Liên Phương", "Bùi Viện", "Cầu Lãm Khê", "Trường Chinh", "Cầu Niệm", "Nguyễn Văn Linh", "Tôn Đức Thắng"],
+            "seed": [20.836, 106.700],
+            "area_km2": [20, 150]
+          },
+          "bbox": [106.64, 20.79, 106.81, 20.88]
+        }
+      }
+    },
+    {
+      "id": "hp_kv1_tai_lon_ban_ngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "QĐ 11/2026/QĐ-UBND TP Hải Phòng (Điều 6 khoản 1 điểm a, b; suy luận)",
+      "source": "https://cdn.haiphong.gov.vn/gov-hpg/6326/tintuc/2026/2/2026-02-10-14-.signed639064815851805463.pdf https://logistics.gov.vn/chinh-sach/hai-phong-quy-dinh-moi-ve-phan-luong-xe-tai-xe-khach",
+      "valid_from": "2026-02-23",
+      "valid_to": null,
+      "note": "Suy luận, không phải câu chữ trực tiếp. Điều 6.1.a chỉ nói xe chở hàng 'hạn chế lưu thông trên đường đô thị vào các khung giờ' cao điểm (6h–8h, 11h30–12h30, 16h30–18h30) và ban đêm (22h–6h), trên các tuyến hạn chế theo biển. Văn bản không nói gì riêng cho xe trên 1,5 t ở khu trung tâm. Xe lớn không thể được ưu đãi hơn xe ≤1,5 t, nên ở đây áp tối thiểu cùng khung cấm 6h–20h trong Khu vực 1. Thực tế cắm biển (phương án 2017) chỉ cho xe tải đi trên một danh sách trục được phép, có ngưỡng 3,5 t / 7,5 t; danh sách này chưa xác nhận còn hiệu lực nên không đưa vào exempt. Mặc định tắt (thap). Task 9 (đối chiếu OSM 2026-10-22): thêm 'Liên Phương' (nối đầu đông Bùi Viện với Đặng Kinh, OSM hở 440 m) và 'Cầu Niệm' (nối Trường Chinh với Nguyễn Văn Linh, hở 156 m) vào ranh giới; bỏ 'Đình Vũ' và 'Nguyễn Trường Tộ' vì trong OSM chúng nằm ngoài vòng ranh giới đã khép (Đình Vũ ở phía đông nút Chùa Vẽ - Đặng Kinh, Nguyễn Trường Tộ ở phía tây nam cầu Lãm Khê) và không giáp vùng. Vùng dựng được 33,9 km².",
+      "body": {
+        "vehicle": {"payload_t": [">", 1.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "20:00"]]},
+        "scope": {
+          "zone": {
+            "boundary_names": ["Hùng Vương", "Bạch Đằng", "Nguyễn Tri Phương", "Hoàng Diệu", "Lê Thánh Tông", "Chùa Vẽ", "Đặng Kinh", "Liên Phương", "Bùi Viện", "Cầu Lãm Khê", "Trường Chinh", "Cầu Niệm", "Nguyễn Văn Linh", "Tôn Đức Thắng"],
+            "seed": [20.836, 106.700],
+            "area_km2": [20, 150]
+          },
+          "bbox": [106.64, 20.79, 106.81, 20.88]
+        }
+      }
+    },
+    {
+      "id": "hp_kv2_tai_nho_ban_ngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "QĐ 11/2026/QĐ-UBND TP Hải Phòng (Quy định kèm theo, Điều 3 khoản 4 điểm b; Điều 6 khoản 1 điểm b)",
+      "source": "https://cdn.haiphong.gov.vn/gov-hpg/6326/tintuc/2026/2/2026-02-10-14-.signed639064815851805463.pdf",
+      "valid_from": "2026-02-23",
+      "valid_to": null,
+      "note": "Khu vực 2 (Hải Dương cũ): bao bởi Võ Nguyên Giáp (từ cầu Lộ Cương qua sông Bắc Hưng Hải), đường gom An Định, Thanh Niên, Lê Thanh Nghị (đến nút giao Ngô Quyền) và sông Bắc Hưng Hải; gồm các phường Tứ Minh, Thành Đông, Hải Dương, Lê Thanh Nghị, Thạch Khôi. Trong OSM đoạn sông này mang tên 'Sông Sặt' (không có tên 'Bắc Hưng Hải'), đường gom An Định mang tên 'Đường An Định'; cầu Lộ Cương chưa có tên trong OSM. Cách đọc và lý do giống hp_kv1_tai_nho_ban_ngay. Seed là điểm ước lượng quanh đường Thanh Bình, cần kiểm tra khi dựng đa giác. Task 9 (đối chiếu OSM 2026-10-22): tên OSM là 'Đại lộ Võ Nguyên Giáp' và 'Đại lộ Lê Thanh Nghị'. Vùng dựng được 11,1 km².",
+      "body": {
+        "vehicle": {"payload_t": ["<=", 1.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "20:00"]]},
+        "scope": {
+          "zone": {
+            "boundary_names": ["Đại lộ Võ Nguyên Giáp", "An Định", "Thanh Niên", "Đại lộ Lê Thanh Nghị", "Sông Sặt"],
+            "seed": [20.928, 106.305],
+            "area_km2": [4, 45]
+          },
+          "bbox": [106.285, 20.895, 106.35, 20.955]
+        }
+      }
+    },
+    {
+      "id": "hp_kv2_tai_lon_ban_ngay",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "QĐ 11/2026/QĐ-UBND TP Hải Phòng (Điều 6 khoản 1 điểm a, b; suy luận)",
+      "source": "https://cdn.haiphong.gov.vn/gov-hpg/6326/tintuc/2026/2/2026-02-10-14-.signed639064815851805463.pdf",
+      "valid_from": "2026-02-23",
+      "valid_to": null,
+      "note": "Suy luận giống hp_kv1_tai_lon_ban_ngay, áp cho Khu vực 2 (Hải Dương cũ). Văn bản không nói rõ xe trên 1,5 t trong khu trung tâm. Mặc định tắt. Task 9 (đối chiếu OSM 2026-10-22): tên OSM là 'Đại lộ Võ Nguyên Giáp' và 'Đại lộ Lê Thanh Nghị'. Vùng dựng được 11,1 km².",
+      "body": {
+        "vehicle": {"payload_t": [">", 1.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "20:00"]]},
+        "scope": {
+          "zone": {
+            "boundary_names": ["Đại lộ Võ Nguyên Giáp", "An Định", "Thanh Niên", "Đại lộ Lê Thanh Nghị", "Sông Sặt"],
+            "seed": [20.928, 106.305],
+            "area_km2": [4, 45]
+          },
+          "bbox": [106.285, 20.895, 106.35, 20.955]
+        }
+      }
+    },
+    {
+      "id": "hp_dt390_4truc_gio_cao_diem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Phương án điều chỉnh tổ chức giao thông đường 390 của Sở Xây dựng Hải Phòng (số văn bản không nêu trong bài)",
+      "source": "https://baohaiphong.vn/han-che-xe-tai-tu-4-truc-tro-len-tren-duong-390-tu-ngay-15-10-555724.html",
+      "valid_from": "2026-10-15",
+      "valid_to": null,
+      "note": "Xe tải từ 4 trục trở lên cấm 6h–8h và 17h–19h hằng ngày, Km15+100 – Km35+280 (các xã, phường Ái Quốc, Hà Tây, Thanh Hà, Hà Đông). Chỉ cấm CHIỀU từ QL5 đi cầu Quang Thanh; chiều ngược lại giữ nguyên. Định dạng không mã hóa được chiều đi nên ở đây cấm cả hai chiều (chặt hơn). Mốc Km15+100 và Km35+280 không có trong OSM nên lấy cả đoạn QL5 – cầu Quang Thanh. Bài không nêu ngày kết thúc. Task 9 (đối chiếu OSM 2026-10-22): cầu Quang Thanh mang ref 'ĐT.360;ĐT.390' nên thuộc chính tuyến, không phải đường giao; ĐT.390 trong OSM đứt khoảng 100 m ở phía nam nút Ba Hàng (QL5). Dùng một đầu 'to' Tỉnh lộ 360 (đường nối sau cầu): đoạn chạy từ chỗ đứt gần QL5 tới hết cầu Quang Thanh (22,2 km); khoảng 360 m từ nút QL5 tới chỗ đứt chưa phủ.",
+      "body": {
+        "vehicle": {"axles": [">=", 4]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "08:00"], ["17:00", "19:00"]]},
+        "scope": {
+          "routes": [{"ref": "ĐT.390", "to": "Tỉnh lộ 360"}],
+          "bbox": [106.32, 20.825, 106.505, 21.0]
+        }
+      }
+    },
+    {
+      "id": "hp_cau_niem_so_mi_ro_mooc",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo của Sở Xây dựng Hải Phòng về cấm xe sơ mi rơ moóc qua cầu Niệm (số văn bản không nêu trong bài)",
+      "source": "https://baohaiphong.vn/hai-phong-cam-xe-so-mi-ro-mooc-qua-cau-niem-tu-toi-14-10-555789.html",
+      "valid_from": "2026-10-14",
+      "valid_to": null,
+      "note": "Cấm xe sơ mi rơ moóc qua cầu Niệm (phường Kiến An, An Biên) từ 20h ngày 14/10/2026, trong thời gian kiểm định sau sự cố ngày 13/10. Tạm thời, chưa có ngày kết thúc; cần kiểm tra lại. Bài không nêu ngưỡng tải trọng. 'tractor' được hiểu là đầu kéo kéo sơ mi rơ moóc.",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor"]]},
+        "action": "close",
+        "scope": {
+          "names": ["Cầu Niệm"],
+          "bbox": [106.660, 20.834, 106.670, 20.842]
+        }
+      }
+    },
+    {
+      "id": "hp_bui_thi_tu_nhien_tren_2_5t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo 417/TB-SXD ngày 09/10/2025 của Sở Xây dựng Hải Phòng",
+      "source": "https://thuviennhadat.vn/bat-dong-san/khung-gio-cam-tai-cam-oto-duong-bui-thi-tu-nhien-phuong-dong-hai-hai-phong-tu-ngay-13-10-2025-25251.html",
+      "valid_from": "2025-10-13",
+      "valid_to": null,
+      "note": "Xe tải có khối lượng chuyên chở trên 2,5 t (theo giấy chứng nhận kiểm định) cấm cả hai chiều trên đường Bùi Thị Từ Nhiên (phường Đông Hải). Ngoài ra chiều Phủ Thượng Đoạn → Phương Lưu cấm mọi ô tô 6h–8h và 16h30–18h30 (không mã hóa riêng). Nguồn là trang tổng hợp dẫn thông báo, chưa đọc bản gốc.",
+      "body": {
+        "vehicle": {"payload_t": [">", 2.5]},
+        "action": "close",
+        "scope": {
+          "names": ["Bùi Thị Từ Nhiên"],
+          "bbox": [106.712, 20.847, 106.728, 20.861]
+        }
+      }
+    },
+    {
+      "id": "qn_bao_bien_ha_long_cam_pha_tren_3_5t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Công văn của Văn phòng UBND tỉnh Quảng Ninh chấp thuận phương án của Sở GTVT (số không nêu), 6/2023",
+      "source": "https://thuonghieucongluan.com.vn/quang-ninh-cam-xe-tai-tren-3-5-tan-luu-thong-o-duong-bao-bien-a195821.html",
+      "valid_from": "2023-06-23",
+      "valid_to": null,
+      "note": "Cấm xe có 'tải trọng trên 3,5 tấn' trên đường bao biển Hạ Long – Cẩm Phả và đường Trần Quốc Nghiễn; có đề xuất cắm biển trên các đường nhánh dẫn vào (không mã hóa). Văn bản không nói tải trọng là khối lượng toàn bộ hay chuyên chở; chọn khối lượng toàn bộ (chặt hơn). Trong OSM đoạn bao biển phía Hạ Long mang tên 'Trần Quốc Nghiễn'; đoạn phía Cẩm Phả có thể chưa có tên nên tên thứ hai có thể không khớp. Tin năm 2023, chưa thấy văn bản thay thế; biển báo OSM (hgv, maxweight) nên được dùng để kiểm chứng. Task 9 (đối chiếu OSM 2026-10-22): không có đường nào trong OSM mang tên 'Đường bao biển Hạ Long - Cẩm Phả' trong bbox nên bỏ tên này; chỉ còn Trần Quốc Nghiễn (đoạn phía Hạ Long).",
+      "body": {
+        "vehicle": {"gross_t": [">", 3.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "names": ["Trần Quốc Nghiễn"],
+          "bbox": [107.06, 20.93, 107.29, 21.02]
+        }
+      }
+    },
+    {
+      "id": "lc_sa_pa_31_tuyen_tren_10t_chu_nhat",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "QĐ 2288/QĐ-UBND ngày 01/08/2022 của UBND thị xã Sa Pa (phương án tổ chức giao thông khu vực nội thị)",
+      "source": "https://baolaocai.vn/tu-218-thi-xa-sa-pa-cam-xe-khach-xe-tai-luu-thong-tren-31-tuyen-duong-post359590.html",
+      "valid_from": "2022-08-21",
+      "valid_to": null,
+      "note": "Xe tải khối lượng chuyên chở trên 10 t cấm trên 31 tuyến nội thị Sa Pa: Chủ nhật đến thứ Năm 6h–23h; thứ Sáu, thứ Bảy cả ngày. Quy tắc này mã hóa phần Chủ nhật (06:00–23:00); phần thứ Hai–thứ Năm và thứ Sáu, thứ Bảy nằm ở lc_sa_pa_31_tuyen_tren_10t_cuoi_tuan. Văn bản cấp thị xã năm 2022; thị xã Sa Pa đã giải thể khi sắp xếp 7/2025 (nay là phường Sa Pa), chưa rõ còn áp dụng. Tên trong OSM: 'Phan Si Păng' là 'Đường Fansipan', 'Vi Ô Lét' là 'Đường Violet'; 'Nguyễn Chí Thanh' (đoạn từ Thác Bạc đến ga cáp treo Fansipan), 'Nguyễn Viết Xuân', 'Bế Văn Đàn' và 2 nhánh nối không có tên trong OSM.",
+      "body": {
+        "vehicle": {"payload_t": [">", 10]},
+        "action": "close",
+        "when": {"daytypes": ["sun"], "times": [["06:00", "23:00"]]},
+        "scope": {
+          "names": ["Thạch Sơn", "Ngũ Chỉ Sơn", "Hàm Rồng", "Phạm Xuân Huân", "Phan Si Păng", "Fansipan", "Đồng Lợi", "Cầu Mây", "Phố Mường Hoa", "Vi Ô Lét", "Violet", "Hoàng Liên", "Thác Bạc", "Phố Thác Bạc", "Sở Than", "Nguyễn Chí Thanh", "Hoàng Diệu", "Lê Quý Đôn", "Lê Hồng Phong", "Xuân Viên", "Xuân Hồ", "Thủ Dầu Một", "Hoàng Văn Thụ", "Lê Văn Tám", "Nguyễn Văn Trỗi", "Võ Thị Sáu", "Kim Đồng", "Lương Định Của", "Nguyễn Viết Xuân", "Bế Văn Đàn", "Phố Điện Biên"],
+          "bbox": [103.834, 22.326, 103.856, 22.342]
+        }
+      }
+    },
+    {
+      "id": "lc_sa_pa_31_tuyen_tren_10t_cuoi_tuan",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "QĐ 2288/QĐ-UBND ngày 01/08/2022 của UBND thị xã Sa Pa (phương án tổ chức giao thông khu vực nội thị)",
+      "source": "https://baolaocai.vn/tu-218-thi-xa-sa-pa-cam-xe-khach-xe-tai-luu-thong-tren-31-tuyen-duong-post359590.html",
+      "valid_from": "2022-08-21",
+      "valid_to": null,
+      "note": "Phần cả ngày thứ Sáu, thứ Bảy. Theo quy ước của RULE_FORMAT, ngày thường được ghi là 'weekday' (chặt hơn): như vậy thứ Hai–thứ Năm cũng bị cấm cả ngày thay vì chỉ 6h–23h. Đây là nới chặt có chủ ý; ảnh hưởng nhỏ vì chỉ áp cho xe trên 10 t trong nội thị Sa Pa. Xem thêm ghi chú của lc_sa_pa_31_tuyen_tren_10t_chu_nhat.",
+      "body": {
+        "vehicle": {"payload_t": [">", 10]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat"]},
+        "scope": {
+          "names": ["Thạch Sơn", "Ngũ Chỉ Sơn", "Hàm Rồng", "Phạm Xuân Huân", "Phan Si Păng", "Fansipan", "Đồng Lợi", "Cầu Mây", "Phố Mường Hoa", "Vi Ô Lét", "Violet", "Hoàng Liên", "Thác Bạc", "Phố Thác Bạc", "Sở Than", "Nguyễn Chí Thanh", "Hoàng Diệu", "Lê Quý Đôn", "Lê Hồng Phong", "Xuân Viên", "Xuân Hồ", "Thủ Dầu Một", "Hoàng Văn Thụ", "Lê Văn Tám", "Nguyễn Văn Trỗi", "Võ Thị Sáu", "Kim Đồng", "Lương Định Của", "Nguyễn Viết Xuân", "Bế Văn Đàn", "Phố Điện Biên"],
+          "bbox": [103.834, 22.326, 103.856, 22.342]
+        }
+      }
+    },
+    {
+      "id": "tn_trung_tam_tren_5t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Phương án điều chỉnh biển báo, phân luồng TP Thái Nguyên được UBND tỉnh Thái Nguyên đồng ý (12/2021; số văn bản không nêu)",
+      "source": "https://baothainguyen.vn/thoi-su-trong-tinh/202112/tp-thai-nguyen-cam-xe-o-to-tai-luu-thong-tai-mot-so-tuyen-duong-36784C3/",
+      "valid_from": "2021-12-30",
+      "valid_to": null,
+      "note": "Cấm ô tô tải 'trên 5 tấn' trên Hùng Vương, Nguyễn Du, Nha Trang, phố 19-8 (TP Thái Nguyên cũ). Không rõ khối lượng toàn bộ hay chuyên chở; chọn khối lượng toàn bộ (chặt hơn). Không có điểm đầu, điểm cuối; lấy cả tuyến trong bbox trung tâm. Tin năm 2021, chưa xác nhận còn hiệu lực sau khi sáp nhập tỉnh (7/2025).",
+      "body": {
+        "vehicle": {"gross_t": [">", 5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "names": ["Hùng Vương", "Nguyễn Du", "Nha Trang", "Phố 19 Tháng 8"],
+          "bbox": [105.836, 21.589, 105.849, 21.600]
+        }
+      }
+    },
+    {
+      "id": "tn_doi_can_tren_5t_gio_cao_diem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Phương án điều chỉnh biển báo, phân luồng TP Thái Nguyên được UBND tỉnh Thái Nguyên đồng ý (12/2021; số văn bản không nêu)",
+      "source": "https://baothainguyen.vn/thoi-su-trong-tinh/202112/tp-thai-nguyen-cam-xe-o-to-tai-luu-thong-tai-mot-so-tuyen-duong-36784C3/",
+      "valid_from": "2021-12-30",
+      "valid_to": null,
+      "note": "Đường Đội Cấn: cấm ô tô tải trên 5 t 6h30–8h30 và 16h–19h. Cùng nguồn và cùng hạn chế như tn_trung_tam_tren_5t.",
+      "body": {
+        "vehicle": {"gross_t": [">", 5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:30", "08:30"], ["16:00", "19:00"]]},
+        "scope": {
+          "names": ["Đội Cấn"],
+          "bbox": [105.836, 21.594, 105.845, 21.600]
+        }
+      }
+    },
+    {
+      "id": "bn_bac_giang_phu_luc1_tren_2_5t_gio_cao_diem",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "QĐ 516/2014/QĐ-UBND tỉnh Bắc Giang (Phụ lục I), sửa bởi QĐ 38/2021/QĐ-UBND",
+      "source": "https://caselaw.vn/van-ban-phap-luat/162605-quyet-dinh-so-516-2014-qd-ubnd-ngay-15-08-2014-ve-quan-ly-trat-tu-giao-thong-tren-dia-ban-thanh-pho-bac-giang-tinh-bac-giang https://caselaw.vn/van-ban-phap-luat/398454-quyet-dinh-so-38-2021-qd-ubnd-ngay-17-08-2021-cua-tinh-bac-giang-sua-doi-bo-sung-mot-so-dieu-cua-quy-dinh-quan-ly-trat-tu-giao-thong-tren-dia-ban-thanh-pho-bac-giang-va-phu-luc-i-kem-theo-quyet-dinh-516-2014-qd-ubnd",
+      "valid_from": "2021-09-01",
+      "valid_to": null,
+      "note": "Khu TP Bắc Giang cũ (nay thuộc tỉnh Bắc Ninh; các phường mới quanh Bắc Giang). Xe tải trên 2,5 t cấm 6h–8h và 16h30–19h30 trên các tuyến Phụ lục I; QĐ 38/2021 bổ sung 8 tuyến (Xương Giang 4, Yết Kiêu, Lê Lai, Đồng Cửa, Bàng Bá Lân, Lý Tự Trọng 6, Vi Đức Thăng, Quách Nhẫn 4). Trần Nguyên Hãn chuyển sang Phụ lục II từ 1/1/2015 nên không đưa vào đây. Văn bản dùng 'trọng lượng'/'tải trọng', không rõ toàn bộ hay chuyên chở; chọn khối lượng toàn bộ (chặt hơn). Caselaw ghi 'Đang có hiệu lực'; không có trong danh mục văn bản hết hiệu lực từ 1/6/2026 (QĐ 763/QĐ-UBND); QĐ 06/2026 của Bắc Ninh chỉ bãi bỏ QĐ 50/2024 của Bắc Ninh cũ. Vẫn có rủi ro đã bị thay thế sau sắp xếp. Đọc qua caselaw (bản tóm tắt tự động của trang), chưa đọc bản PDF gốc. Tên 'Võ Thị Sáu', 'Tiền Giang', 'Châu Xuyên', 'Tân Ninh', 'Đàm Thuận Huy', 'Phùng Trạm', 'Nguyễn Duy Năng', 'Phạm Liêu' chưa thấy trong OSM. Task 9 (đối chiếu OSM 2026-10-22): bỏ 8 tên không có trong OSM (Võ Thị Sáu, Tiền Giang, Châu Xuyên, Tân Ninh, Đàm Thuận Huy, Phùng Trạm, Nguyễn Duy Năng, Phạm Liêu). Hùng Vương (Quốc lộ 1 - Huyền Quang): QL1 cách Hùng Vương hơn 3 km trong bbox nên dùng toàn bộ Hùng Vương trong bbox; phần Huyền Quang - Xương Giang dư ra đã bị cấm cả ngày cho cùng loại xe ở bn_bac_giang_phu_luc2. Lê Lợi: OSM kết thúc cách Đồng Cửa 130 m, tại nút Lý Thái Tổ / Cô Bắc, nên 'from' đổi thành Lý Thái Tổ.",
+      "body": {
+        "vehicle": {"gross_t": [">", 2.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "08:00"], ["16:30", "19:30"]]},
+        "scope": {
+          "routes": [
+            {"name": "Hùng Vương"},
+            {"name": "Huyền Quang"},
+            {"name": "Nguyễn Văn Cừ", "from": "Lê Lợi", "to": "Huyền Quang"},
+            {"name": "Thánh Thiên"},
+            {"name": "Lê Lai"},
+            {"name": "Hồ Công Dự"},
+            {"name": "Lê Lợi", "from": "Lý Thái Tổ", "to": "Nguyễn Văn Cừ"},
+            {"name": "Lê Lợi", "from": "Hùng Vương", "to": "Giáp Hải"},
+            {"name": "Á Lữ"},
+            {"name": "Nguyễn Thị Minh Khai"},
+            {"name": "Hoàng Văn Thụ"},
+            {"name": "Lý Thái Tổ"},
+            {"name": "Nguyễn Thị Lưu"},
+            {"name": "Lý Tự Trọng"},
+            {"name": "Lý Tự Trọng 6"},
+            {"name": "Vương Văn Trà"},
+            {"name": "Nguyễn Công Hãng"},
+            {"name": "Nguyễn Khắc Nhu"},
+            {"name": "Lê Hồng Phong"},
+            {"name": "Nghĩa Long"},
+            {"name": "Trần Đăng Tuyển"},
+            {"name": "Cao Kỳ Vân"},
+            {"name": "Đào Sư Tích"},
+            {"name": "Cô Giang"},
+            {"name": "Giáp Văn Phúc"},
+            {"name": "Quách Nhẫn"},
+            {"name": "Quách Nhẫn 4"},
+            {"name": "Trần Quang Khải"},
+            {"name": "Xương Giang 4"},
+            {"name": "Yết Kiêu"},
+            {"name": "Đồng Cửa"},
+            {"name": "Bàng Bá Lân"},
+            {"name": "Vi Đức Thăng"}
+          ],
+          "bbox": [106.183, 21.255, 106.235, 21.302]
+        }
+      }
+    },
+    {
+      "id": "bn_bac_giang_phu_luc2_tren_2_5t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "QĐ 516/2014/QĐ-UBND tỉnh Bắc Giang (Điều 3 khoản 1 điểm b, Phụ lục II), sửa bởi QĐ 38/2021/QĐ-UBND",
+      "source": "https://caselaw.vn/van-ban-phap-luat/162605-quyet-dinh-so-516-2014-qd-ubnd-ngay-15-08-2014-ve-quan-ly-trat-tu-giao-thong-tren-dia-ban-thanh-pho-bac-giang-tinh-bac-giang https://caselaw.vn/van-ban-phap-luat/398454-quyet-dinh-so-38-2021-qd-ubnd-ngay-17-08-2021-cua-tinh-bac-giang-sua-doi-bo-sung-mot-so-dieu-cua-quy-dinh-quan-ly-trat-tu-giao-thong-tren-dia-ban-thanh-pho-bac-giang-va-phu-luc-i-kem-theo-quyet-dinh-516-2014-qd-ubnd",
+      "valid_from": "2014-08-25",
+      "valid_to": null,
+      "note": "Xe tải trên 2,5 t không được hoạt động trên các tuyến nội thành Phụ lục II (và trong ngõ). Xe phục vụ trực tiếp sản xuất, kinh doanh, xây dựng của hộ hai bên đường được cấp giấy phép (không mã hóa). Cùng hạn chế về hiệu lực và ngưỡng như bn_bac_giang_phu_luc1_tren_2_5t. Task 9 (đối chiếu OSM 2026-10-22): Nguyễn Văn Cừ và Hùng Vương trong OSM kết thúc sát Xương Giang (2-3 m) mà không chung nút, nên bỏ đầu 'to' (đoạn chạy tới đầu đường).",
+      "body": {
+        "vehicle": {"gross_t": [">", 2.5], "kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "routes": [
+            {"name": "Quang Trung"},
+            {"name": "Nguyễn Văn Cừ", "from": "Lê Lợi"},
+            {"name": "Hùng Vương", "from": "Huyền Quang"},
+            {"name": "Nguyễn Cao"},
+            {"name": "Ngô Văn Cảnh"},
+            {"name": "Thân Cảnh Vân"},
+            {"name": "Nguyễn Thị Lưu", "from": "Quang Trung", "to": "Đào Sư Tích"},
+            {"name": "Ngô Gia Tự"},
+            {"name": "Hoàng Văn Thụ", "from": "Nguyễn Văn Cừ", "to": "Đào Sư Tích"},
+            {"name": "Lê Lợi", "from": "Nguyễn Văn Cừ", "to": "Hùng Vương"},
+            {"name": "Trần Nguyên Hãn"}
+          ],
+          "bbox": [106.183, 21.255, 106.235, 21.302]
+        }
+      }
+    },
+    {
+      "id": "nb_cau_do_quan_cam_o_to",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo phương án điều chỉnh tổ chức giao thông trên cầu Đò Quan của Sở Xây dựng Ninh Bình (21/5/2026; số không nêu)",
+      "source": "https://baoninhbinh.org.vn/phuong-tien-thuy-va-cham-cau-do-quan-han-che-phuong-tien-qua-cau-bat-dau-tu-10h-260521104552426.html",
+      "valid_from": "2026-05-21",
+      "valid_to": null,
+      "note": "Tạm cấm mọi xe cơ giới (kể cả xe 3 bánh có thùng, trừ xe máy 2 bánh và xe ưu tiên) qua cầu Đò Quan (phường Nam Định cũ) cả hai chiều từ 10h ngày 21/5/2026 'cho đến khi có thông báo thay thế', sau khi tàu HD-5839 va vào dầm cầu. Chưa tìm thấy thông báo mở lại tính đến 21/10/2026. Tuyến thay thế: ĐT.490C – cầu Thiên Trường; QL.21 – cầu Nam Định; QL.21B – cầu Tân Phong.",
+      "body": {
+        "vehicle": {},
+        "action": "close",
+        "scope": {
+          "names": ["Cầu Đò Quan"],
+          "bbox": [106.175, 20.412, 106.188, 20.426]
+        }
+      }
+    },
+    {
+      "id": "nb_cau_phao_ninh_cuong_cam_xe_tai",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Thông báo 2262/TB-SXD ngày 20/3/2026 của Sở Xây dựng Ninh Bình",
+      "source": "https://nbtv.vn/news/401/53657/tu-08h00-ngay-21-3-tam-cam-xe-o-to-khach-va-xe-o-to-tai-qua-cau-phao-ninh-cuong",
+      "valid_from": "2026-03-21",
+      "valid_to": null,
+      "note": "Tạm cấm ô tô khách và ô tô tải cả hai chiều qua cầu phao Ninh Cường (QL.37B Km74+391, xã Ninh Cường) từ 8h ngày 21/3/2026 đến khi có thông báo thay thế, do tình trạng kỹ thuật cầu. Pickup và van được loại theo NĐ 241/2026 (cách đọc, cần kiểm tra). Tuyến thay thế qua cầu Lạc Quần (QL.21) hoặc cầu Thịnh Long.",
+      "body": {
+        "vehicle": {"kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {
+          "names": ["Cầu phao Ninh Cường"],
+          "bbox": [106.192, 20.202, 106.200, 20.212]
+        }
+      }
+    }
+  ],
+  "unresolved": [
+    {"place": "Hải Phòng (toàn thành phố)", "what": "QĐ 11/2026 Điều 6.1.a: xe ô tô chở hàng 'hạn chế lưu thông trên đường đô thị' trong giờ cao điểm 6h–8h, 11h30–12h30, 16h30–18h30 và ban đêm 22h–6h", "why": "Chỉ áp trên các 'tuyến hạn chế' theo biển báo (Điều 3.5); văn bản không liệt kê tuyến. Dựa vào thẻ OSM hgv:conditional.", "source": "https://cdn.haiphong.gov.vn/gov-hpg/6326/tintuc/2026/2/2026-02-10-14-.signed639064815851805463.pdf"},
+    {"place": "Hải Phòng (đô thị)", "what": "QĐ 11/2026 Điều 5.2: xe chở vật liệu xây dựng, phế thải rời chỉ được chạy trên đường đô thị 22h–6h", "why": "Điều kiện theo loại hàng, không theo thông số xe", "source": "https://cdn.haiphong.gov.vn/gov-hpg/6326/tintuc/2026/2/2026-02-10-14-.signed639064815851805463.pdf"},
+    {"place": "Hải Phòng, ĐT.390", "what": "Lệnh cấm xe ≥4 trục 6h–8h, 17h–19h chỉ áp chiều QL5 → cầu Quang Thanh, Km15+100–Km35+280", "why": "Định dạng không có chiều đi và mốc Km; đã mã hóa cả hai chiều trên cả đoạn trong hp_dt390_4truc_gio_cao_diem", "source": "https://baohaiphong.vn/han-che-xe-tai-tu-4-truc-tro-len-tren-duong-390-tu-ngay-15-10-555724.html"},
+    {"place": "Bắc Ninh (đô thị: toàn bộ các phường và trung tâm các xã)", "what": "QĐ 06/2026 Điều 10.2.b: cấm xe ben, xe đầu kéo, xe chở container hoạt động giờ cao điểm 'trên một số tuyến đường'", "why": "Đã đọc toàn văn: quyết định không có danh sách tuyến và không định nghĩa giờ cao điểm bằng số; Điều 13 giao Sở Xây dựng khảo sát, cắm biển. Chỉ có thể lấy từ biển báo (OSM).", "source": "https://bacninh.gov.vn/documents/37632/85377703/06-2026-QĐ-UBND.pdf"},
+    {"place": "Bắc Ninh (khu Bắc Giang cũ), đê sông Thương", "what": "QĐ 516/2014 sửa bởi QĐ 38/2021: xe cơ giới trên đê sông Thương có tổng tải trọng không quá 12 t", "why": "Không tìm thấy tên 'đê sông Thương' trên đường trong OSM để định vị", "source": "https://caselaw.vn/van-ban-phap-luat/398454-quyet-dinh-so-38-2021-qd-ubnd-ngay-17-08-2021-cua-tinh-bac-giang-sua-doi-bo-sung-mot-so-dieu-cua-quy-dinh-quan-ly-trat-tu-giao-thong-tren-dia-ban-thanh-pho-bac-giang-va-phu-luc-i-kem-theo-quyet-dinh-516-2014-qd-ubnd"},
+    {"place": "Bắc Ninh (khu Bắc Giang cũ)", "what": "QĐ 516/2014: xe tải ≥7,5 t cấm trên đường rộng dưới 7 m; ≥15 t cấm trên đường mặt nhựa/láng nhựa/bê tông (có ngoại lệ)", "why": "Điều kiện theo bề rộng và kết cấu mặt đường, không có danh sách tuyến", "source": "https://caselaw.vn/van-ban-phap-luat/162605-quyet-dinh-so-516-2014-qd-ubnd-ngay-15-08-2014-ve-quan-ly-trat-tu-giao-thong-tren-dia-ban-thanh-pho-bac-giang-tinh-bac-giang"},
+    {"place": "Bắc Ninh (đô thị)", "what": "QĐ 09/2026: xe chở phế thải rời cấm 6h–8h, 16h30–18h30; giờ xe chở VLXD do UBND cấp xã quyết định", "why": "Điều kiện theo loại hàng", "source": "https://luatvietnam.vn/van-ban/xem-truoc-file-6e76a273-13fb-0700-2b77-959b9856783b"},
+    {"place": "Tuyên Quang (đô thị)", "what": "QĐ 19/2026 Điều 2.2: xe chở VLXD, phế thải rời không được chạy trong đô thị 6h–7h30 và 16h30–18h", "why": "Điều kiện theo loại hàng", "source": "http://congbao.tuyenquang.gov.vn/media/files/2026/signed-so-18-6-9.pdf"},
+    {"place": "Lào Cai (đô thị)", "what": "QĐ 04/2026: xe chở VLXD ≥3,5 t dưới 3 trục chỉ chạy 8h–11h, 14h–16h, 21h–6h; trên tuyến có biển cấm xe ≥3 trục chỉ chạy 21h–6h", "why": "Điều kiện theo loại hàng; tuyến lấy theo biển báo", "source": "https://luatvietnam.vn/van-ban/xem-truoc-file-3201af8d-1460-a900-1877-98a3a71288bc"},
+    {"place": "Lào Cai, cửa khẩu Kim Thành", "what": "Phương án phân luồng số 51 (hiệu lực 21/2/2024): xe chở hàng nhập khẩu làm thủ tục tại bãi 379 hoặc Nghĩa Anh phải đi T1 → D3 → Hương Sơn (D1)", "why": "Là lộ trình bắt buộc, không phải lệnh cấm; định dạng không có kiểu 'bắt buộc đi'. Đề xuất tổ chức lại nút cuối cao tốc (9/2026) chưa được duyệt.", "source": "https://logistics.gov.vn/dich-vu-logistics/cang-bien/lao-cai-to-chuc-phan-luong-van-chuyen-hang-hoa-qua-cua-khau-duong-bo-kim-thanh https://baolaocai.vn/go-nut-that-giao-thong-tai-cua-khau-kim-thanh-post909737.html"},
+    {"place": "Thái Nguyên (gồm Bắc Kạn cũ), 28 cầu hạn chế tải trọng", "what": "Công văn 1426/SXD-QLKCHTGT (26/8/2025), khối lượng toàn bộ: QL.3C Khuôn Lồng Km1+950 17 t, Dốc Đỏ Km20+803 30 t; QL.279 Pi-O Km248+330, Lạng San Km258+502, Khuổi Lụa Km261+657 25-35-45 t, Nà Làng Km264+710 30-45-45 t, Phiêng Giản Km325+995 17 t; QL.3B Hát Deng Km76+310 và Thác Giềng cũ Km129+450 13 t; ĐT.261D Lăng Tạ Km4+480, Xóm Đồng Trong Km7+380 10 t; ĐT.261E Cầu Thủng Km0 30 t; ĐT.262 Na Giang Km7+402 17 t; ĐT.263B Cầu Thông Km0+271 30 t; ĐT.264 Quản Thơ Km16+516, Đá To Km23+870 17 t; ĐT.265 Suối Lũ Km2 17 t; ĐT.269D Khe Mo Km1+110 10 t; ĐT.252B Bản Giang Km0+350 10-15-20 t; ĐT.253 Phúc Lộc II Km20+012, Khuổi Chả Km26+182 13 t (cao 2,3 m); ĐT.256B Quang Phong Km0+070 13 t; ĐT.258B Tin Đồn Km3+070 3,5 t, Khuổi Trà Km44+370 13 t; ĐT.258C Nà Lại Km14+590, Khuổi Lạn Km19+450 10 t; ĐT.259 Nà Vịt Km23+145, Nà Bản Km23+930 13 t. Bộ ba XX-YY-ZZ: xe tải - đầu kéo sơ mi rơ moóc - xe kéo rơ moóc.", "why": "Không có tên cầu nào trong OSM và định dạng không nhận mốc Km, nên không lập được bbox chặt. Cần ghép lý trình với dữ liệu cột Km hoặc tọa độ.", "source": "https://drvn.gov.vn/upload/2006538/20250912/VB_1426_Thai_Nguyen_3e105.pdf"},
+    {"place": "Thái Nguyên, 6 vị trí hạn chế chiều cao", "what": "Công văn 1426/SXD-QLKCHTGT: QL.3 Km54+100 (4,75 m, dưới cầu vượt CT07), QL.17 Km133+100 (4,75 m), ĐT.261 Km45+270 (4,75 m), ĐT.274 Km10+300 (4,5 m), ĐT.269E Km10+950, ĐT.256 Km0+950 (cầu vòm đường sắt)", "why": "Hạn chế chiều cao theo mốc Km; nên lấy từ thẻ maxheight của OSM", "source": "https://drvn.gov.vn/upload/2006538/20250912/VB_1426_Thai_Nguyen_3e105.pdf"},
+    {"place": "Ninh Bình (đô thị)", "what": "QĐ 124/2026: xe chở VLXD, phế thải >3,5–10 t (khối lượng toàn bộ thiết kế) cấm 6h–8h, 16h–18h; >10 t chỉ chạy 22h–6h", "why": "Điều kiện theo loại hàng", "source": "https://ninhbinh.gov.vn/kinh-te/ninh-binh-quy-dinh-gio-hoat-dong-cua-xe-cho-vat-lieu-trong-do-thi-396426"},
+    {"place": "Hưng Yên (gồm Thái Bình cũ)", "what": "QĐ 46/2026: xe từ 1,5 t không được lưu thông trên các tuyến, đoạn đô thị có biển cấm, hạn chế trọng tải", "why": "Chỉ dẫn chiếu biển báo, không có tuyến hay khung giờ chung", "source": "research_north.md (bản v1 ghi đã đọc toàn văn nhưng không lưu URL); lần này trang thuvienphapluat trả 403 nên chưa đọc lại"}
+  ]
+}

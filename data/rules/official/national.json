@@ -1,0 +1,189 @@
+{
+  "area": "national",
+  "researched_at": "2026-10-21",
+  "rules": [
+    {
+      "id": "vn_cap_tai_den_3_5t",
+      "kind": "cap",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TT 38/2024/TT-BGTVT (Điều 6, Điều 9), sửa Điều 10 bởi Điều 26 TT 09/2025/TT-BXD",
+      "source": "https://www.atld.vn/law/3364/content",
+      "valid_from": "2025-01-01",
+      "valid_to": null,
+      "note": "Dòng 'ô tô tải có trọng tải không lớn hơn 3,5 tấn' của Bảng 2 Điều 6: ngoài khu đông dân cư 90 km/h trên đường đôi, 80 km/h trên đường hai chiều. Trong khu đông dân cư mọi xe cơ giới: 60 km/h (đường đôi) và 50 km/h (đường hai chiều). 'Trọng tải' là khối lượng hàng chuyên chở cho phép (Điều 3 khoản 5), nên ngưỡng tính theo payload_t. Xe ben (tự đổ) được coi là ô tô tải, vì luật không có dòng riêng cho xe ben. Ánh xạ sang 5 lớp: quoclo lấy mức đường đôi ngoài khu đông dân cư (90), vì cap chỉ có tác dụng trên quốc lộ có dải phân cách, nơi tốc độ thực đo cao; trên quốc lộ hai chiều mức đúng là 80, trong đô thị là 50–60. Sai số: cao hơn luật tối đa 10 km/h trên quốc lộ hai chiều và 30–40 km/h ở đoạn qua đô thị. chinh lấy mức đường hai chiều ngoài khu đông dân cư (80); trong đô thị luật chỉ cho 50–60. noido và nho lấy mức 50 của khu đông dân cư, đường hai chiều. Luật không có mức thấp hơn cho hẻm; mức thấp hơn chỉ có trên biển báo (Điều 10 khoản 4). caotoc: Điều 9 chỉ quy định tối đa 120 và tối thiểu 60, còn mức thực tế theo biển báo của từng tuyến. Mức 100 là đề xuất, không phải số trong luật: đoạn cao tốc phân kỳ 4 làn phần lớn đặt 90 km/h cho mọi xe; cao tốc hoàn chỉnh cho 100–120 km/h tùy làn. Pickup và van ≤3,5 t thuộc dòng này hoặc dòng 'ô tô con', cùng mức 90/80.",
+      "body": {
+        "vehicle": {"payload_t": ["<=", 3.5], "kind": ["in", ["normal", "tipper", "pickup", "van"]]},
+        "road_classes": {"caotoc": 100, "quoclo": 90, "chinh": 80, "noido": 50, "nho": 50}
+      }
+    },
+    {
+      "id": "vn_cap_tai_tren_3_5t",
+      "kind": "cap",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TT 38/2024/TT-BGTVT (Điều 6, Điều 9), sửa Điều 10 bởi Điều 26 TT 09/2025/TT-BXD",
+      "source": "https://www.atld.vn/law/3364/content",
+      "valid_from": "2025-01-01",
+      "valid_to": null,
+      "note": "Dòng 'ô tô tải có trọng tải trên 3,5 tấn (trừ ô tô xi téc)' của Bảng 2: ngoài khu đông dân cư 80 km/h trên đường đôi, 70 km/h trên đường hai chiều. Trong khu đông dân cư: 60/50. Ngưỡng tính theo trọng tải, tức payload_t. Xe ben thuộc dòng này. Ô tô xi téc, ô tô kéo rơ moóc và ô tô trộn bê tông thuộc dòng 60/50, nhưng mô hình xe chưa có thuộc tính này (xem mục unresolved). Ánh xạ: quoclo = mức đường đôi (80), chinh = mức đường hai chiều (70), noido và nho = 50. Sai số như rule vn_cap_tai_den_3_5t: cao hơn luật 10 km/h trên quốc lộ hai chiều và 20–30 km/h ở đoạn qua đô thị. caotoc: luật không quy định riêng cho xe tải. Mức 90 là đề xuất: đoạn phân kỳ 4 làn đặt 90 cho mọi xe. Trên cao tốc hoàn chỉnh, xe tải được chạy 100–120 ở làn ngoài, ví dụ làn 3 cao tốc Hà Nội – Hải Phòng tối đa 100.",
+      "body": {
+        "vehicle": {"payload_t": [">", 3.5], "kind": ["in", ["normal", "tipper", "pickup", "van"]]},
+        "road_classes": {"caotoc": 90, "quoclo": 80, "chinh": 70, "noido": 50, "nho": 50}
+      }
+    },
+    {
+      "id": "vn_cap_dau_keo_so_mi_ro_mooc",
+      "kind": "cap",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "TT 38/2024/TT-BGTVT (Điều 6, Điều 9), sửa Điều 10 bởi Điều 26 TT 09/2025/TT-BXD",
+      "source": "https://www.atld.vn/law/3364/content",
+      "valid_from": "2025-01-01",
+      "valid_to": null,
+      "note": "Dòng 'ô tô đầu kéo kéo sơ mi rơ moóc (trừ ô tô đầu kéo kéo sơ mi rơ moóc xi téc)' của Bảng 2: ngoài khu đông dân cư 70 km/h trên đường đôi, 60 km/h trên đường hai chiều. Trong khu đông dân cư: 60/50. Không phụ thuộc trọng tải. Kind 'container' được hiểu là đầu kéo kéo sơ mi rơ moóc chở công te nơ. Xe tải thân liền chở công te nơ (hiếm) đúng ra theo dòng ô tô tải. Đầu kéo kéo sơ mi rơ moóc xi téc chỉ được 60/50, nhưng mô hình chưa phân biệt được. Ánh xạ: quoclo = 70, chinh = 60, noido và nho = 50. caotoc 90 là đề xuất, cùng lý do như rule vn_cap_tai_tren_3_5t.",
+      "body": {
+        "vehicle": {"kind": ["in", ["tractor", "container"]]},
+        "road_classes": {"caotoc": 90, "quoclo": 70, "chinh": 60, "noido": 50, "nho": 50}
+      }
+    },
+    {
+      "id": "vn_ql1_cau_ben_thuy_1_10t",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 278/QĐ-CĐBVN ngày 11/3/2026 của Cục Đường bộ Việt Nam (Phụ lục 03), và danh sách cập nhật cầu hạn chế tải trọng Nghệ An đăng ngày 24/6/2026",
+      "source": "https://drvn.gov.vn/upload/2006538/20260311/QD_278_11_3_26_ab797.pdf https://drvn.gov.vn/upload/2006538/20260624/File_T_cap_nhat_76df9.pdf",
+      "valid_from": null,
+      "valid_to": null,
+      "note": "Cầu Bến Thủy 1, QL.1 Km467+500, giữa Nghệ An và Hà Tĩnh. Tải trọng thiết kế H30-XB80; cột 'tình trạng tải trọng (biển hạn chế tải trọng)' ghi 10. Bảng chỉ ghi một con số, nên được hiểu là biển hạn chế khối lượng toàn bộ xe 10 t. Nếu biển thật ra tính theo trục hoặc theo hàng chuyên chở, cách hiểu theo khối lượng toàn bộ vẫn chặt hơn. Biển báo đã có từ trước khi QĐ 278 công bố, nên valid_from để null. Xe nặng đi cầu Bến Thủy 2 (QL.1, song song). Trong OSM cầu này không có thẻ maxweight. bbox lấy từ OSM: way 'Cầu Bến Thủy 1', ref QL.1.",
+      "body": {
+        "vehicle": {"gross_t": [">", 10]},
+        "action": "close",
+        "scope": {"names": ["Cầu Bến Thủy 1"], "bbox": [105.7040, 18.6435, 105.7125, 18.6490]}
+      }
+    },
+    {
+      "id": "vn_hue_cau_truong_tien_cam_xe_tai",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "cao",
+      "document": "QĐ 278/QĐ-CĐBVN ngày 11/3/2026 của Cục Đường bộ Việt Nam (Phụ lục 02 và 03)",
+      "source": "https://drvn.gov.vn/upload/2006538/20260311/QD_278_11_3_26_ab797.pdf",
+      "valid_from": null,
+      "valid_to": null,
+      "note": "Cầu Trường Tiền, Huế, QL.1 Km825+798 (nhánh QL.1 qua cầu Trường Tiền, không phải tuyến tránh). Phụ lục 03 ghi 'Cấm xe tải, xe khách'. Phụ lục 02 ghi chiều cao hạn chế 4,55 m, chiều rộng 5,5/7,0 m. Tuyến QL.1 chính đi qua cầu Phú Xuân. Theo NĐ 241/2026, biển cấm xe tải phải loại trừ pickup cabin kép và van có khối lượng toàn bộ ≤3,5 t, nên rule loại trừ kind pickup và van. Định dạng không biểu diễn được phép OR, nên van và pickup trên 3,5 t (rất hiếm) cũng bị loại trừ. Có thể trùng với rule của file miền Trung; nếu trùng, giữ một rule. bbox lấy từ OSM: way 'Cầu Trường Tiền', highway=secondary.",
+      "body": {
+        "vehicle": {"kind": ["not_in", ["pickup", "van"]]},
+        "action": "close",
+        "scope": {"names": ["Cầu Trường Tiền"], "bbox": [107.5855, 16.4665, 107.5915, 16.4715]}
+      }
+    },
+    {
+      "id": "vn_ct01_hcm_trung_luong_cau_vuot_4_3m",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "tb",
+      "document": "Danh sách vị trí hạn chế khổ giới hạn trên đường bộ (Đồng Tháp), đăng trên trang Cục Đường bộ Việt Nam ngày 16/7/2026, theo Điều 6, 7 TT 12/2025/TT-BXD",
+      "source": "https://drvn.gov.vn/upload/2006538/20260716/File_K_cap_nhat_2a635.pdf",
+      "valid_from": null,
+      "valid_to": null,
+      "note": "Cao tốc TP.HCM – Trung Lương: các cầu vượt số 7, 8, 9, 10 (Km37+980, Km39+550, Km44+600, Km45+305) có chiều cao hạn chế 4,3 m. Đây là mức thấp hơn chiều cao xếp hàng tối đa của xe chở công te nơ (4,35 m, Điều 16 khoản 3 TT 12/2025/TT-BXD). Nguồn đã đọc đầy đủ bảng, nhưng vị trí là ước tính, nên độ tin cậy là tb. Bảng cho thấy cầu vượt nút giao Thân Cửu Nghĩa ở Km50+418; vì vậy các cầu vượt nằm cách nút này khoảng 5–12,5 km về phía TP.HCM. bbox lấy các nút của way cao tốc trong OSM cách nút Thân Cửu Nghĩa 4–13 km theo đường chim bay, nên có thể dài hơn đoạn thật vài km. Trong OSM, các cầu vượt này không có thẻ maxheight. Đường dẫn Km2+000 cũng có khung hạn chế 4,3 m (chưa định vị, không mã hóa).",
+      "body": {
+        "vehicle": {"height_m": [">", 4.3]},
+        "action": "close",
+        "scope": {"routes": [{"ref": "CT.01"}], "bbox": [106.325, 10.470, 106.372, 10.550], "classes": ["caotoc"]}
+      }
+    },
+    {
+      "id": "vn_caotoc_cam_lo_la_son_tu_6_truc",
+      "kind": "ban",
+      "layer": "official",
+      "confidence": "thap",
+      "document": "Phương án phân luồng của Cục Đường bộ Việt Nam, áp dụng từ 6h ngày 4/4/2024 (báo chí không nêu số văn bản)",
+      "source": "https://hatinh.gov.vn/vi/bai-viet/cam-xe-tai-xe-khach-tren-30-cho-vao-cao-toc-cam-lo-la-son-tu-ngay-44 https://vtcnews.vn/cam-xe-tai-nang-xe-khach-tren-30-cho-di-vao-cao-toc-cam-lo-la-son-tu-4-4-ar862303.html https://tuoitre.vn/plo/cao-toc-cam-lo-la-son-chinh-thuc-mo-rong-len-4-lan-xe-hoan-chinh-post887395.html https://doanhnghiephoinhap.vn/dieu-chinh-toc-do-tai-nhieu-doan-cao-toc-cam-lo-la-son-qua-quang-tri-va-tp-hue-129654.html",
+      "valid_from": "2024-04-04",
+      "valid_to": null,
+      "note": "Lệnh cấm 'xe trên 6 trục (gồm cả xe thân liền và tổ hợp xe đầu kéo)', xe khách trên 30 chỗ và xe giường nằm, áp dụng 'trong giai đoạn phân kỳ đầu tư'. Cùng bài viết lại dùng cụm 'từ 6 trục trở lên', nên rule chọn cách hiểu chặt hơn (≥6 trục). Xe bị cấm đi QL.1, rẽ tại ngã tư Sòng và ngã ba La Sơn. Tình trạng đến 10/2026 chưa rõ: dự án mở rộng lên 4 làn khởi công 19/12/2025, dự kiến xong trong năm 2026. Tháng 3/2026 có 5 đoạn được nâng lên 80 km/h, nhưng không thấy tin dỡ lệnh cấm. Vì vậy độ tin cậy là thấp; rule nhập vào ở trạng thái không hoạt động cho tới khi có xác nhận. Tên trong OSM: 'Đường cao tốc Cam Lộ - La Sơn' (ref CT.01;CT.02). bbox lấy từ OSM.",
+      "body": {
+        "vehicle": {"axles": [">=", 6]},
+        "action": "close",
+        "scope": {"routes": [{"name": "Đường cao tốc Cam Lộ - La Sơn"}], "bbox": [107.015, 16.308, 107.720, 16.808], "classes": ["caotoc"]}
+      }
+    }
+  ],
+  "unresolved": [
+    {
+      "place": "Toàn quốc",
+      "what": "NĐ 241/2026/NĐ-CP (ký 26/6/2026, hiệu lực 1/7/2026), Điều 11 sửa khoản 2 Điều 24 NĐ 165/2024: 'Xe ô tô tải Pickup cabin kép và xe ô tô tải Van có khối lượng toàn bộ không lớn hơn 3500 kg' 'được tổ chức giao thông như đối với xe ô tô con'. Biển cấm xe tải và cấm xe tải theo giờ phải loại trừ các xe này. Phân loại xe, thuế, phí và đăng kiểm không đổi.",
+      "why": "Đây là quy tắc về xe, không gắn với địa điểm. Nên xử lý ở bộ so khớp: mọi rule cấm xe tải (của tỉnh, của OSM hgv=no, và các rule ở đây) bỏ qua xe có kind pickup (cabin kép) hoặc van với gross_t ≤ 3,5, trừ khi văn bản địa phương ghi rõ khác. Pickup cabin đơn không được nêu, nên vẫn xem là xe tải.",
+      "source": "https://luatvietnam.vn/giao-thong/nghi-dinh-241-2026-nd-cp-sua-doi-nghi-dinh-165-2024-ve-luat-duong-bo-va-an-toan-giao-thong-438974-d1.html https://baochinhphu.vn/go-bo-rao-can-tam-ly-lo-ngai-cho-nguoi-su-dung-xe-ban-tai-102260707154657868.htm"
+    },
+    {
+      "place": "Toàn quốc",
+      "what": "TT 38/2024 Bảng 2: ô tô kéo rơ moóc, ô tô kéo xe khác, ô tô trộn vữa, ô tô trộn bê tông lưu động, ô tô xi téc, đầu kéo kéo sơ mi rơ moóc xi téc chỉ được 60 km/h (đường đôi) và 50 km/h (đường hai chiều) ngoài khu đông dân cư. Ô tô chuyên dùng khác: 70/60.",
+      "why": "Mô hình xe chưa có thuộc tính rơ moóc, xi téc hay chuyên dùng. Nếu bổ sung, thêm rule cap {caotoc 90, quoclo 60, chinh 50, noido 50, nho 50}.",
+      "source": "https://www.atld.vn/law/3364/content"
+    },
+    {
+      "place": "Toàn quốc, đường cao tốc",
+      "what": "TT 38/2024 Điều 9: tốc độ tối đa 120, tối thiểu 60 km/h; trị số cụ thể theo phương án tổ chức giao thông và biển báo của từng tuyến. Xe tải nặng chở đầy không giữ được 60 km/h khi lên dốc vẫn phải tuân thủ tốc độ tối thiểu.",
+      "why": "Không có mức riêng theo loại xe để mã hóa. Tốc độ tối thiểu không phải lệnh cấm. Mức cap caotoc trong các rule là đề xuất.",
+      "source": "https://www.atld.vn/law/3364/content"
+    },
+    {
+      "place": "Cao tốc Hà Nội – Hải Phòng; TP.HCM – Long Thành – Dầu Giây; TP.HCM – Trung Lương",
+      "what": "Thí điểm cấm xe tải ở làn 1 (làn sát dải phân cách). Hà Nội – Hải Phòng (QĐ của Cục Đường bộ 13/8/2025, từ 15/8/2025, thí điểm 1 tháng): cấm ô tô tải, chuyên dùng, đầu kéo, xe kéo rơ moóc; pickup và van không bị cấm. Làn 1 tối đa 120, tối thiểu 90; làn 2 tối đa 120, tối thiểu 80; làn 3 tối đa 100, tối thiểu 60. Hai tuyến phía Nam: theo đoạn trích tìm kiếm, cấm xe tải khối lượng toàn bộ trên 7,5 t và xe khách trên 29 chỗ ở làn 1 (chưa đọc toàn văn).",
+      "why": "Đây là quy định theo làn, không cấm cả tuyến, nên không ảnh hưởng tới việc chọn đường. Chưa rõ thí điểm đã chính thức hóa hay chưa.",
+      "source": "https://daibieunhandan.vn/tu-15-8-thi-diem-cam-o-to-tai-luu-thong-tai-lan-1-cao-toc-ha-noi-hai-phong-10383209.html"
+    },
+    {
+      "place": "QL.1 qua Nghệ An: Km404+320, Km456+150, Km466+240",
+      "what": "Cầu vượt phía trên với chiều cao hạn chế 4,3 m, 4,0 m và 4,5 m. Riêng Km456+150 (4,0 m) thấp hơn chiều cao xếp hàng 4,2 m cho xe từ 5 t và 4,35 m cho xe công te nơ. Km441+400: 4,35 m.",
+      "why": "Không định vị được lý trình Km trên QL.1 khi không có dữ liệu cọc Km. OSM không có thẻ maxheight ở các vị trí này. Cần định vị rồi thêm rule cấm theo height_m.",
+      "source": "https://drvn.gov.vn/upload/2006538/20260311/QD_278_11_3_26_ab797.pdf"
+    },
+    {
+      "place": "Đường Hồ Chí Minh Km2321+418 (Đồng Tháp); đường dẫn cao tốc TP.HCM – Trung Lương Km1+525, Km2+000",
+      "what": "Cầu vượt Đường Thét có chiều cao hạn chế 4,25 m. Cổng trạm thu phí Đồng Tâm và khung hạn chế chiều cao trên đường dẫn có chiều cao hạn chế 4,3 m.",
+      "why": "Chưa định vị được.",
+      "source": "https://drvn.gov.vn/upload/2006538/20260716/File_K_cap_nhat_2a635.pdf"
+    },
+    {
+      "place": "Cầu yếu trên quốc lộ (toàn quốc)",
+      "what": "Cục Đường bộ và các Sở Xây dựng công bố danh sách cầu hạn chế tải trọng theo Điều 6, 7 TT 12/2025/TT-BXD. Ví dụ: QL.46C cầu Hói Nậy 10 t, cầu tại Km105+970 5 t; QL.48E cầu Thống Nhất 10 t; QL.15 cầu Ba Ra I (cũ) cấm ô tô; nhiều cầu QL.1 cũ ở Quảng Trị và Huế ghi ba số, ví dụ 25-35-40.",
+      "why": "Mỗi tỉnh và mỗi Khu quản lý có một file riêng, cần định vị theo Km. Dạng ba số đi kèm biển S.505B (giới hạn theo từng loại xe) và chưa được giải mã chắc chắn. Phần lớn cầu cũ có cầu mới song song. Nên xử lý bằng một pipeline đọc file và định vị tự động, cộng với thẻ maxweight của OSM.",
+      "source": "https://drvn.gov.vn/upload/2006538/20260311/QD_278_11_3_26_ab797.pdf https://drvn.gov.vn/upload/2006538/20260624/File_T_cap_nhat_76df9.pdf"
+    },
+    {
+      "place": "Hầm Đèo Cả (QL.1, Phú Yên cũ – Khánh Hòa)",
+      "what": "Ngày 17/4/2024, khi QL.1 qua đèo Cả bị cấm ô tô vì sự cố hầm đường sắt Bãi Gió, hầm đường bộ cấm xe chở hàng nguy hiểm, xe cao trên 4,95 m, xe rộng từ 3,5 m, mô tô và xe thô sơ. OSM ghi maxheight 6.8.",
+      "why": "Hàng nguy hiểm không mã hóa. Giới hạn chiều cao và chiều rộng gắn với một tình huống tạm thời năm 2024, và cao hơn khổ xe hợp pháp, nên không mã hóa.",
+      "source": "https://vov.vn/xa-hoi/ho-tro-xe-cho-dong-vat-xe-qua-kho-qua-deo-ca-post1089754.vov"
+    },
+    {
+      "place": "Hầm Hải Vân, hầm Cù Mông, hầm Cổ Mã",
+      "what": "Có thể có hạn chế với xe chở hàng nguy hiểm, nhưng chưa đọc được văn bản. Bài VnExpress 2019 về hầm Hải Vân chỉ nói về phí. OSM ghi maxheight 4.75 cho hầm Cù Mông và hầm Cổ Mã.",
+      "why": "Hàng nguy hiểm không mã hóa. Chiều cao 4,75 m cao hơn khổ xe hợp pháp (4,2 m; 4,35 m với xe công te nơ). Không tìm thấy lệnh cấm xe tải ở các hầm này.",
+      "source": "https://vnexpress.net/ham-hai-van-thu-phi-tu-27-9-3985453.html"
+    },
+    {
+      "place": "Toàn quốc, dịp Tết và lễ",
+      "what": "Mỗi năm, Cục CSGT ra kế hoạch cao điểm Tết. Năm 2026: 'Đối với các tuyến quốc lộ có mật độ xe máy cao, CSGT sẽ áp dụng biện pháp cấm xe ô tô tải trọng lớn theo khung giờ.' Ngoài ra dự kiến tạm cấm chiều ra khỏi Hà Nội và TP.HCM trên một số cao tốc vào cuối kỳ nghỉ. Cục Đường bộ yêu cầu các đơn vị chuẩn bị phương án phân luồng. Các tỉnh và thành phố ra phương án phân luồng riêng, không có tuyến cố định hằng năm.",
+      "why": "Lệnh cấm là tạm thời, thay đổi theo từng năm và không có danh sách tuyến chính thức trước. Không mã hóa thành rule đang hoạt động. Mỗi dịp Tết hoặc lễ cần nhập riêng, với valid_to.",
+      "source": "https://thoibaotaichinhvietnam.vn/canh-sat-giao-thong-ra-quan-cao-diem-toan-quoc-siet-nong-do-con-tu-mung-1-tet-192276.html https://daibieunhandan.vn/dip-tet-nguyen-dan-le-hoi-xuan-2026-tang-cuong-bao-dam-an-toan-giao-thong-tren-cac-tuyen-quoc-lo-va-duong-cao-toc-10405943.html"
+    },
+    {
+      "place": "Toàn quốc",
+      "what": "Giới hạn xe theo TT 12/2025/TT-BXD (hiệu lực 1/7/2025, thay TT 39/2024; sửa bởi TT 19/2026/TT-BXD từ 1/7/2026). Trục đơn ≤10 t; cụm trục kép ≤11/16/18 t; cụm trục ba ≤21/24 t. Khối lượng toàn bộ: xe 2 trục 16 t, 3 trục 24 t, 4 trục 30 t, 5 trục trở lên 32/34 t; đầu kéo kéo sơ mi rơ moóc 26–48 t. Chiều cao xếp hàng 4,2 m, công te nơ 4,35 m; chiều dài ≤20 m.",
+      "why": "Đây là giới hạn của xe, không phải lệnh cấm đường. Nên kiểm tra ở hồ sơ xe; xe vượt mức phải có giấy phép lưu hành.",
+      "source": "https://hethongphapluat.com/thong-tu-12-2025-tt-bxd-c55b3f00d1a5e6f49f7900f375d3cf9e.html https://luatvietnam.vn/giao-thong/thong-tu-19-2026-tt-bxd-quy-dinh-tai-trong-kho-gioi-han-va-luu-hanh-xe-qua-tai-434394-d1.html"
+    },
+    {
+      "place": "Toàn quốc",
+      "what": "Thời gian lái xe (Luật TTATGT 2024 Điều 64). Ban đầu: không quá 10 giờ/ngày, 48 giờ/tuần, liên tục không quá 4 giờ. Luật 118/2025/QH15 (hiệu lực 1/7/2026) sửa thành: liên tục không quá 4 giờ, trừ bất khả kháng; giờ làm việc theo ngày và tuần theo Bộ luật Lao động.",
+      "why": "Quy định này ràng buộc lịch trình (VRP), không ràng buộc đường đi. Chỉ đọc tin báo về luật sửa đổi, chưa đọc toàn văn.",
+      "source": "https://hcc.nghean.gov.vn/tin-tong-hop/toan-van-luat-trat-tu-an-toan-giao-thong-duong-bo-1545.html https://lsvn.vn/sua-doi-quy-dinh-gioi-han-thoi-gian-lai-xe-o-to-toi-da-trong-ngay-a167579.html"
+    }
+  ]
+}

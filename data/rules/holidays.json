@@ -1,0 +1,9 @@
+{
+  "comment": "Fixed-date national holidays only. Add each year's lunar holidays (Tet, Hung Kings) through State.add_holiday.",
+  "holidays": [
+    ["2026-01-01", "Tết Dương lịch"],
+    ["2026-04-30", "Ngày Giải phóng miền Nam"],
+    ["2026-05-01", "Ngày Quốc tế Lao động"],
+    ["2026-09-02", "Quốc khánh"]
+  ]
+}
