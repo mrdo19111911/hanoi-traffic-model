@@ -19,7 +19,8 @@ Dependencies: `requirements-buildings.txt` (duckdb with the spatial extension, r
 .venv/Scripts/python.exe buildings/heights_25d.py              # -> vn_buildings.parquet (attributes and heights)
 .venv/Scripts/python.exe buildings/compact_layer.py            # -> vn_buildings_compact.parquet (footprint + height, small)
 .venv/Scripts/python.exe buildings/check_road_overlap.py --bbox 105.81 20.98 105.83 21.00   # both counts must be 0
-.venv/Scripts/python.exe buildings/split_by_area.py            # -> by_area/<province>/<commune>.parquet + index.json
+.venv/Scripts/python.exe buildings/group_communes.py          # -> buildings/commune_groups.{json,md} (table of contents)
+.venv/Scripts/python.exe buildings/split_by_area.py            # -> by_area/<province>_<NN>.parquet + index.json
 .venv/Scripts/python.exe buildings/strip_buildings.py          # -> osrm/data/vietnam-nobuildings.osm.pbf
 ```
 
@@ -84,15 +85,16 @@ Footprint plus height in about 19 bytes per building (Bùi Xương Trạch test:
 - **Ring** otherwise, including every footprint that was cut: first vertex in `lon_e6`/`lat_e6`, then int16 (dx, dy) steps in 1e-6 degrees. Holes are dropped. Round-trip IoU median 0.99.
 - Plus `id`, `src`, `height_dm`, `height_src`, `floors`.
 
-## One file per commune (`split_by_area.py`)
+## Download files by area (`group_communes.py`, `split_by_area.py`)
 
-A client downloads and opens only the communes it needs: `data/buildings/by_area/<province>/<commune>.parquet`, same schema as the compact layer.
+A client downloads and opens only the area it needs: `data/buildings/by_area/<province>_<NN>.parquet`, same schema as the compact layer, plus `by_area/index.json`.
 
-- Boundaries come from OSM, two-level system since July 2025: 34 provinces (`admin_level=4`, `ISO3166-2` VN-*) and 3,318 communes (`admin_level=6` named Xã / Phường / Đặc khu). They are assembled once into `data/buildings/vn_admin.parquet`.
-- The extract cuts off part of the offshore boundary of Trường Sa, so osmium cannot close Khánh Hòa or Trường Sa. For any unit it cannot assemble, the script polygonizes the member ways present and keeps the closed faces. Khánh Hòa: 46 of 61 ways, mainland and islands kept.
-- A building goes to the commune that contains its centroid, so each building is in exactly one file and keeps its id. Centroids outside every commune go to the nearest one; the count is in `index.json`.
-- `by_area/index.json` lists, per province and per commune, the OSM name, relation id, file, building count, bytes and lon/lat bbox. A client picks files by bbox.
-- Bùi Xương Trạch test: 11,510 buildings in 3 files (Phường Khương Đình 7,505, Định Công 3,208, Phương Liệt 797), totals match the compact layer.
+- **Boundaries** come from OSM, two-level system since July 2025: 34 provinces (`admin_level=4`, `ISO3166-2` VN-*) and 3,318 communes (`admin_level=6` named Xã / Phường / Đặc khu), assembled once into `data/buildings/vn_admin.parquet`. The extract cuts off part of the offshore boundary of Trường Sa, so osmium cannot close Khánh Hòa or Trường Sa; for any unit it cannot assemble, the script polygonizes the member ways present and keeps the closed faces (Khánh Hòa: 46 of 61 ways, mainland and islands kept).
+- **Groups** (`group_communes.py`): neighbouring units of one province and one kind, up to 3 urban wards (Phường) or up to 10 communes (Xã, Đặc khu) per file, at most about 15 MB. Small groups merge into a neighbour of the same kind. Result: 551 files, median 1.5 MB, largest about 9.4 MB, about 1 GB in total (estimates).
+- **Table of contents**, committed: [`commune_groups.md`](commune_groups.md) (readable, per province) and `commune_groups.json` (machine-readable). Grouping depends only on boundaries and rough counts, so it does not change when footprints are refined.
+- **Assignment** (`split_by_area.py`): a building goes to the commune that contains its centroid, so each building is in exactly one file and keeps its id. Centroids outside every commune go to the nearest one (nationwide: 64,432, 0.12 %).
+- `by_area/index.json` lists per file its province, communes with exact building counts, bytes and lon/lat bbox. A client picks files by bbox or by commune name.
+- Bùi Xương Trạch test: 11,510 buildings in 3 files (`ha_noi_15` Khương Đình, `ha_noi_16` Phương Liệt, `ha_noi_19` Định Công), totals match the compact layer.
 
 ## OSM without buildings (`strip_buildings.py`)
 
