@@ -16,8 +16,10 @@ Per area (worker process):
      overlapping pair: the lower-ranked one, pass B order) and the check runs again, up to CHECK_ROUNDS times;
      the count is 'dropped_check'. Write buildings/by_area/<file>, under 95 MB. An area still failing is written
      to the state file and never committed; the next run builds it again.
-Parent: prepares the work copies once (fit_footprints.prepare), runs the areas largest first on --workers processes
-(default 60 % of the logical CPUs; the first ones start 10 s apart), commits each passed file with git and pushes
+Parent: prepares the work copies once (fit_footprints.prepare), runs the areas largest first on up to --workers
+processes (default 60 % of the logical CPUs; the first ones start 10 s apart; the next area starts only when free
+memory, less what the running areas are still expected to grow by, holds its estimated peak, mem_estimate, plus
+MEM_HEADROOM), commits each passed file with git and pushes
 every 10 commits or 2 minutes, and at the end writes and commits buildings/by_area/index.json. Re-running skips
 areas that passed (state in <out>/_areas/done/) and builds failed ones again.
 
@@ -25,7 +27,11 @@ areas that passed (state in <out>/_areas/done/) and builds failed ones again.
     .venv/Scripts/python.exe buildings/build_areas.py --area ha_noi_15.parquet --bbox 105.815 20.985 105.82 20.99 --no-push
         (test: one area, only its buildings inside the box, which is then also the whole input window)
 """
-import argparse, json, os, subprocess, sys, time
+import argparse, ctypes, json, os, subprocess, sys, time
+# Before numpy loads: each OpenBLAS copy (numpy's and scipy's) commits a buffer per core, 1.6 GB per process on 24
+# cores, and nothing here uses BLAS. GDAL's block cache defaults to 5 % of RAM per process; the tiles are read once.
+os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
+os.environ.setdefault('GDAL_CACHEMAX', '64')
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
 import duckdb, numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 from pyproj import Transformer
@@ -43,6 +49,9 @@ CHECK_ROUNDS = 3                   # rounds of deleting what fails the check bef
 HEIGHT_THREADS = 2                 # tiles read at once per worker (network bound)
 PUSH_EVERY, PUSH_SECONDS = 10, 120
 START_GAP_S = 10
+MEM_BASE, MEM_PER_BUILDING = 1.0e9, 7.0e3   # peak private bytes of a worker for an area of n buildings, with
+                                   # margin: measured 1.3 GB at n = 110k, 2.4 GB at 308k (its window 506k)
+MEM_HEADROOM = 2e9                 # kept free when starting another area
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _W = {}                            # per worker: admin units and the group of each commune
 
@@ -113,16 +122,21 @@ def build_area(args):
     entry = {'file': file, 'province': g['province'], 'province_iso': g['province_iso']}
     core = np.array(area['box']) + np.array([-1, -1, 1, 1]) * (1e-7 if test else 1e-4)
     margin = 0.0 if test else fit.NB_MARGIN_DEG
-    # Pass A on the window, own buildings (centroid in the core box) first, then pass B.
+    # Pass A on the window, own buildings (centroid in the core box) first, then pass B. The whole window, not only the
+    # buildings near the area: pass B's unions on the 1e-6 degree grid depend on the order their inputs come out of
+    # STRtrees built over the whole window, so a smaller window moves a few shared walls by a fraction of a m2.
     b = fit.read_box(work, core, margin)
     if not b.num_rows:
         return {**entry, 'buildings': 0, 'status': 'ok', 'seconds': round(time.time() - t0)}
     lines, bufs = fit.roads_near(work, core, margin + fit.ROAD_MARGIN_DEG)
     ta, sa = fit.shift_rows(b, lines, bufs)
+    del b, lines
     cx, cy = ta['cx'].to_numpy(), ta['cy'].to_numpy()
     own = (cx >= core[0]) & (cx < core[2]) & (cy >= core[1]) & (cy < core[3])
     ta = pa.concat_tables([ta.filter(pa.array(own)), ta.filter(pa.array(~own))])
     res, sb = fit.overlap_rows(ta, int(own.sum()), bufs, core)
+    del bufs
+    ta = ta.select(['id', 'a1', 'rank_conf'])        # what the check needs; the pass A footprints go
     t_fit = time.time() - t0
 
     # The rows vn_buildings_clean.parquet would hold (fit_footprints.main), then the area's own buildings.
@@ -134,6 +148,7 @@ def build_area(args):
                CASE WHEN isnan(f.nb_gap_m) THEN NULL ELSE f.nb_gap_m END::FLOAT nb_gap_m
         FROM (SELECT * FROM '{work}/attrs.parquet' WHERE cx >= {core[0] - 1e-3} AND cx < {core[2] + 1e-3}
               AND cy >= {core[1] - 1e-3} AND cy < {core[3] + 1e-3}) m JOIN f USING (id) ORDER BY m.id""")
+    con.unregister('f'); del res
     q = con.execute("""SELECT id, ST_X(c) cx, ST_Y(c) cy, CAST(round(ST_X(c) * 1e6) AS INTEGER) lon_e6,
                        CAST(round(ST_Y(c) * 1e6) AS INTEGER) lat_e6, ST_AsWKB(geometry) wkb
                        FROM (SELECT id, geometry, ST_Centroid(geometry) c FROM clean) ORDER BY id""").fetchnumpy()
@@ -142,6 +157,8 @@ def build_area(args):
         bx = test['bbox']
         mine &= (q['cx'] >= bx[0]) & (q['cx'] <= bx[2]) & (q['cy'] >= bx[1]) & (q['cy'] <= bx[3])
     ids, hx, hy, wkb = q['id'][mine].astype(np.int64), q['cx'][mine], q['cy'][mine], q['wkb'][mine]
+    q_id, q_lon, q_lat = q['id'][mine], q['lon_e6'][mine], q['lat_e6'][mine]
+    del q
     if not len(ids):
         return {**entry, 'buildings': 0, 'status': 'ok', 'seconds': round(time.time() - t0)}
 
@@ -171,6 +188,7 @@ def build_area(args):
     rows = con.execute(f"""SELECT m.id, m.src, ST_AsWKB(m.geometry) wkb, b.height_dm, b.height_src, b.floors, {gap} gap
                            FROM clean m JOIN attrs b USING (id) ORDER BY m.id""").fetchall()
     tbl, is_rect, geoms = encode_rows(*zip(*rows))
+    del rows, wkb
 
     # Check what is published (decoded) and the fitted footprints. A building on a carriageway, and the lower-ranked
     # building of each overlapping pair (pass B rank: OSM, then rank_conf, then larger pass A area, then lower id),
@@ -207,9 +225,9 @@ def build_area(args):
         con.register('gone', pa.table({'id': gone}))
         con.execute("DELETE FROM attrs WHERE id IN (SELECT id FROM gone)")
         con.execute("DELETE FROM clean WHERE id IN (SELECT id FROM gone)")
-        keep_c = ~np.isin(q['id'][mine], gone)
+        keep_c = ~np.isin(q_id, gone)
     else:
-        keep_c = np.ones(int(mine.sum()), bool)
+        keep_c = np.ones(len(q_id), bool)
     lon, lat = tbl['lon_e6'].to_numpy() / 1e6, tbl['lat_e6'].to_numpy() / 1e6
     bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
     os.makedirs(dst_dir, exist_ok=True)
@@ -221,7 +239,7 @@ def build_area(args):
     mb = os.path.getsize(path) / 1e6
     bad = [k for k, v in chk.items() if v] + ([f'{mb:.0f} MB'] if mb >= MAX_MB else [])
     per_c = {}
-    kc = assign_communes(_W['prov'], _W['comm'], q['lon_e6'][mine][keep_c] / 1e6, q['lat_e6'][mine][keep_c] / 1e6)[0]
+    kc = assign_communes(_W['prov'], _W['comm'], q_lon[keep_c] / 1e6, q_lat[keep_c] / 1e6)[0]
     for x in kc.tolist():
         rid = _W['comm'][x]['rel_id']; per_c[rid] = per_c.get(rid, 0) + 1
     return {**entry, 'buildings': int(tbl.num_rows), 'bytes': os.path.getsize(path), 'bbox': bbox,
@@ -229,6 +247,48 @@ def build_area(args):
             'check': chk, 'dropped_check': dropped, 'rect_share': round(float(is_rect.mean()), 3), 'pass_a': sa, 'pass_b': sb,
             'status': 'ok' if not bad else 'failed: ' + ', '.join(bad),
             'seconds': round(time.time() - t0), 'seconds_fit': round(t_fit), 'seconds_heights': round(t_h)}
+
+
+def mem_estimate(n):
+    """Estimated peak private bytes of a worker building an area of n buildings (areas.json 'n')."""
+    return MEM_BASE + MEM_PER_BUILDING * n
+
+
+class _MemStatus(ctypes.Structure):
+    _fields_ = [('dwLength', ctypes.c_ulong), ('dwMemoryLoad', ctypes.c_ulong)] + \
+               [(k, ctypes.c_ulonglong) for k in ('total_phys', 'avail_phys', 'total_commit', 'avail_commit',
+                                                  'total_virtual', 'avail_virtual', 'avail_ext_virtual')]
+
+
+class _ProcMem(ctypes.Structure):
+    _fields_ = [('cb', ctypes.c_ulong), ('faults', ctypes.c_ulong)] + [(k, ctypes.c_size_t) for k in (
+        'peak_ws', 'ws', 'peak_paged', 'paged', 'peak_nonpaged', 'nonpaged', 'pagefile', 'peak_pagefile', 'private')]
+
+
+def avail_bytes():
+    """Memory free for another worker: on Windows the smaller of available RAM and available commit (RAM + page
+    file; a process fails to allocate when commit runs out, even with RAM free)."""
+    if os.name != 'nt':
+        return os.sysconf('SC_AVPHYS_PAGES') * os.sysconf('SC_PAGE_SIZE')
+    m = _MemStatus(); m.dwLength = ctypes.sizeof(m)
+    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m))
+    return min(m.avail_phys, m.avail_commit)
+
+
+def private_bytes(pids):
+    """Private (committed) bytes of processes, summed; 0 where unknown."""
+    if os.name != 'nt':
+        return 0
+    k32, tot = ctypes.windll.kernel32, 0
+    k32.OpenProcess.restype = ctypes.c_void_p
+    for pid in pids:
+        h = k32.OpenProcess(0x1000, False, pid)            # PROCESS_QUERY_LIMITED_INFORMATION
+        if h:
+            c = _ProcMem(); c.cb = ctypes.sizeof(c)
+            if k32.K32GetProcessMemoryInfo(ctypes.c_void_p(h), ctypes.byref(c), c.cb):
+                tot += c.private
+            k32.CloseHandle(ctypes.c_void_p(h))
+    return tot
 
 
 def git(*a):
@@ -305,14 +365,24 @@ def main():
             finish(e)
     jobs = [(work, a.dst_dir, x, st['tiles'], test) for x in todo]
     with ProcessPoolExecutor(max(1, a.workers), initializer=_init, initargs=(a.admin, a.pbf, a.groups)) as ex:
-        running, k = set(), 0
+        running, k = {}, 0                          # future -> estimated peak bytes of its area
         while k < len(jobs) or running:
             while k < len(jobs) and len(running) < a.workers:
-                running.add(ex.submit(build_area, jobs[k])); k += 1
+                # Memory gate: free memory, less what the running areas are still expected to grow by, must hold the
+                # next area's estimated peak plus MEM_HEADROOM (one area always runs).
+                need = mem_estimate(jobs[k][2]['n'])
+                grow = max(0.0, sum(running.values()) - private_bytes(list(getattr(ex, '_processes', None) or {})))
+                free = avail_bytes() - grow
+                if running and free < need + MEM_HEADROOM:
+                    break
+                print(f"start {jobs[k][2]['file']} ({jobs[k][2]['n']} buildings) | est {need / 1e9:.1f} GB | "
+                      f"free {free / 1e9:.1f} GB after {grow / 1e9:.1f} GB still to grow | running {len(running) + 1}", flush=True)
+                running[ex.submit(build_area, jobs[k])] = need; k += 1
                 if k <= a.workers and k < len(jobs):
                     time.sleep(START_GAP_S)        # stagger the first starts, so reads and CPU work interleave
-            fin, running = wait(running, timeout=30, return_when=FIRST_COMPLETED)
+            fin, _ = wait(list(running), timeout=30, return_when=FIRST_COMPLETED)
             for f in fin:
+                running.pop(f)
                 try:
                     finish(f.result())
                 except Exception as err:            # one bad area must not stop the others
