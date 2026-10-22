@@ -75,14 +75,16 @@ def group_medians(lab, H):
 def attrs_query(src, hh, keep=''):
     """SQL for the output rows: footprints `src` (merged columns + geometry) joined with heights `hh` (id, h25)."""
     # least()/greatest() skip NULLs in DuckDB, so a missing height must be guarded explicitly.
-    dm = lambda x: f"CASE WHEN {x} IS NULL THEN NULL ELSE CAST(round(least({x}, 6553) * 10) AS USMALLINT) END"
+    dm = lambda x: f"CASE WHEN {x} IS NULL THEN NULL ELSE CAST(round(least(greatest({x}, 0), 6553) * 10) AS USMALLINT) END"
+    # OSM height and building:levels that are zero or negative are tagging errors (seen: height=-3.3): no OSM value.
+    pos = lambda x: f"CASE WHEN {x} > 0 THEN {x} END"
     return f"""
         WITH t AS (
             SELECT m.id, m.src, ST_Centroid(m.geometry) c, m.area_m2, m.conf, m.osm_id, m.name,
                    nullif(trim(concat_ws(' ', m.addr_housenumber, m.addr_street)), '') addr,
                    CASE WHEN isnan(hh.h25) THEN NULL ELSE hh.h25 END h25,
-                   coalesce(try_cast(m.height AS DOUBLE), try_cast(m.building_levels AS DOUBLE) * 3.3) osm_h,
-                   try_cast(m.building_levels AS DOUBLE) osm_levels
+                   coalesce({pos('try_cast(m.height AS DOUBLE)')}, {pos('try_cast(m.building_levels AS DOUBLE)')} * 3.3) osm_h,
+                   {pos('try_cast(m.building_levels AS DOUBLE)')} osm_levels
             FROM {src} m JOIN {hh} USING (id) {keep})
         , u AS (SELECT *, coalesce(osm_h, CASE WHEN h25 >= 2 THEN h25 END) hm FROM t)
         SELECT id, src, CAST(round(ST_X(c) * 1e6) AS INTEGER) lon_e6, CAST(round(ST_Y(c) * 1e6) AS INTEGER) lat_e6,
