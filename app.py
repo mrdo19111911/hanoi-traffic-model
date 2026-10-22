@@ -67,8 +67,18 @@ def _derived_outdated(root, name):
         return True
 
 
+CLUSTER_PARTITIONS = {"province", "natural"}
+
+
 def clusters_outdated(root):
-    return _derived_outdated(root, "big_road_clusters.json")
+    """Also outdated when the file is not the "regions" format or holds a partition other than province and natural."""
+    if _derived_outdated(root, "big_road_clusters.json"):
+        return True
+    try:
+        doc = json.loads((root / "osrm/data/big_road_clusters.json").read_text(encoding="utf-8"))
+        return doc["method"] != "regions" or any(p["method"] not in CLUSTER_PARTITIONS for p in doc["partitions"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
 
 
 def provinces_outdated(root):
@@ -109,7 +119,7 @@ def setup():
         run([PYTHON, "model/natural_barriers.py"])
     # The cluster file carries the province and natural partitions, so it follows a new province or river file too.
     if provinces or rivers or clusters_outdated(ROOT):
-        run([PYTHON, "model/spectral_clusters.py"])
+        run([PYTHON, "model/clusters.py"])
     npm = shutil.which("npm.cmd") or shutil.which("npm")
     if not npm:
         raise RuntimeError("Node.js/npm is required to build the frontend.")

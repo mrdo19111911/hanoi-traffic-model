@@ -118,7 +118,7 @@ describe('big-road colouring and selection',()=>{
   expect(trialStyle(false)).toEqual({color:'#1f4fd1',weight:5,opacity:.95,dashArray:'4 4'});
  });
 });
-describe('spectral cut drawing',()=>{
+describe('cluster cut drawing',()=>{
  it('draws cuts black and 4 wide over a white casing, and boundary nodes as black dots',()=>{
   expect(cutStyle).toMatchObject({color:'#000000',weight:4,opacity:1});
   expect(cutCasingStyle).toMatchObject({color:'#ffffff',opacity:1});

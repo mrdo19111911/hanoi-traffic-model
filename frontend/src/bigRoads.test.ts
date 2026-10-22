@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {normalizeRef,refMatches,foldText,searchRoutes,routeStats,lineKm,speedColor,SPEED_BANDS,clusterColor,CLUSTER_COLORS,reviewItems,filterReview,reviewCounts,reviewCsv,osmViewUrl,osmEditUrl,visibleGroups,availableKs,pickPartition,clusterAdjacency,partitionAdjacency,colorClusters,cutInfo,cutTipText,clusterStatRows,clustersOutdated,provincePartition,naturalPartition,partitionLabel,compareRows} from './bigRoads';
+import {normalizeRef,refMatches,foldText,searchRoutes,routeStats,lineKm,speedColor,SPEED_BANDS,clusterColor,CLUSTER_COLORS,reviewItems,filterReview,reviewCounts,reviewCsv,osmViewUrl,osmEditUrl,visibleGroups,pickPartition,clusterAdjacency,partitionAdjacency,colorClusters,cutInfo,cutTipText,clusterStatRows,clustersOutdated,provincePartition,naturalPartition,partitionLabel} from './bigRoads';
 
 const road=(id:number,props:any,coordinates:number[][]=[[105,21],[105.01,21]])=>({type:'Feature',geometry:{type:'LineString',coordinates},properties:{way_id:id,group:'quoclo',highway:'trunk',name:'',ref:'',km:1,...props}}) as any;
 const point=(props:any,coordinates:number[])=>({type:'Feature',geometry:{type:'Point',coordinates},properties:props}) as any;
@@ -94,19 +94,12 @@ describe('cluster colours',()=>{
  });
 });
 
-describe('spectral partitions (18.14)',()=>{
+describe('cluster drawing (18.14)',()=>{
  // Cluster 0 on the left, 1 in the middle, 2 on the right; 0 and 2 never touch.
  const roads=[road(1,{},[[0,0],[1,0]]),road(4,{},[[1,0],[1,1]]),road(3,{},[[1,0],[2,0]]),road(2,{},[[2,0],[3,0]]),road(5,{},[[3,0],[4,0]]),road(6,{},[[4,0],[5,0]]),road(9,{},[[9,9],[9,8]])];
  const ways={'1':0,'4':0,'3':1,'2':1,'5':1,'6':2,'9':3};
- const partition=(k:number,extra:any={})=>({k,ways,cuts:[[[1,0],[2,0]],[[3,0],[4,0]]],boundary:[[1,0],[4,0]],stats:{cut_edges:2,cut_km:222.4,cut_pct:4,boundary_nodes:2,contiguous:3,conductance_mean:0.0048,km_min:100,km_median:200,km_max:300},...extra});
- const clusters={method:'spectral_njw_inv_time',created_at:'2026-10-20',pbf_sha256:'abc',policy_version:6,partitions:[partition(8),partition(32),partition(16)]} as any;
- it('lists the ks present in ascending order and defaults to 16',()=>{
-  expect(availableKs(clusters)).toEqual([8,16,32]);
-  expect(pickPartition(clusters,null)!.k).toBe(16);
-  expect(pickPartition(clusters,32)!.k).toBe(32);
-  expect(pickPartition({...clusters,partitions:[partition(8),partition(64)]},null)!.k).toBe(8);
-  expect(pickPartition({...clusters,partitions:[]},16)).toBeNull();
- });
+ const partition=(k:number,extra:any={})=>({method:'natural',k,ways,cuts:[[[1,0],[2,0]],[[3,0],[4,0]]],boundary:[[1,0],[4,0]],stats:{cut_edges:2,cut_km:222.4,cut_pct:4,boundary_nodes:2,contiguous:3,conductance_mean:0.0048,km_min:100,km_median:200,km_max:300},...extra});
+ const clusters={method:'regions',created_at:'2026-10-20',pbf_sha256:'abc',policy_version:6,partitions:[partition(16)]} as any;
  it('makes clusters adjacent when their ways share a vertex',()=>{
   expect(clusterAdjacency(roads,ways)).toEqual({0:[1],1:[0,2],2:[1],3:[]});
  });
@@ -119,19 +112,19 @@ describe('spectral partitions (18.14)',()=>{
   expect(colours[5]).toBe(CLUSTER_COLORS[0]);
  });
  it('names the two clusters of each cut and its length',()=>{
-  const cuts=cutInfo(partition(16),roads);
+  const cuts=cutInfo(partition(16) as any,roads);
   expect(cuts.map(c=>[c.a,c.b])).toEqual([[0,1],[1,2]]);
   expect(cuts[0].km).toBeCloseTo(111.19,1);
   expect(cutTipText(cuts[0])).toBe('Cắt giữa cụm 0 và cụm 1, 111,2 km');
  });
  it('takes the second cluster from the start of a cut whose far end touches no assigned way',()=>{
   const two=[road(1,{},[[0,0],[1,0]]),road(2,{},[[1,0],[2,0]])];
-  const cut={k:2,ways:{'1':0,'2':1},cuts:[[[1,0],[1,1]]],boundary:[],stats:{}} as any;
+  const cut={method:'natural',k:2,ways:{'1':0,'2':1},cuts:[[[1,0],[1,1]]],boundary:[],stats:{}} as any;
   expect(cutInfo(cut,two).map(c=>[c.a,c.b])).toEqual([[0,1]]);
  });
  it('adds the clusters on both sides of every cut to the adjacency',()=>{
   const apart=[road(1,{},[[0,0],[1,0]]),road(2,{},[[2,0],[3,0]])];
-  const cut={k:2,ways:{'1':0,'2':1},cuts:[[[1,0],[2,0]]],boundary:[],stats:{}} as any;
+  const cut={method:'natural',k:2,ways:{'1':0,'2':1},cuts:[[[1,0],[2,0]]],boundary:[],stats:{}} as any;
   const all=[...apart,road(7,{},[[1,0],[2,0]])];
   expect(partitionAdjacency(cut,all)).toEqual({0:[1],1:[0]});
  });
@@ -145,56 +138,39 @@ describe('spectral partitions (18.14)',()=>{
  });
 });
 
-describe('province partition (19.6)',()=>{
+describe('river and province partitions (22)',()=>{
  const roads=[road(1,{},[[0,0],[1,0]]),road(3,{},[[1,0],[2,0]]),road(2,{},[[2,0],[3,0]])];
  const stats=(o:any)=>({cut_edges:257,cut_km:4072,cut_pct:6.2,boundary_nodes:482,contiguous:31,conductance_mean:0.0086,km_min:735,km_median:1793,km_max:3887,...o});
- const spectral=(k:number,extra:any={})=>({method:'spectral',k,ways:{'1':0,'3':1,'2':1},cuts:[[[1,0],[2,0]]],boundary:[[1,0]],stats:stats({}),...extra});
+ const natural={method:'natural',k:5,ways:{'1':0,'3':1,'2':1},cuts:[[[1,0],[2,0]]],boundary:[[1,0]],stats:stats({})};
  const province={method:'province',k:34,ways:{'1':0,'3':1,'2':1},names:{'0':'Thành phố Hà Nội','1':'Tỉnh Bắc Ninh'},cuts:[[[1,0],[2,0]]],boundary:[[1,0]],stats:stats({cut_edges:300,cut_km:3900,cut_pct:5.9,boundary_nodes:520,contiguous:34,conductance_mean:0.0086,unassigned_nodes:12})};
- const clusters={method:'mixed',created_at:'2026-10-20',partitions:[spectral(8),{...spectral(16),method:undefined},spectral(32),province]} as any;
- it('keeps the province partition out of the k list and the default',()=>{
-  expect(availableKs(clusters)).toEqual([8,16,32]);
-  expect(pickPartition(clusters,null)).toMatchObject({k:16});
-  expect(pickPartition(clusters,34)).toMatchObject({k:16});
+ const clusters={method:'regions',created_at:'2026-10-20',partitions:[province,natural]} as any;
+ it('defaults to the river partition and switches to provinces when asked',()=>{
+  expect(pickPartition(clusters,null)).toBe(natural);
+  expect(pickPartition(clusters,'natural')).toBe(natural);
   expect(pickPartition(clusters,'province')).toBe(province);
   expect(provincePartition(clusters)).toBe(province);
-  expect(provincePartition({...clusters,partitions:[spectral(16)]})).toBeNull();
-  expect(pickPartition({...clusters,partitions:[spectral(16)]},'province')).toMatchObject({k:16});
+  expect(naturalPartition(clusters)).toBe(natural);
  });
- it('picks the natural partition only when asked, and labels it',()=>{
-  const natural={...spectral(5),method:'natural'};
-  const withNatural={...clusters,partitions:[...clusters.partitions,natural]};
-  expect(availableKs(withNatural)).toEqual([8,16,32]);
-  expect(pickPartition(withNatural,null)).toMatchObject({k:16,method:undefined});
-  expect(pickPartition(withNatural,'natural')).toBe(natural);
-  expect(naturalPartition(withNatural)).toBe(natural);
-  expect(naturalPartition(clusters)).toBeNull();
-  expect(pickPartition(clusters,'natural')).toMatchObject({k:16});
-  expect(partitionLabel(natural as any)).toBe('Phân cụm · theo sông');
+ it('defaults to provinces when the file has no river partition',()=>{
+  const only={...clusters,partitions:[province]};
+  expect(naturalPartition(only)).toBeNull();
+  expect(pickPartition(only,null)).toBe(province);
+  expect(pickPartition(only,'natural')).toBe(province);
+  expect(pickPartition({...clusters,partitions:[natural]},'province')).toBe(natural);
+  expect(pickPartition({...clusters,partitions:[]},null)).toBeNull();
  });
  it('names provinces in cut tooltips',()=>{
   const cuts=cutInfo(province as any,roads);
   expect(cutTipText(cuts[0])).toBe('Cắt giữa Thành phố Hà Nội và Tỉnh Bắc Ninh, 111,2 km');
-  expect(cutTipText(cutInfo(spectral(16) as any,roads)[0])).toBe('Cắt giữa cụm 0 và cụm 1, 111,2 km');
+  expect(cutTipText(cutInfo(natural as any,roads)[0])).toBe('Cắt giữa cụm 0 và cụm 1, 111,2 km');
  });
  it('labels the stats panel and adds unassigned nodes for provinces',()=>{
-  expect(partitionLabel(spectral(16) as any)).toBe('Phân cụm · k = 16');
+  expect(partitionLabel(natural as any)).toBe('Phân cụm · theo sông');
   expect(partitionLabel(province as any)).toBe('Phân cụm · theo tỉnh');
   const rows=clusterStatRows(province.stats,34);
   expect(rows).toContainEqual(['Số cụm liền mạch','34 / 34']);
   expect(rows[rows.length-1]).toEqual(['Số nút chưa gán','12']);
-  expect(clusterStatRows(spectral(16).stats,16).map(r=>r[0])).not.toContain('Số nút chưa gán');
- });
- it('compares spectral k = 32 with provinces and marks the better value',()=>{
-  const rows=compareRows(spectral(32) as any,province as any);
-  expect(rows.map(r=>r.label)).toEqual(['Số cạnh bị cắt','Km bị cắt (tỉ lệ)','Số nút biên','Số cụm liền mạch','Conductance trung bình','Km mỗi cụm (nhỏ nhất / trung vị / lớn nhất)','Số nút chưa gán']);
-  const row=(label:string)=>rows.find(r=>r.label===label)!;
-  expect(row('Số cạnh bị cắt')).toEqual({label:'Số cạnh bị cắt',spectral:'257',province:'300',better:'spectral'});
-  expect(row('Km bị cắt (tỉ lệ)')).toMatchObject({spectral:'4.072 km (6,2 %)',province:'3.900 km (5,9 %)',better:'province'});
-  expect(row('Số nút biên').better).toBe('spectral');
-  expect(row('Số cụm liền mạch')).toMatchObject({spectral:'31 / 32',province:'34 / 34',better:'province'});
-  expect(row('Conductance trung bình').better).toBeNull();
-  expect(row('Km mỗi cụm (nhỏ nhất / trung vị / lớn nhất)')).toMatchObject({spectral:'735 / 1.793 / 3.887',better:null});
-  expect(row('Số nút chưa gán')).toEqual({label:'Số nút chưa gán',spectral:'—',province:'12',better:null});
+  expect(clusterStatRows(natural.stats,5).map(r=>r[0])).not.toContain('Số nút chưa gán');
  });
 });
 

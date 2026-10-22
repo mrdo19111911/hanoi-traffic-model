@@ -135,26 +135,15 @@ export function reviewCsv(items:ReviewItem[]):string{
  return '﻿'+[header,...rows].map(r=>r.map(csvField).join(',')).join('\r\n');
 }
 
-// Spec 18.14: spectral partitions of network A, one per k.
+// Spec 22: the cluster file holds two partitions of network A, by main river ("natural") and by province.
 const fmt=(n:number,digits:number)=>n.toLocaleString('vi-VN',{maximumFractionDigits:digits});
-export const DEFAULT_K=16;
-// Spec 19.4: a partition without `method` is spectral; the province partition is listed separately.
-export const isSpectral=(p:ClusterPartition)=>(p.method??'spectral')==='spectral';
-const spectralParts=(clusters:BigRoadClusters|null|undefined)=>(clusters?.partitions||[]).filter(isSpectral);
-export const availableKs=(clusters:BigRoadClusters|null|undefined)=>[...new Set(spectralParts(clusters).map(p=>p.k))].sort((a,b)=>a-b);
 export const provincePartition=(clusters:BigRoadClusters|null|undefined)=>(clusters?.partitions||[]).find(p=>p.method==='province')||null;
-// Round 4: the partition along main rivers ("natural"), also listed separately.
 export const naturalPartition=(clusters:BigRoadClusters|null|undefined)=>(clusters?.partitions||[]).find(p=>p.method==='natural')||null;
-// Step 3: main-river regions split by spectral clustering ("natural_spectral").
-export const twoLevelPartition=(clusters:BigRoadClusters|null|undefined)=>(clusters?.partitions||[]).find(p=>p.method==='natural_spectral')||null;
-export type PartitionChoice=number|'province'|'natural'|'natural_spectral'|null;
+export type PartitionChoice='province'|'natural'|null;
+// The chosen partition when the file has it; otherwise rivers, then provinces.
 export function pickPartition(clusters:BigRoadClusters|null|undefined,choice:PartitionChoice):ClusterPartition|null{
- if(choice==='province'){const province=provincePartition(clusters);if(province)return province;}
- if(choice==='natural'){const natural=naturalPartition(clusters);if(natural)return natural;}
- if(choice==='natural_spectral'){const two=twoLevelPartition(clusters);if(two)return two;}
- const parts=spectralParts(clusters);
- if(!parts.length)return provincePartition(clusters);
- return parts.find(p=>p.k===choice)||parts.find(p=>p.k===DEFAULT_K)||[...parts].sort((a,b)=>a.k-b.k)[0];
+ const natural=naturalPartition(clusters),province=provincePartition(clusters);
+ return (choice==='province'?province:null)||natural||province;
 }
 type Adjacency=Record<number,number[]>;
 // Clusters of the ways meeting at each vertex, keyed like routeStats.
@@ -191,7 +180,7 @@ export function cutInfo(partition:ClusterPartition,roads:Feature[]):CutInfo[]{
 }
 const side=(name:string|undefined,id:number|null)=>name||`cụm ${id??'?'}`;
 export const cutTipText=(cut:CutInfo)=>`Cắt giữa ${side(cut.aName,cut.a)} và ${side(cut.bName,cut.b)}, ${fmt(cut.km,1)} km`;
-export const partitionLabel=(p:ClusterPartition)=>p.method==='province'?'Phân cụm · theo tỉnh':p.method==='natural'?'Phân cụm · theo sông':p.method==='natural_spectral'?'Phân cụm · sông + spectral':`Phân cụm · k = ${p.k}`;
+export const partitionLabel=(p:ClusterPartition)=>p.method==='province'?'Phân cụm · theo tỉnh':'Phân cụm · theo sông';
 // Adjacency from shared vertices plus the two sides of every cut.
 export function partitionAdjacency(partition:ClusterPartition,roads:Feature[]):Adjacency{
  const adj=emptyAdjacency(partition.ways);
@@ -213,24 +202,3 @@ export function clusterStatRows(stats:Partial<ClusterStats>,k:number):[string,st
  return [['Số cạnh bị cắt',n(stats.cut_edges)],['Km bị cắt',`${n(stats.cut_km)} km`],['Tỉ lệ km bị cắt',`${n(stats.cut_pct,1)} %`],['Số nút biên',n(stats.boundary_nodes)],['Số cụm liền mạch',contiguous],['Conductance trung bình',n(stats.conductance_mean,4)],['Km mỗi cụm (nhỏ nhất / trung vị / lớn nhất)',`${n(stats.km_min)} / ${n(stats.km_median)} / ${n(stats.km_max)}`],...(stats.unassigned_nodes!=null?[['Số nút chưa gán',n(stats.unassigned_nodes)] as [string,string]]:[])];
 }
 export const clustersOutdated=(clusters:BigRoadClusters|null|undefined,meta:BigRoadMeta)=>!!clusters?.pbf_sha256&&typeof meta.pbf_sha256==='string'&&clusters.pbf_sha256!==meta.pbf_sha256;
-
-// Spec 19.6: spectral k = 32 against the province partition; lower is better except the contiguous share.
-export interface CompareRow{label:string;spectral:string;province:string;better:'spectral'|'province'|null}
-export function compareRows(spectral:ClusterPartition,province:ClusterPartition):CompareRow[]{
- const a=spectral.stats||{} as ClusterStats,b=province.stats||{} as ClusterStats;
- const n=(v:unknown,d=0)=>typeof v==='number'?fmt(v,d):'—';
- const pick=(x:unknown,y:unknown,higher=false):CompareRow['better']=>typeof x!=='number'||typeof y!=='number'||x===y?null:(x<y)!==higher?'spectral':'province';
- const share=(s:ClusterStats,k:number)=>typeof s.contiguous==='number'&&k?s.contiguous/k:undefined;
- const contiguous=(s:ClusterStats,k:number)=>typeof s.contiguous==='number'?`${fmt(s.contiguous,0)} / ${fmt(k,0)}`:'—';
- const km=(s:ClusterStats)=>`${n(s.cut_km)} km (${n(s.cut_pct,1)} %)`;
- const spread=(s:ClusterStats)=>`${n(s.km_min)} / ${n(s.km_median)} / ${n(s.km_max)}`;
- return [
-  {label:'Số cạnh bị cắt',spectral:n(a.cut_edges),province:n(b.cut_edges),better:pick(a.cut_edges,b.cut_edges)},
-  {label:'Km bị cắt (tỉ lệ)',spectral:km(a),province:km(b),better:pick(a.cut_km,b.cut_km)},
-  {label:'Số nút biên',spectral:n(a.boundary_nodes),province:n(b.boundary_nodes),better:pick(a.boundary_nodes,b.boundary_nodes)},
-  {label:'Số cụm liền mạch',spectral:contiguous(a,spectral.k),province:contiguous(b,province.k),better:pick(share(a,spectral.k),share(b,province.k),true)},
-  {label:'Conductance trung bình',spectral:n(a.conductance_mean,4),province:n(b.conductance_mean,4),better:pick(a.conductance_mean,b.conductance_mean)},
-  {label:'Km mỗi cụm (nhỏ nhất / trung vị / lớn nhất)',spectral:spread(a),province:spread(b),better:null},
-  {label:'Số nút chưa gán',spectral:'—',province:n(b.unassigned_nodes),better:null},
- ];
-}

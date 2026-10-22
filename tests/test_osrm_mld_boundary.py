@@ -213,7 +213,7 @@ class RunTests(unittest.TestCase):
         self.assertEqual(report["comparison"]["target"]["cells"], 3)
         self.assertEqual(report["comparison"]["target"]["boundary_ebg"], 6)
         self.assertEqual(report["comparison"]["cells_2"]["boundary_ebg"], 4)
-        self.assertEqual(report["comparison"]["reference_G"], {"full_network_4a": 1832, "natural_spectral_a": 590, "natural": 350})
+        self.assertEqual(report["comparison"]["reference_G"], {"natural": 350})
         self.assertEqual(len(cells["features"]), 3)  # geometries 0, 1, 2 at the 3-cell cut
         self.assertTrue(all("cell" in f["properties"] for f in cells["features"]))
 

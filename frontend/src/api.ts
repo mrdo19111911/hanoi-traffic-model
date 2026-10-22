@@ -9,7 +9,7 @@ export type ReviewStatus='unseen'|'seen'|'skipped';
 export interface ReviewEntry {status:ReviewStatus;note:string;updated_at?:string}
 export interface BigRoadReview {items:Record<string,ReviewEntry>}
 export interface ClusterStats {cut_edges:number;cut_km:number;cut_pct:number;boundary_nodes:number;contiguous:number|boolean;conductance_mean:number;km_min:number;km_median:number;km_max:number;unassigned_nodes?:number}
-export interface ClusterPartition {method?:'spectral'|'province'|'natural'|'natural_spectral';parents?:Record<string,number>;adjacency?:number[][];extra_gates?:unknown[];rivers?:string[];names?:Record<string,string>;k:number;ways:Record<string,number>;cuts:number[][][];boundary:number[][];stats:ClusterStats}
+export interface ClusterPartition {method:'province'|'natural';extra_gates?:unknown[];rivers?:string[];names?:Record<string,string>;k:number;ways:Record<string,number>;cuts:number[][][];boundary:number[][];stats:ClusterStats}
 // Spec 18.14: one partition per k in {8, 16, 32, 64}; replaces the single-k format of 18.10.
 export interface BigRoadClusters {method:string;created_at:string;pbf_sha256?:string;policy_version?:number;partitions:ClusterPartition[]}
 export interface TrialSegment {on_a:boolean;coords:number[][];km:number;seconds:number}

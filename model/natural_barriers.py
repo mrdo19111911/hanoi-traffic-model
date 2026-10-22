@@ -29,7 +29,7 @@ from scipy.sparse.csgraph import connected_components
 from build_big_roads import _cells, _crossing_point, _segment_km, inside
 from osm_classes import DEFAULT_SPEEDS_KMH
 from osm_classes import BIG_ROAD_POLICY_VERSION
-from spectral_clusters import _boundary_km, write_json_atomic
+from clusters import _boundary_km, write_json_atomic
 
 ROOT = Path(__file__).resolve().parents[1]
 CELL_DEG = 0.02
@@ -617,7 +617,7 @@ def main():
     parser.add_argument("--out", type=Path, default=ROOT / "reports/natural_barriers.json")
     parser.add_argument("--land", type=Path, default=ROOT / "osrm/data/vietnam_land.geojson")
     parser.add_argument("--rivers-out", type=Path, default=ROOT / "osrm/data/main_rivers.geojson",
-                        help="main rivers and their crossings, read by model/spectral_clusters.py")
+                        help="main rivers and their crossings, read by model/clusters.py")
     parser.add_argument("--min-river-km", type=float, default=100.0, help="shortest dividing river inside Vietnam")
     parser.add_argument("--small-km", type=float, default=200.0, help="components with less A road count as small")
     parser.add_argument("--tunnel-m", type=float, default=500.0, help="shortest tunnel counted as a mountain crossing")

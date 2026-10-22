@@ -21,11 +21,11 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 from build_big_roads import OsrmRouter, _write_json_atomic
-from spectral_clusters import _in_rings, assign_provinces, build_graph, haversine_km
+from clusters import PARTITIONS, _in_rings, assign_provinces, build_graph, haversine_km
 
 ROOT = Path(__file__).resolve().parents[1]
 BLOCK = 100  # OSRM's default --max-table-size allows 100 x 100 per /table request
-FULL_TABLE_PARTITIONS = ("spectral_16", "spectral_32", "province", "natural", "natural_spectral")
+FULL_TABLE_PARTITIONS = PARTITIONS
 MAX_GATE_SNAP_M = 500.0  # an extra gate OSRM snaps farther than this is dropped
 BANDS = ((0, 30, "<30"), (30, 100, "30-100"), (100, 300, "100-300"), (300, math.inf, ">=300"))
 SLOTS = 96  # 15-minute departure slots per day
@@ -48,8 +48,18 @@ class TableRouter(OsrmRouter):
 
 
 def partition_name(partition):
+    """The partition's method when it is one of PARTITIONS, else None."""
     method = partition.get("method")
-    return method if method in ("province", "natural", "natural_spectral") else f"spectral_{partition['k']}"
+    return method if method in PARTITIONS else None
+
+
+def known_partitions(doc, log=print):
+    """The province and natural partitions of a cluster file; any other is skipped with a warning."""
+    for partition in doc["partitions"]:
+        if partition_name(partition) is None:
+            log(f"Skipping unknown partition {partition.get('method')!r} (k={partition.get('k')}) in the cluster file")
+            continue
+        yield partition
 
 
 def extra_gate_points(partition, router):
@@ -83,20 +93,21 @@ def _with_extra(own, extra):
 def partition_labels(graph, partition):
     """Cluster of each graph junction from the partition's node_labels (-1 unassigned); no majority recount."""
     if "node_labels" not in partition:
-        raise ValueError(f"partition {partition_name(partition)} has no node_labels; regenerate with python model/spectral_clusters.py")
+        raise ValueError(f"partition {partition_name(partition)} has no node_labels; regenerate with python model/clusters.py")
     at = {(round(float(lon), 6), round(float(lat), 6)): int(c) for lon, lat, c in partition["node_labels"]}
     labels = np.array([at.get((round(float(x), 6), round(float(y), 6)), -2) for x, y in graph.lonlat], dtype=np.int64)
     if (labels == -2).any():
         raise ValueError(f"node_labels of {partition_name(partition)} miss {int((labels == -2).sum())} junctions of this graph; "
-                         "regenerate with python model/spectral_clusters.py")
+                         "regenerate with python model/clusters.py")
     return labels
 
 
 def require_node_labels(doc, partitions=None):
     for partition in doc["partitions"]:
-        if (not partitions or partition_name(partition) in partitions) and "node_labels" not in partition:
+        name = partition_name(partition)
+        if name and (not partitions or name in partitions) and "node_labels" not in partition:
             raise ValueError(f"{partition_name(partition)} in the cluster file has no node_labels; "
-                             "regenerate with python model/spectral_clusters.py")
+                             "regenerate with python model/clusters.py")
 
 
 def gate_sets(graph, labels, boundary, extra=None):
@@ -226,7 +237,7 @@ def evaluate_partition(graph, partition, pairs, router, direct=None):
     """
     labels = partition_labels(graph, partition)
     gate_nodes = gates(graph, labels, partition["boundary"])
-    adjacency = partition_adjacency(graph, labels, partition)
+    adjacency = cluster_adjacency(graph, labels)
     direct = direct_times(graph, pairs, router) if direct is None else np.asarray(direct)
     point = lambda n: tuple(graph.lonlat[n])  # noqa: E731
     extra, dropped = extra_gate_points(partition, router)
@@ -270,7 +281,7 @@ def run(roads, clusters, out, router, pairs=500, seed=0, partitions=None, full_g
     meta = json.loads((roads.parent / "big_roads.meta.json").read_text(encoding="utf-8"))
     doc = json.loads(clusters.read_text(encoding="utf-8"))
     if doc.get("pbf_sha256") != meta["pbf_sha256"]:
-        raise ValueError(f"{clusters.name} comes from another map; run python model/spectral_clusters.py")
+        raise ValueError(f"{clusters.name} comes from another map; run python model/clusters.py")
     require_node_labels(doc, partitions)
     reason = router.unavailable(meta["pbf_sha256"]) if hasattr(router, "unavailable") else None
     if reason:
@@ -282,7 +293,7 @@ def run(roads, clusters, out, router, pairs=500, seed=0, partitions=None, full_g
     direct = direct_times(graph, sample, router)
     direct_s = time.perf_counter() - clock
     report_partitions = []
-    for partition in doc["partitions"]:
+    for partition in known_partitions(doc):
         name = partition_name(partition)
         if partitions and name not in partitions:
             continue
@@ -548,11 +559,6 @@ def cluster_adjacency(graph, labels):
     return {frozenset((int(a), int(b))) for a, b in zip(la[cut], lb[cut])}
 
 
-def partition_adjacency(graph, labels, partition):
-    """Cut-edge adjacency plus the pairs the partition lists itself (natural_spectral: river crossings too)."""
-    return cluster_adjacency(graph, labels) | {frozenset((int(a), int(b))) for a, b in partition.get("adjacency", [])}
-
-
 def relation(ca, cb, adjacency):
     if ca == cb:
         return "same"
@@ -655,7 +661,7 @@ def run_stratified(roads, clusters, out, out_geojson, router, edges, land_ring, 
     meta = json.loads((roads.parent / "big_roads.meta.json").read_text(encoding="utf-8"))
     doc = json.loads(clusters.read_text(encoding="utf-8"))
     if doc.get("pbf_sha256") != meta["pbf_sha256"]:
-        raise ValueError(f"{clusters.name} comes from another map; run python model/spectral_clusters.py")
+        raise ValueError(f"{clusters.name} comes from another map; run python model/clusters.py")
     require_node_labels(doc, partitions)
     uniform = {}
     if round1 is not None and Path(round1).is_file():
@@ -688,7 +694,7 @@ def run_stratified(roads, clusters, out, out_geojson, router, edges, land_ring, 
             province_of = dict(zip(small, labels.tolist()))
     km = np.array([p["km"] for p in sample])
     report_partitions, all_cases = [], []
-    for partition in doc["partitions"]:
+    for partition in known_partitions(doc):
         name = partition_name(partition)
         if partitions and name not in partitions:
             continue
@@ -696,8 +702,7 @@ def run_stratified(roads, clusters, out, out_geojson, router, edges, land_ring, 
         labels = partition_labels(graph, partition)
         extra, _ = extra_gate_points(partition, router)
         gate_points = gate_sets(graph, labels, partition["boundary"], extra)
-        adjacency = partition_adjacency(graph, labels, partition)
-        parents = partition.get("parents")
+        adjacency = cluster_adjacency(graph, labels)
         is_province = partition.get("method") == "province"
 
         def cluster_of(pair, end):
@@ -750,9 +755,6 @@ def run_stratified(roads, clusters, out, out_geojson, router, edges, land_ring, 
                       "kind": sample[i]["kind"], "src": sample[i]["src"], "dst": sample[i]["dst"],
                       "gates": [list(gate_points[ka][g]), list(gate_points[kb][h])], "t_direct": round(float(t_direct[i]), 1),
                       "t_gate": round(float(t_gate[k]), 1), "error": float(errors[k]), "km": round(float(km[i]), 2)}
-            if parents:
-                # Two-level partition: does the pair cross a river boundary or only a spectral one inside a region?
-                record["boundary_kind"] = "river" if parents.get(str(ka[1])) != parents.get(str(kb[1])) else "spectral"
             inspected.append(_inspect(record, router, edges, partition["ways"]))
         share = uniform.get(name)
         all_cases += inspected
@@ -801,7 +803,7 @@ def main():
     parser.add_argument("--out", type=Path, help="report path (default reports/gate_matrix_experiment.json, _2 with --stratified)")
     parser.add_argument("--pairs", type=int, default=500)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--partitions", nargs="+", help="e.g. spectral_32 province (default: all)")
+    parser.add_argument("--partitions", nargs="+", help="province and/or natural (default: both)")
     parser.add_argument("--skip-full-gate-table", action="store_true")
     parser.add_argument("--stratified", action="store_true", help="round 2: stratified pairs with small-road points")
     parser.add_argument("--band-pairs", default=",".join(map(str, BAND_PAIRS)), help="pairs for <30,30-100,100-300,>=300 km")

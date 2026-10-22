@@ -242,7 +242,7 @@ class BigRoadApiTests(unittest.TestCase):
         response = self.client.get("/api/big-roads/clusters")
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["detail"], "Chưa có dữ liệu cụm.")
-        clusters = {"method": "spectral", "k": 2, "created_at": "2026-10-20T00:00:00+00:00", "ways": {"1": 0, "2": 1}}
+        clusters = {"method": "regions", "created_at": "2026-10-20T00:00:00+00:00", "partitions": [{"method": "natural", "k": 2, "ways": {"1": 0, "2": 1}}]}
         (self.data / "big_road_clusters.json").write_text(json.dumps(clusters), encoding="utf-8")
         response = self.client.get("/api/big-roads/clusters")
         self.assertEqual(response.status_code, 200)

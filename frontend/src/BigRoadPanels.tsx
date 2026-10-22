@@ -4,7 +4,7 @@ import {useEffect,useId,useRef,useState} from 'react';
 import type {Feature} from 'geojson';
 import {Ban,ChevronDown,CircleDot,Download,ExternalLink,Layers3,LoaderCircle,LocateFixed,Pencil,Route as RouteIcon,Search,Ship,TriangleAlert,X} from 'lucide-react';
 import type {BigRoadMeta,BigRoadClusters,ClusterPartition,ReviewStatus,TrialRoute} from './api';
-import {GROUPS,type Group,groupLabels,bridgeKindLabels,speedSourceLabels,reviewStatusLabels,deadEndReasons,SPEED_BANDS,UNKNOWN_COLOR,lineKm,refParts,ferryTipLines,clusterStatRows,partitionLabel,compareRows,reviewCounts,reviewCsv,reviewReasonText,osmViewUrl,osmEditUrl,type ReviewItem,type ReviewFilter,type RouteHit,type RouteStats} from './bigRoads';
+import {GROUPS,type Group,groupLabels,bridgeKindLabels,speedSourceLabels,reviewStatusLabels,deadEndReasons,SPEED_BANDS,UNKNOWN_COLOR,lineKm,refParts,ferryTipLines,clusterStatRows,partitionLabel,reviewCounts,reviewCsv,reviewReasonText,osmViewUrl,osmEditUrl,type ReviewItem,type ReviewFilter,type RouteHit,type RouteStats} from './bigRoads';
 
 export const number=(n:number,digits=1)=>n.toLocaleString('vi-VN',{maximumFractionDigits:digits});
 const props=(f:Feature)=>(f.properties||{}) as Record<string,any>;
@@ -16,10 +16,8 @@ interface ToolbarProps{
  groups:Record<Group,boolean>;onToggleGroup:(g:Group)=>void;
  colorBy:'group'|'speed';onColorBy:(c:'group'|'speed')=>void;
  layers:LayerState;onLayer:(key:keyof LayerState,value:boolean)=>void;clusters:BigRoadClusters|null;
- // Shown only while the cluster layer is on (spec 18.14).
- ks?:number[];k?:number|null;onK?:(k:number)=>void;
- // Spec 19.6: the province partition button and the province outline layer.
- provinceK?:number|null;provinceOn?:boolean;onProvince?:()=>void;hasProvinces?:boolean;
+ // Spec 19.6: the province outline layer.
+ hasProvinces?:boolean;
 }
 export function BigToolbar(p:ToolbarProps){
  const [menu,setMenu]=useState(false);const listId=useId(),menuRef=useRef<HTMLDivElement>(null);
@@ -50,13 +48,13 @@ export function BigToolbar(p:ToolbarProps){
     {layer('basemap','Ảnh nền')}
    </div>}
   </div>
-  {p.ks&&<PartitionPicker ks={p.ks} k={p.k} onK={p.onK} provinceK={p.provinceK} provinceOn={p.provinceOn} onProvince={p.onProvince}/>}
  </div>;
 }
 // The "Cách chia" buttons; spec 20 shows them in the drawer's "Cụm" tab.
-export function PartitionPicker(p:{ks:number[];k?:number|null;onK?:(k:number)=>void;provinceK?:number|null;provinceOn?:boolean;onProvince?:()=>void;naturalK?:number|null;naturalOn?:boolean;onNatural?:()=>void;twoLevelK?:number|null;twoLevelOn?:boolean;onTwoLevel?:()=>void}){
- if(!p.ks.length&&p.provinceK==null&&p.naturalK==null&&p.twoLevelK==null)return null;
- return <div className="color-by k-picker" role="group" aria-label="Cách chia"><span>Cách chia</span>{p.ks.map(k=>{const on=!p.provinceOn&&!p.naturalOn&&!p.twoLevelOn&&p.k===k;return <button type="button" key={k} aria-pressed={on} className={on?'on':''} onClick={()=>p.onK?.(k)}>{`k = ${k}`}</button>;})}{p.provinceK!=null&&<button type="button" aria-pressed={!!p.provinceOn} className={p.provinceOn?'on':''} onClick={()=>p.onProvince?.()}>{`Tỉnh (${p.provinceK})`}</button>}{p.naturalK!=null&&<button type="button" aria-pressed={!!p.naturalOn} className={p.naturalOn?'on':''} onClick={()=>p.onNatural?.()}>{`Sông (${p.naturalK})`}</button>}{p.twoLevelK!=null&&<button type="button" aria-pressed={!!p.twoLevelOn} className={p.twoLevelOn?'on':''} onClick={()=>p.onTwoLevel?.()}>{`Sông + spectral (${p.twoLevelK})`}</button>}</div>;
+export function PartitionPicker(p:{naturalK?:number|null;naturalOn?:boolean;onNatural?:()=>void;provinceK?:number|null;provinceOn?:boolean;onProvince?:()=>void}){
+ if(p.naturalK==null&&p.provinceK==null)return null;
+ const button=(label:string,on:boolean,onClick?:()=>void)=><button type="button" aria-pressed={on} className={on?'on':''} onClick={()=>onClick?.()}>{label}</button>;
+ return <div className="color-by k-picker" role="group" aria-label="Cách chia"><span>Cách chia</span>{p.naturalK!=null&&button(`Sông (${p.naturalK})`,!!p.naturalOn,p.onNatural)}{p.provinceK!=null&&button(`Tỉnh (${p.provinceK})`,!!p.provinceOn,p.onProvince)}</div>;
 }
 
 export function BigStats({meta,junctions}:{meta:BigRoadMeta;junctions:Feature[]}){
@@ -78,7 +76,7 @@ export function BigStats({meta,junctions}:{meta:BigRoadMeta;junctions:Feature[]}
 export function BigLegend({colorBy,partition,basemap}:{colorBy:'group'|'speed'|'cluster';partition:ClusterPartition|null;basemap:boolean}){
  return <div className="map-legend big-road-legend">
   {colorBy==='speed'?<><span className="legend-title">VẬN TỐC</span>{SPEED_BANDS.map((b,i)=><span key={b.color}><i style={{background:b.color}}/>{i===SPEED_BANDS.length-1?`${b.label} km/h`:b.label}</span>)}<span><i style={{background:UNKNOWN_COLOR}}/>Không rõ</span><span className="legend-note">Vận tốc tự do theo profile OSRM, chưa tính kẹt xe</span></>
-  :colorBy==='cluster'&&partition?<><span className="legend-title">CỤM</span><span>{partition.method==='province'?`Tô theo tỉnh · ${partition.k} tỉnh`:partition.method==='natural'?`Tô theo sông · ${partition.k} vùng`:partition.method==='natural_spectral'?`Tô theo sông + spectral · ${partition.k} vùng`:`Tô theo cụm phổ · k = ${partition.k}`}</span><span><i className="cut"/>Nhát cắt</span><span><i className="dot" style={{background:'#000000'}}/>Nút biên</span></>
+  :colorBy==='cluster'&&partition?<><span className="legend-title">CỤM</span><span>{partition.method==='province'?`Tô theo tỉnh · ${partition.k} tỉnh`:`Tô theo sông · ${partition.k} vùng`}</span><span><i className="cut"/>Nhát cắt</span><span><i className="dot" style={{background:'#000000'}}/>Nút biên</span></>
   :<><span className="legend-title">ĐƯỜNG LỚN</span><span><i style={{background:'#dc3e48'}}/>Cao tốc</span><span><i style={{background:'#e89b36'}}/>Quốc lộ</span><span><i style={{background:'#d4b12f'}}/>Đường tỉnh</span><span><i style={{background:'#8a949a'}}/>Khúc cô lập</span></>}
   <span><i className="dashed"/>Chỉ nhờ số hiệu</span><span><i className="dotted"/>Nối bù</span><span><i className="ferry"/>Phà</span>
   <span><i className="dot" style={{background:'#3974d8'}}/>Giao B</span><span><i className="dot" style={{background:'#2a9d8f'}}/>Giao C</span><span><i className="square"/>Giao biên giới</span><span><i className="ring"/>Điểm cụt</span>
@@ -131,16 +129,6 @@ export function ClusterPanel({clusters,partition}:{clusters:BigRoadClusters;part
   <div className="side-heading"><h3>{partitionLabel(partition)}</h3></div>
   <table className="cluster-stats"><tbody>{clusterStatRows(partition.stats||{},partition.k).map(([label,value])=><tr key={label}><th scope="row">{label}</th><td>{value}</td></tr>)}</tbody></table>
   <p className="side-note">{`${clusters.method} · ${clusters.created_at}`}</p>
- </section>;
-}
-
-// Spec 19.6: spectral k = 32 against the province partition, the better value in bold.
-export function ComparePanel({spectral,province}:{spectral:ClusterPartition;province:ClusterPartition}){
- const cell=(text:string,better:boolean)=><td className={better?'better':undefined}>{better?<strong>{text}</strong>:text}</td>;
- return <section className="side-panel compare-panel" aria-label="So sánh cách chia">
-  <div className="side-heading"><h3>So sánh cách chia</h3></div>
-  <table className="cluster-stats compare-stats"><thead><tr><th scope="col"></th><th scope="col">{`Spectral k = ${spectral.k}`}</th><th scope="col">Tỉnh</th></tr></thead>
-   <tbody>{compareRows(spectral,province).map(r=><tr key={r.label}><th scope="row">{r.label}</th>{cell(r.spectral,r.better==='spectral')}{cell(r.province,r.better==='province')}</tr>)}</tbody></table>
  </section>;
 }
 

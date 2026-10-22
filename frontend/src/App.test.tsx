@@ -11,10 +11,13 @@ const bigLand={type:'Feature',geometry:{type:'Polygon',coordinates:[[[102,8],[11
 const bigBoundary={type:'Feature',geometry:{type:'Polygon',coordinates:[[[101,7],[111,7],[111,24],[101,24],[101,7]]]},properties:{source:'osm_admin_level_2',tolerance_m:100,points:5}};
 const bigMeta={ways:2,km:{caotoc:7354.951,quoclo:30986.02,tinhlo:28146},junctions:{B:9753,C:7773,border:32,deadend:1012},components:170,island_km:412.3,land_status:'ok',bridges:2400,bridge_km:812.4,fragments:74,fragment_km:21.3,osrm_bridging:'ok',osrm_bridges:310,osrm_errors:1,osrm_unmatched:0,bridge_km_by_kind:{road:640.2,small:120.1,ferry:52.1},ferries:12,ferries_unconfirmed:5,dead_end_reasons:{construction:40,continues:300,end:230},osrm_error_samples:[{node_id:99,at:[107,16],error:'NoSegment'}],pbf_sha256:'pbf-1'};
 const stats=(cut_edges:number)=>({cut_edges,cut_km:2642,cut_pct:4,boundary_nodes:313,contiguous:15,conductance_mean:0.0048,km_min:2388,km_median:3189,km_max:7185});
-const partition=(k:number,ways:Record<string,number>,cut_edges:number)=>({k,ways,cuts:[[[105.9,21],[105.9,21.05]]],boundary:[[105.9,21]],stats:stats(cut_edges)});
-const provincePart={method:'province',k:34,ways:{'1':0,'5':1,'6':0},names:{'0':'Thành phố Hà Nội','1':'Tỉnh Bắc Ninh'},cuts:[[[105.9,21],[105.9,21.05]]],boundary:[[105.9,21]],stats:{...stats(300),cut_km:2500,cut_pct:3.8,boundary_nodes:520,contiguous:34,unassigned_nodes:12}};
-const clusterFile={method:'spectral_njw_inv_time',created_at:'2026-10-20T09:00:00+07:00',pbf_sha256:'pbf-1',policy_version:6,partitions:[{...partition(8,{'1':0,'5':0,'6':0},80),method:'spectral'},partition(16,{'1':0,'5':1,'6':0},164),{...partition(32,{'1':0,'5':1,'6':2},257),method:'spectral'},provincePart]};
-const spectralOnly={...clusterFile,partitions:clusterFile.partitions.filter((p:any)=>p.method!=='province')};
+const cut=[[[105.9,21],[105.9,21.05]]];
+const naturalPart={method:'natural',k:2,ways:{'1':0,'5':1,'6':1},rivers:['Sông Hồng'],extra_gates:[],cuts:cut,boundary:[[105.9,21]],stats:{...stats(12),contiguous:2,unassigned_nodes:0}};
+const provincePart={method:'province',k:34,ways:{'1':0,'5':1,'6':0},names:{'0':'Thành phố Hà Nội','1':'Tỉnh Bắc Ninh'},cuts:cut,boundary:[[105.9,21]],stats:{...stats(300),cut_km:2500,cut_pct:3.8,boundary_nodes:520,contiguous:34,unassigned_nodes:12}};
+// Spec 22: two partitions; the province one comes first here so the default cannot depend on file order.
+const clusterFile={method:'regions',created_at:'2026-10-20T09:00:00+07:00',pbf_sha256:'pbf-1',policy_version:6,partitions:[provincePart,naturalPart]};
+const naturalOnly={...clusterFile,partitions:[naturalPart]};
+const provinceOnly={...clusterFile,partitions:[provincePart]};
 const provinces={type:'FeatureCollection',pbf_sha256:'pbf-1',policy_version:6,failed:[],features:[{type:'Feature',geometry:{type:'MultiPolygon',coordinates:[[[[105,20.5],[106.2,20.5],[106.2,21.5],[105,21.5],[105,20.5]]]]},properties:{iso:'VN-HN',name:'Thành phố Hà Nội',relation_id:1,area_km2:3359,points:5}}]};
 const trial={segments:[{on_a:false,coords:[[105.85,21.03],[105.86,21.03]],km:1.2,seconds:120},{on_a:true,coords:[[105.86,21.03],[106.6,20.85]],km:98.3,seconds:4500},{on_a:false,coords:[[106.6,20.85],[106.68,20.86]],km:2.5,seconds:300}],km:102,minutes:82,km_on_a:98.3,km_off_a:3.7};
 const options={road_classes:[{id:'motorway',label:'Cao tốc',color:'#8b5cf6'},{id:'primary',label:'Đường chính',color:'#0c9f9a'}],methods:[{id:'idw1',label:'IDW · p = 1'},{id:'idw2',label:'IDW · p = 2'}],default_method:'idw1'};
@@ -433,28 +436,34 @@ describe('speed and cluster colouring',()=>{
   expect(screen.getByText('Cụm: chưa có dữ liệu')).toBeInTheDocument();
   expect(screen.queryByRole('checkbox',{name:'Cụm'})).toBeNull();
  });
- const kGroup=()=>screen.queryByRole('group',{name:'Cách chia'});
+ const picker=()=>screen.queryByRole('group',{name:'Cách chia'});
+ const pickerButton=(name:string)=>within(picker()!).getByRole('button',{name});
  async function clustersOn(file:unknown=clusterFile){override({'/api/big-roads/clusters':()=>ok(file)});await enterBig();await openLayers();await userEvent.click(screen.getByRole('checkbox',{name:'Cụm'}));await openTab('Cụm');}
- it('colours roads by the k = 16 partition when the cluster layer is on, adjacent clusters apart',async()=>{
+ it('colours roads by the river partition by default when the cluster layer is on, adjacent clusters apart',async()=>{
   await clustersOn();
   expect(map.props.bigRoads.colorBy).toBe('cluster');
-  expect(map.props.bigRoads.clusters).toEqual({'1':0,'5':1,'6':0});
+  expect(map.props.bigRoads.clusters).toEqual(naturalPart.ways);
   const colours=map.props.bigRoads.clusterColors;
   expect(colours[0]).toBeTruthy();expect(colours[1]).toBeTruthy();expect(colours[0]).not.toBe(colours[1]);
-  expect(document.querySelector('.big-road-legend')).toHaveTextContent('k = 16');
+  expect(document.querySelector('.big-road-legend')).toHaveTextContent('Tô theo sông · 2 vùng');
   expect(document.querySelector('.big-road-legend')).toHaveTextContent('Nhát cắt');
+  expect(map.props.bigRoads.cutKey).toBe('natural-2');
  });
- it('offers only the ks present in the file and switches partition',async()=>{
-  expect(kGroup()).toBeNull();
+ it('shows exactly the "Sông (N)" and "Tỉnh (34)" buttons, Sông pressed by default (22.3)',async()=>{
+  expect(picker()).toBeNull();
   await clustersOn();
-  const buttons=within(kGroup()!).getAllByRole('button');
-  expect(buttons.map(b=>b.textContent)).toEqual(['k = 8','k = 16','k = 32','Tỉnh (34)']);
-  expect(within(kGroup()!).getByRole('button',{name:'k = 16'})).toHaveAttribute('aria-pressed','true');
-  await userEvent.click(within(kGroup()!).getByRole('button',{name:'k = 8'}));
-  expect(map.props.bigRoads.clusters).toEqual({'1':0,'5':0,'6':0});
-  expect(within(kGroup()!).getByRole('button',{name:'k = 8'})).toHaveAttribute('aria-pressed','true');
+  expect(within(picker()!).getAllByRole('button').map(b=>b.textContent)).toEqual(['Sông (2)','Tỉnh (34)']);
+  expect(pickerButton('Sông (2)')).toHaveAttribute('aria-pressed','true');
+  expect(pickerButton('Tỉnh (34)')).toHaveAttribute('aria-pressed','false');
   await openLayers();await userEvent.click(screen.getByRole('checkbox',{name:'Cụm'}));
-  expect(kGroup()).toBeNull();expect(map.props.bigRoads.colorBy).toBe('group');expect(map.props.bigRoads.cuts).toBeFalsy();
+  expect(picker()).toBeNull();expect(map.props.bigRoads.colorBy).toBe('group');expect(map.props.bigRoads.cuts).toBeFalsy();
+ });
+ it('defaults to Tỉnh, the only button, when the file has no natural partition (22.3)',async()=>{
+  await clustersOn(provinceOnly);
+  expect(within(picker()!).getAllByRole('button').map(b=>b.textContent)).toEqual(['Tỉnh (34)']);
+  expect(pickerButton('Tỉnh (34)')).toHaveAttribute('aria-pressed','true');
+  expect(map.props.bigRoads.clusters).toEqual(provincePart.ways);
+  expect(document.querySelector('.big-road-legend')).toHaveTextContent('Tô theo tỉnh · 34 tỉnh');
  });
  it('hands cuts with their two clusters and the boundary nodes to the map',async()=>{
   await clustersOn();
@@ -465,40 +474,22 @@ describe('speed and cluster colouring',()=>{
  it('shows the selected partition stats in the drawer cluster tab',async()=>{
   await clustersOn();
   const table=screen.getByRole('region',{name:'Phân cụm'});
-  expect(within(table).getByText('Số cạnh bị cắt').closest('tr')).toHaveTextContent('164');
-  expect(within(table).getByText('Số cụm liền mạch').closest('tr')).toHaveTextContent('15 / 16');
-  await userEvent.click(within(kGroup()!).getByRole('button',{name:'k = 8'}));
-  expect(within(table).getByText('Số cạnh bị cắt').closest('tr')).toHaveTextContent('80');
- });
- it('offers the natural (river) partition as "Sông (N)" and switches to it',async()=>{
-  const naturalPart={method:'natural',k:2,ways:{'1':0,'5':1,'6':1},cuts:[[[105.9,21],[105.9,21.05]]],boundary:[[105.9,21]],extra_gates:[],rivers:['Sông Hồng'],stats:{...stats(12),unassigned_nodes:0}};
-  await clustersOn({...clusterFile,partitions:[...clusterFile.partitions,naturalPart]});
-  expect(within(kGroup()!).getAllByRole('button').map(b=>b.textContent)).toEqual(['k = 8','k = 16','k = 32','Tỉnh (34)','Sông (2)']);
-  await userEvent.click(within(kGroup()!).getByRole('button',{name:'Sông (2)'}));
-  expect(within(kGroup()!).getByRole('button',{name:'Sông (2)'})).toHaveAttribute('aria-pressed','true');
-  expect(within(kGroup()!).getByRole('button',{name:'Tỉnh (34)'})).toHaveAttribute('aria-pressed','false');
-  expect(map.props.bigRoads.clusters).toEqual(naturalPart.ways);
-  expect(within(screen.getByRole('region',{name:'Phân cụm'})).getByRole('heading')).toHaveTextContent('Phân cụm · theo sông');
-  expect(document.querySelector('.big-road-legend')).toHaveTextContent('Tô theo sông · 2 vùng');
- });
- it('offers the two-level partition as "Sông + spectral (N)" next to "Sông (N)"',async()=>{
-  const naturalPart={method:'natural',k:2,ways:{'1':0,'5':1,'6':1},cuts:[[[105.9,21],[105.9,21.05]]],boundary:[[105.9,21]],extra_gates:[],rivers:['Sông Hồng'],stats:{...stats(12),unassigned_nodes:0}};
-  const twoLevel={method:'natural_spectral',k:3,ways:{'1':0,'5':1,'6':2},parents:{'0':0,'1':1,'2':1},cuts:[[[105.9,21],[105.9,21.05]]],boundary:[[105.9,21]],extra_gates:[],adjacency:[[0,1],[1,2]],stats:{...stats(20),unassigned_nodes:0,k_by_parent:{'0':1,'1':2}}};
-  await clustersOn({...clusterFile,partitions:[...clusterFile.partitions,naturalPart,twoLevel]});
-  expect(within(kGroup()!).getAllByRole('button').map(b=>b.textContent)).toEqual(['k = 8','k = 16','k = 32','Tỉnh (34)','Sông (2)','Sông + spectral (3)']);
-  await userEvent.click(within(kGroup()!).getByRole('button',{name:'Sông + spectral (3)'}));
-  expect(within(kGroup()!).getByRole('button',{name:'Sông + spectral (3)'})).toHaveAttribute('aria-pressed','true');
-  expect(within(kGroup()!).getByRole('button',{name:'Sông (2)'})).toHaveAttribute('aria-pressed','false');
-  expect(map.props.bigRoads.clusters).toEqual(twoLevel.ways);
-  expect(within(screen.getByRole('region',{name:'Phân cụm'})).getByRole('heading')).toHaveTextContent('Phân cụm · sông + spectral');
-  expect(document.querySelector('.big-road-legend')).toHaveTextContent('Tô theo sông + spectral · 3 vùng');
+  expect(within(table).getByRole('heading')).toHaveTextContent('Phân cụm · theo sông');
+  expect(within(table).getByText('Số cạnh bị cắt').closest('tr')).toHaveTextContent('12');
+  expect(within(table).getByText('Số cụm liền mạch').closest('tr')).toHaveTextContent('2 / 2');
+  expect(within(table).getByText('Số nút chưa gán').closest('tr')).toHaveTextContent('0');
+  expect(table).toHaveTextContent('regions · 2026-10-20T09:00:00+07:00');
+  await userEvent.click(pickerButton('Tỉnh (34)'));
+  expect(within(table).getByText('Số cạnh bị cắt').closest('tr')).toHaveTextContent('300');
+  expect(within(table).getByText('Số cụm liền mạch').closest('tr')).toHaveTextContent('34 / 34');
  });
  it('switches to the province partition and names provinces on cuts',async()=>{
   await clustersOn();
-  await userEvent.click(within(kGroup()!).getByRole('button',{name:'Tỉnh (34)'}));
-  expect(within(kGroup()!).getByRole('button',{name:'Tỉnh (34)'})).toHaveAttribute('aria-pressed','true');
-  expect(within(kGroup()!).getByRole('button',{name:'k = 16'})).toHaveAttribute('aria-pressed','false');
+  await userEvent.click(pickerButton('Tỉnh (34)'));
+  expect(pickerButton('Tỉnh (34)')).toHaveAttribute('aria-pressed','true');
+  expect(pickerButton('Sông (2)')).toHaveAttribute('aria-pressed','false');
   expect(map.props.bigRoads.clusters).toEqual(provincePart.ways);
+  expect(map.props.bigRoads.cutKey).toBe('province-34');
   expect(map.props.bigRoads.cuts[0]).toMatchObject({aName:'Thành phố Hà Nội',bName:'Tỉnh Bắc Ninh'});
   const colours=map.props.bigRoads.clusterColors;expect(colours[0]).not.toBe(colours[1]);
   const panel=screen.getByRole('region',{name:'Phân cụm'});
@@ -506,29 +497,24 @@ describe('speed and cluster colouring',()=>{
   expect(within(panel).getByText('Số nút chưa gán').closest('tr')).toHaveTextContent('12');
   expect(document.querySelector('.big-road-legend')).toHaveTextContent('Tô theo tỉnh · 34 tỉnh');
  });
- it('offers no province button when the file has no province partition',async()=>{
-  await clustersOn(spectralOnly);
-  expect(within(kGroup()!).queryByRole('button',{name:/Tỉnh/})).toBeNull();
- });
- it('compares spectral k = 32 with provinces and bolds the better value',async()=>{
+ it('switches back to the river partition after choosing provinces',async()=>{
   await clustersOn();
-  const table=screen.getByRole('region',{name:'So sánh cách chia'});
-  expect(within(table).getAllByRole('columnheader').map(h=>h.textContent)).toEqual(['','Spectral k = 32','Tỉnh']);
-  expect(within(table).getAllByRole('row')).toHaveLength(8);
-  const cells=(label:string)=>within(within(table).getByText(label).closest('tr') as HTMLElement).getAllByRole('cell');
-  const bold=(label:string)=>cells(label).map(c=>!!c.querySelector('strong'));
-  expect(cells('Số cạnh bị cắt').map(c=>c.textContent)).toEqual(['257','300']);
-  expect(bold('Số cạnh bị cắt')).toEqual([true,false]);
-  expect(bold('Km bị cắt (tỉ lệ)')).toEqual([false,true]);
-  expect(bold('Số nút biên')).toEqual([true,false]);
-  expect(bold('Số cụm liền mạch')).toEqual([false,true]);
-  expect(bold('Conductance trung bình')).toEqual([false,false]);
-  expect(bold('Km mỗi cụm (nhỏ nhất / trung vị / lớn nhất)')).toEqual([false,false]);
-  expect(cells('Số nút chưa gán').map(c=>c.textContent)).toEqual(['—','12']);
-  expect(bold('Số nút chưa gán')).toEqual([false,false]);
+  await userEvent.click(pickerButton('Tỉnh (34)'));
+  await userEvent.click(pickerButton('Sông (2)'));
+  expect(pickerButton('Sông (2)')).toHaveAttribute('aria-pressed','true');
+  expect(pickerButton('Tỉnh (34)')).toHaveAttribute('aria-pressed','false');
+  expect(map.props.bigRoads.clusters).toEqual(naturalPart.ways);
+  expect(map.props.bigRoads.cuts[0].aName).toBeUndefined();
+  expect(within(screen.getByRole('region',{name:'Phân cụm'})).getByRole('heading')).toHaveTextContent('Phân cụm · theo sông');
+  expect(document.querySelector('.big-road-legend')).toHaveTextContent('Tô theo sông · 2 vùng');
  });
- it('hides the comparison without a province partition or with the cluster layer off',async()=>{
-  await clustersOn(spectralOnly);
+ it('offers no province button when the file has no province partition',async()=>{
+  await clustersOn(naturalOnly);
+  expect(within(picker()!).getAllByRole('button').map(b=>b.textContent)).toEqual(['Sông (2)']);
+  expect(within(picker()!).queryByRole('button',{name:/Tỉnh/})).toBeNull();
+ });
+ it('has no comparison table between partitions (22)',async()=>{
+  await clustersOn();
   expect(screen.queryByRole('region',{name:'So sánh cách chia'})).not.toBeInTheDocument();
  });
  it('warns when the cluster file comes from another map build',async()=>{

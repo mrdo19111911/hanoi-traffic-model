@@ -1,17 +1,13 @@
-"""Spectral clustering (Ng-Jordan-Weiss) of the big-road (A) network, for viewing its natural cuts on the map.
+"""Regions of the big-road (A) network: by province and by main river (spec 22).
 
-Reads big_roads.geojson and big_roads.meta.json, builds the junction graph (shared vertices split ways, degree-2
-chains are contracted, the main component is kept), weights each edge by 1 / free-flow time, embeds the junctions
-with the smallest eigenvectors of the normalised Laplacian and runs k-means for several k. Writes
-big_road_clusters.json: per k the cluster of every way and of every junction (node_labels), the cut chains, the
-boundary junctions (exactly the ends of cut edges) and summary stats. Ferry landings stay junctions.
-When vietnam_provinces.geojson comes from the same map, the province partition of the same graph is added last,
-so both ways of dividing the network are measured alike, and a comparison with spectral k=32 is printed.
+Reads big_roads.geojson and big_roads.meta.json and builds the junction graph (shared vertices split ways, degree-2
+chains are contracted, the main component is kept; each edge weighted by 1 / free-flow time). Writes
+big_road_clusters.json: per partition the region of every way and of every junction (node_labels), the cut chains,
+the boundary junctions (exactly the ends of cut edges) and summary stats. Ferry landings stay junctions.
+When vietnam_provinces.geojson comes from the same map, the "province" partition is written.
 When main_rivers.geojson (written by model/natural_barriers.py) comes from the same map, the "natural" partition
-is added too: the network is cut where it crosses a main river and pieces under 200 km of road are merged; the
-ends of non-A crossings (small-road bridges, ferries) are kept as extra gates. "natural_spectral" then splits each
-natural region with the same NJW spectral clustering into sub-clusters, about --target in all, by km of road.
-Production port of reports/spectral_spike/spectral_spike.py; runs are deterministic for a given seed.
+is written too: the network is cut where it crosses a main river and pieces under 200 km of road are merged; the
+ends of non-A crossings (small-road bridges, ferries) are kept as extra gates.
 """
 import argparse
 from collections import defaultdict
@@ -21,29 +17,23 @@ import math
 import os
 from pathlib import Path
 import tempfile
-import warnings
 
 import numpy as np
-from scipy.cluster.vq import kmeans2
-from scipy.sparse import coo_matrix, diags, identity
+from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
-from scipy.sparse.linalg import eigsh
 from scipy.spatial import cKDTree
 
 ROOT = Path(__file__).resolve().parents[1]
-METHOD = "spectral_njw_inv_time"
+METHOD = "regions"
+PARTITIONS = ("province", "natural")
 SPEED_KMH = {"caotoc": 80.0, "quoclo": 50.0, "tinhlo": 40.0}
 FERRY_KMH = 15.0
 MIN_HOURS = 30 / 3600  # so tiny junction stubs do not dominate the weights
-KS = (8, 16, 32, 64)
-RESTARTS = 10
 SNAP_KM = 2.0  # junctions just outside every province go to the nearest one within this distance
 KM_PER_DEGREE = 111.32
 NATURAL_MIN_KM = 200.0  # natural pieces with less A road are merged into a neighbour
-NATURAL_TARGET = 22  # sub-clusters of the two-level partition, over all natural regions
 RIVER_CELL_DEG = 0.02
 BANK_CANDIDATES = 200  # nearest junctions tried for the bank of a crossing end
-DENSE_MAX_NODES = 500  # below this a dense eigensolver is exact and avoids eigsh's k < n limit
 
 
 def haversine_km(first, second):
@@ -199,49 +189,6 @@ def build_graph(features):
     return Graph(size, lonlat, edges[:, 0], edges[:, 1], np.array(weights), np.array(kms), edge_chains, chains)
 
 
-def spectral_embedding(graph, count, seed=0):
-    """The `count` eigenvectors of I - D^-1/2 W D^-1/2 with the smallest eigenvalues (columns, ascending)."""
-    n = graph.n
-    w = coo_matrix((graph.w, (graph.a, graph.b)), shape=(n, n)).tocsr()
-    w = (w + w.T).tocsr()
-    degree = np.asarray(w.sum(axis=1)).ravel()
-    scale = diags(1.0 / np.sqrt(degree))
-    laplacian = identity(n, format="csc") - scale @ w @ scale
-    count = min(count, n)
-    if n <= DENSE_MAX_NODES:
-        values, vectors = np.linalg.eigh(laplacian.toarray())
-    else:
-        # A fixed start vector keeps ARPACK, and so the whole run, deterministic.
-        start = np.random.default_rng(seed).random(n)
-        values, vectors = eigsh(laplacian.tocsc(), k=count, sigma=-1e-5, which="LM", v0=start)
-    order = np.argsort(values, kind="stable")[:count]
-    return vectors[:, order]
-
-
-def _kmeans(points, k, rng):
-    best, best_inertia = None, math.inf
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")  # empty clusters on tiny graphs; relabelled below
-        for _ in range(RESTARTS):
-            centres, labels = kmeans2(points, k, minit="++", iter=50, missing="warn", seed=int(rng.integers(1 << 31)))
-            inertia = float(((points - centres[labels]) ** 2).sum())
-            if inertia < best_inertia:
-                best, best_inertia = labels, inertia
-    return np.unique(best, return_inverse=True)[1]
-
-
-def partition(graph, ks, seed=0):
-    """{k: junction labels}, NJW on one shared embedding; each k gets its own Generator(seed)."""
-    vectors = spectral_embedding(graph, max(ks), seed)
-    found = {}
-    for k in ks:
-        k_eff = min(k, graph.n)
-        rows = vectors[:, :k_eff]
-        rows = rows / np.maximum(np.linalg.norm(rows, axis=1, keepdims=True), 1e-12)
-        found[k] = _kmeans(rows, k_eff, np.random.default_rng(seed))
-    return found
-
-
 def _province_rings(feature):
     """All rings of a MultiPolygon feature as (m, 2) arrays; even-odd over all of them honours the holes."""
     return [np.asarray(ring, dtype=float) for polygon in feature["geometry"]["coordinates"] for ring in polygon]
@@ -306,7 +253,7 @@ def assign_provinces(lonlat, features, snap_km=SNAP_KM):
 
 
 def stats(graph, labels, k=None):
-    """Summary of one partition, as in reports/spectral_spike/README.md (conductance by edge count).
+    """Summary of one partition (conductance by edge count).
 
     Junctions labelled -1 belong to no cluster: their edges are neither cuts nor inside a cluster.
     """
@@ -491,75 +438,6 @@ def natural_partition(graph, rivers, min_km=NATURAL_MIN_KM):
     return {"labels": labels, "extra_gates": extra, "info": info}
 
 
-def allocate_k(km, target):
-    """Sub-clusters per region, proportional to km by largest remainder, each >= 1, summing to target."""
-    n = len(km)
-    if target < n:
-        raise ValueError(f"target {target} is below the {n} regions; every region needs at least one sub-cluster")
-    total = float(sum(km))
-    quota = [target * value / total if total > 0 else target / n for value in km]
-    k = [max(1, math.floor(q)) for q in quota]
-    while sum(k) < target:
-        i = min(range(n), key=lambda j: (-(quota[j] - k[j]), -km[j], j))
-        k[i] += 1
-    while sum(k) > target:
-        i = min((j for j in range(n) if k[j] > 1), key=lambda j: (quota[j] - k[j], km[j], -j))
-        k[i] -= 1
-    return k
-
-
-def _region_km(graph, labels, count):
-    la, lb = labels[graph.a], labels[graph.b]
-    inner = (la == lb) & (la >= 0)
-    assigned = labels >= 0
-    return (np.bincount(la[inner], graph.km[inner], count) + np.bincount(labels[assigned], graph.self_km[assigned], count))
-
-
-def natural_spectral_partition(graph, natural, target=NATURAL_TARGET, seed=0):
-    """Split every natural region by NJW spectral clustering on its own junction subgraph.
-
-    Region i gets allocate_k() sub-clusters by its km of road. Labels run on in region order; parents[c] is the
-    region of sub-cluster c. Extra gates get the sub-clusters of their bank junctions; adjacency lists the pairs
-    joined by a cut edge or by a non-A river crossing.
-    """
-    parents_of_node = natural["labels"]
-    count = int(parents_of_node.max()) + 1 if len(parents_of_node) else 0
-    km = _region_km(graph, parents_of_node, count)
-    ks = allocate_k(km.tolist(), target)
-    labels = -np.ones(graph.n, dtype=np.int64)
-    parents, k_by_parent, offset = {}, {}, 0
-    for region, k in enumerate(ks):
-        nodes = np.flatnonzero(parents_of_node == region)
-        local = -np.ones(graph.n, dtype=np.int64)
-        local[nodes] = np.arange(len(nodes))
-        inner = (local[graph.a] >= 0) & (local[graph.b] >= 0)
-        k_eff = min(k, len(nodes))
-        if k_eff > 1:
-            sub = Graph.__new__(Graph)
-            sub.n, sub.a, sub.b, sub.w = len(nodes), local[graph.a[inner]], local[graph.b[inner]], graph.w[inner]
-            found = partition(sub, [k_eff], seed)[k_eff]
-        else:
-            found = np.zeros(len(nodes), dtype=np.int64)
-        used = int(found.max()) + 1 if len(found) else 0
-        labels[nodes] = offset + found
-        for c in range(used):
-            parents[offset + c] = region
-        k_by_parent[str(region)] = used
-        offset += used
-    extra = []
-    gates = natural["extra_gates"]
-    for first, second in zip(gates[0::2], gates[1::2]):
-        ca, cb = int(labels[first["node"]]), int(labels[second["node"]])
-        extra.append({**first, "clusters": [ca, cb]})
-        extra.append({**second, "clusters": [cb, ca]})
-    la, lb = labels[graph.a], labels[graph.b]
-    cut = (la >= 0) & (lb >= 0) & (la != lb)
-    adjacency = {(int(min(a, b)), int(max(a, b))) for a, b in zip(la[cut], lb[cut])}
-    adjacency |= {(min(g["clusters"]), max(g["clusters"])) for g in extra if g["clusters"][0] != g["clusters"][1]}
-    return {"labels": labels, "parents": parents, "k_by_parent": k_by_parent, "extra_gates": extra,
-            "adjacency": sorted([a, b] for a, b in adjacency), "target": target}
-
-
 def _partition(graph, labels, k, method):
     la, lb = labels[graph.a], labels[graph.b]
     cut = np.flatnonzero((la >= 0) & (lb >= 0) & (la != lb))
@@ -568,13 +446,13 @@ def _partition(graph, labels, k, method):
             "node_labels": [[round(float(x), 6), round(float(y), 6), int(c)] for (x, y), c in zip(graph.lonlat, labels)],
             "cuts": [[[round(x, 6), round(y, 6)] for x, y in graph.chains[c]["coords"]] for e in cut for c in graph.edge_chains[e]],
             "boundary": [[round(float(graph.lonlat[i][0]), 6), round(float(graph.lonlat[i][1]), 6)] for i in nodes],
-            "stats": stats(graph, labels, None if method == "spectral" else k)}
+            "stats": stats(graph, labels, k)}
 
 
-def export(graph, labels_by_k, meta, provinces=None, natural=None, two_level=None):
-    """The big_road_clusters.json document: spectral partitions by k, then the (labels, names) province one and the
-    natural_partition() result if given."""
-    partitions = [_partition(graph, labels_by_k[k], k, "spectral") for k in sorted(labels_by_k)]
+def export(graph, meta, provinces=None, natural=None):
+    """The big_road_clusters.json document: the (labels, names) province partition and the natural_partition()
+    result, each when given."""
+    partitions = []
     if provinces is not None:
         labels, names = provinces
         item = _partition(graph, labels, len(names), "province")
@@ -589,35 +467,8 @@ def export(graph, labels_by_k, meta, provinces=None, natural=None, two_level=Non
         item["natural"] = {key: value for key, value in natural["info"].items() if key != "rivers"}
         item["stats"]["unassigned_nodes"] = int((labels < 0).sum())
         partitions.append(item)
-    if two_level is not None:
-        labels = two_level["labels"]
-        item = _partition(graph, labels, int(labels.max()) + 1 if len(labels) else 0, "natural_spectral")
-        item["parents"] = {str(c): p for c, p in sorted(two_level["parents"].items())}
-        item["names"] = {str(c): f"sông {p} · {c}" for c, p in sorted(two_level["parents"].items())}
-        item["extra_gates"] = two_level["extra_gates"]
-        item["adjacency"] = two_level["adjacency"]
-        item["target"] = two_level["target"]
-        item["stats"]["k_by_parent"] = two_level["k_by_parent"]
-        item["stats"]["unassigned_nodes"] = int((labels < 0).sum())
-        partitions.append(item)
     return {"method": METHOD, "created_at": datetime.now(timezone.utc).isoformat(), "pbf_sha256": meta["pbf_sha256"],
             "policy_version": meta["policy_version"], "partitions": partitions}
-
-
-COMPARED = ("cut_edges", "cut_km", "cut_pct", "boundary_nodes", "contiguous", "conductance_mean", "km_min", "km_median",
-            "km_max", "unassigned_nodes")
-
-
-def comparison(result, k=32):
-    """Text table of spectral k against the province partition, or None when either is missing."""
-    spectral = next((p for p in result["partitions"] if p.get("method") == "spectral" and p["k"] == k), None)
-    provinces = next((p for p in result["partitions"] if p.get("method") == "province"), None)
-    if spectral is None or provinces is None:
-        return None
-    rows = [("", f"spectral k={k}", f"province ({provinces['k']})")]
-    rows += [(key, str(spectral["stats"].get(key, "-")), str(provinces["stats"].get(key, "-"))) for key in COMPARED]
-    widths = [max(len(row[i]) for row in rows) for i in range(3)]
-    return "\n".join(f"{row[0]:<{widths[0]}}  {row[1]:>{widths[1]}}  {row[2]:>{widths[2]}}" for row in rows)
 
 
 def write_json_atomic(path, value):
@@ -653,7 +504,7 @@ def _rivers_for(path, meta):
     return data, None
 
 
-def run(roads, out, ks=KS, seed=0, natural_min_km=NATURAL_MIN_KM, natural_target=NATURAL_TARGET):
+def run(roads, out, natural_min_km=NATURAL_MIN_KM):
     roads = Path(roads)
     meta = json.loads((roads.parent / "big_roads.meta.json").read_text(encoding="utf-8"))
     graph = build_graph(json.loads(roads.read_text(encoding="utf-8"))["features"])
@@ -665,8 +516,7 @@ def run(roads, out, ks=KS, seed=0, natural_min_km=NATURAL_MIN_KM, natural_target
     if reason:
         print("Natural partition skipped:", reason)
     natural = natural_partition(graph, rivers, natural_min_km) if rivers else None
-    two_level = natural_spectral_partition(graph, natural, natural_target, seed) if natural else None
-    result = export(graph, partition(graph, ks, seed), meta, provinces, natural, two_level)
+    result = export(graph, meta, provinces, natural)
     write_json_atomic(out, result)
     return result
 
@@ -675,16 +525,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--roads", type=Path, default=ROOT / "osrm/data/big_roads.geojson")
     parser.add_argument("--out", type=Path, default=ROOT / "osrm/data/big_road_clusters.json")
-    parser.add_argument("--k", type=int, nargs="+", default=list(KS))
-    parser.add_argument("--target", type=int, default=NATURAL_TARGET, help="sub-clusters of natural_spectral in all")
     args = parser.parse_args()
-    if min(args.k) < 2:
-        parser.error("k must be at least 2")
-    result = run(args.roads, args.out, sorted(set(args.k)), natural_target=args.target)
+    result = run(args.roads, args.out)
     for item in result["partitions"]:
         print(item["method"], item["k"], json.dumps(item["stats"]))
-    table = comparison(result)
-    print(table if table else "No comparison: spectral k=32 or the province partition is missing")
 
 
 if __name__ == "__main__":

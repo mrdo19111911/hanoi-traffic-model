@@ -28,7 +28,7 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
-from spectral_clusters import write_json_atomic
+from clusters import write_json_atomic
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "osrm/data/vietnam-latest.osrm"
@@ -38,8 +38,7 @@ CLOSE_FRAC = 0.25  # a level within 25% of the target cell count is "near enough
 MERGE_M = 100.0
 TABLE_POINTS = 2000
 TABLE_BLOCK = 100  # osrm-routed default --max-table-size
-REFERENCE_G = {"full_network_4a": 1832, "natural_spectral_a": 590, "natural": 350}
-REFERENCE_GXG_S = 110.0
+REFERENCE_G = {"natural": 350}
 METRES_PER_DEGREE = 111320.0
 CELL_DTYPE = np.dtype([("value_offset", "<u8"), ("source_boundary_offset", "<u8"), ("destination_boundary_offset", "<u8"),
                        ("num_source_nodes", "<u4"), ("num_destination_nodes", "<u4")])
@@ -290,7 +289,7 @@ def time_table(router, points, block=TABLE_BLOCK):
     table_s = time.perf_counter() - tick
     requests = math.ceil(len(points) / block) ** 2
     return {"points": len(points), "block": block, "requests": requests, "snap_s": round(snap_s, 2), "table_s": round(table_s, 2),
-            "reachable_share": float(np.isfinite(table).mean()), "reference_gxg_1832_s": REFERENCE_GXG_S}
+            "reachable_share": float(np.isfinite(table).mean())}
 
 
 def run(base, build_json, edges_path, out, out_geojson, target=TARGET, compare_cells=COMPARE_CELLS, router=None,

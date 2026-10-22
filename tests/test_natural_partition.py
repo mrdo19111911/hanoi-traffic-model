@@ -1,4 +1,4 @@
-"""Offline tests for the "natural" (main river) partition of the big-road network in model/spectral_clusters.py."""
+"""Offline tests for the "natural" (main river) partition of the big-road network in model/clusters.py."""
 import json
 from pathlib import Path
 import sys
@@ -38,34 +38,43 @@ def rivers_doc(sha="map-a", crossings=None):
                  "ends": [[105.499, 21.008], [105.501, 21.008]]}]}
 
 
+def square(lon0, lat0, lon1, lat1):
+    return [[lon0, lat0], [lon1, lat0], [lon1, lat1], [lon0, lat1], [lon0, lat0]]
+
+
+def province(iso, name, *polygons):
+    return {"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [list(p) for p in polygons]},
+            "properties": {"iso": iso, "name": name, "relation_id": 1, "area_km2": 1.0, "points": 5}}
+
+
 class MergeTests(unittest.TestCase):
     def test_small_components_join_the_neighbour_with_most_connecting_edges(self):
-        from spectral_clusters import merge_components
+        from clusters import merge_components
         # 0 and 1 are large; 2 is small with 3 edges to 1 and 1 edge to 0; 3 is small and has no connection.
         km = [500.0, 300.0, 50.0, 10.0]
         links = {(0, 2): 1, (1, 2): 3, (0, 1): 2}
         self.assertEqual(merge_components(km, links, 200.0), [0, 1, 1, -1])
 
     def test_a_tie_goes_to_the_larger_neighbour_and_merging_repeats(self):
-        from spectral_clusters import merge_components
+        from clusters import merge_components
         # 3 (linked only to 2) joins 2 first; then 2+3 ties between 0 and 1 and joins the larger 1, which becomes label 0.
         km = [300.0, 400.0, 20.0, 5.0]
         links = {(0, 2): 2, (1, 2): 2, (2, 3): 1}
         self.assertEqual(merge_components(km, links, 200.0), [1, 0, 0, 0])
 
     def test_small_pieces_merge_together_until_large_enough(self):
-        from spectral_clusters import merge_components
+        from clusters import merge_components
         self.assertEqual(merge_components([120.0, 100.0], {(0, 1): 1}, 200.0), [0, 0])
 
 
 class NaturalPartitionTests(unittest.TestCase):
     def setUp(self):
-        from spectral_clusters import build_graph
+        from clusters import build_graph
         self.graph = build_graph(square_features())
         self.node = {tuple(np.round(p, 6)): i for i, p in enumerate(self.graph.lonlat)}
 
     def test_a_main_river_cuts_the_bridge_and_non_a_crossings_give_gates_on_both_banks(self):
-        from spectral_clusters import natural_partition
+        from clusters import natural_partition
         result = natural_partition(self.graph, rivers_doc(), min_km=1.0)
         labels = result["labels"]
         self.assertNotEqual(labels[self.node[W0]], labels[self.node[E0]])
@@ -76,13 +85,13 @@ class NaturalPartitionTests(unittest.TestCase):
         self.assertEqual(result["info"]["cut_edges"], 1)
 
     def test_components_below_the_threshold_merge_and_leave_no_boundary_gate(self):
-        from spectral_clusters import natural_partition
+        from clusters import natural_partition
         result = natural_partition(self.graph, rivers_doc(), min_km=200.0)
         self.assertEqual(set(result["labels"].tolist()), {0})
         self.assertEqual(result["extra_gates"], [])
 
     def test_without_main_rivers_nothing_is_cut(self):
-        from spectral_clusters import natural_partition
+        from clusters import natural_partition
         doc = rivers_doc(crossings=[])
         doc["features"] = []
         result = natural_partition(self.graph, doc, min_km=1.0)
@@ -94,7 +103,7 @@ class NaturalFromOsmTests(unittest.TestCase):
 
     def test_two_banks_two_clusters_and_every_crossing_gives_gates(self):
         from natural_barriers import run as survey_run
-        from spectral_clusters import build_graph, natural_partition
+        from clusters import build_graph, natural_partition
         from test_natural_barriers import A_WAYS, NODES, make_fixture
         with tempfile.TemporaryDirectory() as name:
             root = Path(name)
@@ -122,19 +131,26 @@ class NaturalFromOsmTests(unittest.TestCase):
 
 
 class ClusterFileTests(unittest.TestCase):
-    def test_the_cluster_file_carries_a_natural_partition_like_the_others(self):
-        from spectral_clusters import run
+    def test_the_cluster_file_holds_exactly_the_province_and_natural_partitions(self):
+        from clusters import run
+        provinces = [province("VN-W", "Tỉnh Tây", [square(104.99, 20.99, 105.02, 21.02)]),
+                     province("VN-E", "Tỉnh Đông", [square(105.99, 20.99, 106.02, 21.02)])]
         with tempfile.TemporaryDirectory() as name:
             root = Path(name)
             (root / "big_roads.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": square_features()}),
                                                     encoding="utf-8")
             (root / "big_roads.meta.json").write_text(json.dumps({"pbf_sha256": "map-a", "policy_version": 6}), encoding="utf-8")
             (root / "main_rivers.geojson").write_text(json.dumps(rivers_doc()), encoding="utf-8")
-            result = run(root / "big_roads.geojson", root / "clusters.json", ks=(2,), natural_min_km=1.0)
+            (root / "vietnam_provinces.geojson").write_text(json.dumps({"type": "FeatureCollection", "pbf_sha256": "map-a",
+                "policy_version": 6, "failed": [], "features": provinces}, ensure_ascii=False), encoding="utf-8")
+            result = run(root / "big_roads.geojson", root / "clusters.json", natural_min_km=1.0)
             doc = json.loads((root / "clusters.json").read_text(encoding="utf-8"))
-        natural = next(p for p in doc["partitions"] if p.get("method") == "natural")
-        spectral = next(p for p in doc["partitions"] if p.get("method") == "spectral")
-        self.assertTrue(set(spectral) <= set(natural))
+        self.assertEqual(doc["method"], "regions")
+        self.assertEqual([p["method"] for p in doc["partitions"]], ["province", "natural"])
+        by_province, natural = doc["partitions"]
+        common = {"k", "method", "ways", "node_labels", "cuts", "boundary", "stats"}
+        self.assertEqual(set(by_province), common | {"names"})
+        self.assertEqual(set(natural), common | {"extra_gates", "rivers", "natural"})
         self.assertEqual(natural["k"], 2)
         self.assertEqual(sorted(map(tuple, natural["boundary"])), [W0, E0])
         self.assertEqual(len(natural["extra_gates"]), 2)
@@ -143,14 +159,14 @@ class ClusterFileTests(unittest.TestCase):
         self.assertIn("natural", [p.get("method") for p in result["partitions"]])
 
     def test_main_rivers_from_another_map_are_skipped(self):
-        from spectral_clusters import run
+        from clusters import run
         with tempfile.TemporaryDirectory() as name:
             root = Path(name)
             (root / "big_roads.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": square_features()}),
                                                     encoding="utf-8")
             (root / "big_roads.meta.json").write_text(json.dumps({"pbf_sha256": "map-a", "policy_version": 6}), encoding="utf-8")
             (root / "main_rivers.geojson").write_text(json.dumps(rivers_doc(sha="map-b")), encoding="utf-8")
-            result = run(root / "big_roads.geojson", root / "clusters.json", ks=(2,))
+            result = run(root / "big_roads.geojson", root / "clusters.json")
         self.assertNotIn("natural", [p.get("method") for p in result["partitions"]])
 
 

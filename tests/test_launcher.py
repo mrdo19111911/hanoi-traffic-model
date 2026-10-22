@@ -56,9 +56,10 @@ class ClusterRebuildTests(unittest.TestCase):
         (self.root / "osrm/data").mkdir(parents=True)
         (self.root / "osrm/data/big_roads.meta.json").write_text(json.dumps({"pbf_sha256": "map-a", "policy_version": 6}), encoding="utf-8")
 
-    def write_clusters(self, sha="map-a", policy=6):
+    def write_clusters(self, sha="map-a", policy=6, method="regions", partitions=("province", "natural")):
         (self.root / "osrm/data/big_road_clusters.json").write_text(
-            json.dumps({"method": "spectral_njw_inv_time", "pbf_sha256": sha, "policy_version": policy, "partitions": []}), encoding="utf-8")
+            json.dumps({"method": method, "pbf_sha256": sha, "policy_version": policy,
+                        "partitions": [{"method": m, "k": 2} for m in partitions]}), encoding="utf-8")
 
     def test_missing_clusters_need_a_run(self):
         self.assertTrue(launcher.clusters_outdated(self.root))
@@ -72,6 +73,14 @@ class ClusterRebuildTests(unittest.TestCase):
         self.assertTrue(launcher.clusters_outdated(self.root))
         self.write_clusters(policy=5)
         self.assertTrue(launcher.clusters_outdated(self.root))
+
+    def test_clusters_in_the_old_format_or_with_other_partitions_need_a_run(self):
+        self.write_clusters(method="njw_inv_time")
+        self.assertTrue(launcher.clusters_outdated(self.root))
+        self.write_clusters(partitions=("kmeans", "province", "natural"))
+        self.assertTrue(launcher.clusters_outdated(self.root))
+        self.write_clusters(partitions=("province",))
+        self.assertFalse(launcher.clusters_outdated(self.root))
 
     def test_corrupt_clusters_or_missing_meta_need_a_run(self):
         (self.root / "osrm/data/big_road_clusters.json").write_text("{not json", encoding="utf-8")

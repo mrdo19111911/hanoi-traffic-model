@@ -94,13 +94,8 @@
 /* Spec 18.5: a reviewed point pulses for about two seconds after the map flies to it. */
 .pulse-point{border-radius:50%;border:3px solid #e16d40;background:#e16d4030;animation:pulse .66s ease-out 3}
 @keyframes pulse{from{transform:scale(.4);opacity:1}to{transform:scale(1.6);opacity:0}}
-/* Spec 19.6: province outline swatch and the spectral / province comparison table. */
+/* Spec 19.6: province outline swatch. */
 .layer-popup i.province{width:14px;height:0;border-radius:0;background:transparent;border-top:1.5px dashed #6b5b95}
-.compare-stats thead th{font-size:8px;letter-spacing:.3px;color:#8a9da4;font-weight:600;text-align:right;padding:4px 0 6px;border-bottom:1px solid #e3e9e9;background:transparent}
-.compare-stats thead th:first-child{text-align:left}
-.compare-stats td{padding-left:8px}
-.compare-stats td:not(.better){font-weight:400;color:#6c828b}
-.compare-stats td.better strong{font-weight:700;color:#203746}
 /* Spec 20: map-first journey tab. A 48px topbar, then a 360px drawer beside the map; only the drawer panels scroll. */
 .rail{width:56px}.main-shell{margin-left:56px;width:calc(100% - 56px)}.brand-mark{width:38px;height:38px;margin-top:5px}.rail-line{margin-top:14px}
 .topbar{height:48px;padding:0 20px;gap:22px}

@@ -1,4 +1,6 @@
 """Offline tests for the gate travel-time matrix experiment, with a fake OSRM /table."""
+import contextlib
+import io
 import json
 import math
 from pathlib import Path
@@ -31,9 +33,9 @@ def features():
 def clusters_doc(sha="map-a", ways=None):
     ways = ways or {**{str(w): 0 for w in A_WAYS}, **{str(w): 1 for w in B_WAYS}, "99": 0}
     node_labels = [[*p, 0] for p in (A0, A1, A2, A3)] + [[*p, 1] for p in (B0, B1, B2, B3)]
-    partition = {"k": 2, "method": "spectral", "ways": ways, "node_labels": node_labels, "cuts": [[list(A0), list(B0)]],
+    partition = {"k": 2, "method": "natural", "ways": ways, "node_labels": node_labels, "cuts": [[list(A0), list(B0)]],
                  "boundary": [list(A0), list(B0)], "stats": {}}
-    return {"method": "spectral_njw_inv_time", "pbf_sha256": sha, "policy_version": 6, "partitions": [partition]}
+    return {"method": "regions", "pbf_sha256": sha, "policy_version": 6, "partitions": [partition]}
 
 
 def km(a, b):
@@ -71,7 +73,7 @@ CROSS_PAIRS = [(A1, B2), (A3, B1), (B3, A2), (A2, B2)]
 
 class GateTimeTests(unittest.TestCase):
     def setUp(self):
-        from spectral_clusters import build_graph
+        from clusters import build_graph
         self.graph = build_graph(features())
         self.node = {tuple(np.round(p, 6)): i for i, p in enumerate(self.graph.lonlat)}
 
@@ -184,12 +186,26 @@ class RunTests(unittest.TestCase):
         self.assertEqual(saved, report)
         self.assertEqual(report["pbf_sha256"], "map-a")
         item, = report["partitions"]
-        self.assertEqual(item["name"], "spectral_2")
+        self.assertEqual(item["name"], "natural")
         self.assertEqual(item["cost"]["gates"], 2)
         self.assertEqual(item["cost"]["gate_cells"], 4)
         self.assertEqual(item["cost"]["db_bytes_96_slots"], 4 * 4 * 96)
         self.assertEqual(item["cost"]["cells_n2000"], 2000 * 2)
         self.assertIn("full_gate_table_s", item["cost"])
+
+    def test_an_unknown_partition_is_skipped_with_a_warning(self):
+        from gate_matrix_experiment import run
+        doc = clusters_doc()
+        doc["partitions"].insert(0, {**doc["partitions"][0], "method": "kmeans", "k": 7})
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.write_inputs(root)
+            (root / "big_road_clusters.json").write_text(json.dumps(doc), encoding="utf-8")
+            printed = io.StringIO()
+            with contextlib.redirect_stdout(printed):
+                report = run(root / "big_roads.geojson", root / "big_road_clusters.json", root / "out.json", FakeRouter(ROADS), pairs=20)
+        self.assertEqual([item["name"] for item in report["partitions"]], ["natural"])
+        self.assertIn("Skipping unknown partition 'kmeans'", printed.getvalue())
 
     def test_clusters_from_another_map_stop_without_a_file(self):
         from gate_matrix_experiment import run
@@ -214,7 +230,7 @@ class RunTests(unittest.TestCase):
 
 
 def haversine(a, b):
-    from spectral_clusters import haversine_km
+    from clusters import haversine_km
     return haversine_km(a, b)
 
 
@@ -394,7 +410,7 @@ class ClassifyTests(unittest.TestCase):
 class WorstGeojsonTests(unittest.TestCase):
     def test_each_case_has_two_routes_and_two_gates(self):
         from gate_matrix_experiment import worst_geojson
-        case = {"partition": "spectral_32", "case": "worst", "label": "other", "labels": ["other"], "clusters": [0, 1],
+        case = {"partition": "natural", "case": "worst", "label": "other", "labels": ["other"], "clusters": [0, 1],
                 "t_direct": 100.0, "t_gate": 130.0, "error": 0.3, "km": 12.0, "src": [105.0, 21.0], "dst": [105.2, 21.0],
                 "gates": [[105.05, 21.0], [105.1, 21.0]], "direct_coords": [[105.0, 21.0], [105.2, 21.0]],
                 "via_coords": [[105.0, 21.0], [105.05, 21.0], [105.1, 21.0], [105.2, 21.0]], "direct_ways": ["QL.1"], "via_ways": ["QL.1"],
@@ -405,7 +421,7 @@ class WorstGeojsonTests(unittest.TestCase):
         kinds = [(f["geometry"]["type"], f["properties"]["role"]) for f in collection["features"][:4]]
         self.assertEqual(kinds, [("LineString", "direct"), ("LineString", "via_gate"), ("Point", "gate"), ("Point", "gate")])
         props = collection["features"][1]["properties"]
-        self.assertEqual((props["label"], props["partition"], props["case"], props["stroke-dasharray"]), ("other", "spectral_32", "worst", "6 4"))
+        self.assertEqual((props["label"], props["partition"], props["case"], props["stroke-dasharray"]), ("other", "natural", "worst", "6 4"))
         for key in ("t_direct", "t_gate", "error", "km", "clusters"):
             self.assertIn(key, props)
 
@@ -426,15 +442,15 @@ def line_world(edges=(105.4,)):
             feats.append(line(200 + k, [town, towns[k + 1]]))
             ways[str(200 + k)] = cluster(town[0])
     boundary = [[lon, 21.0] for e in edges for lon in (e, round(e + 0.1, 1))]
-    partition = {"k": len(edges) + 1, "method": "spectral", "ways": ways, "node_labels": node_labels,
+    partition = {"k": len(edges) + 1, "method": "natural", "ways": ways, "node_labels": node_labels,
                  "cuts": [[[e, 21.0], [round(e + 0.1, 1), 21.0]] for e in edges], "boundary": boundary, "stats": {}}
-    return feats, {"method": "spectral_njw_inv_time", "pbf_sha256": "map-a", "policy_version": 6, "partitions": [partition]}
+    return feats, {"method": "regions", "pbf_sha256": "map-a", "policy_version": 6, "partitions": [partition]}
 
 
 class FarPairTests(unittest.TestCase):
     def test_only_pairs_in_non_adjacent_clusters_are_measured(self):
         from gate_matrix_experiment import evaluate_partition
-        from spectral_clusters import build_graph
+        from clusters import build_graph
         feats, doc = line_world(edges=(105.2, 105.5))
         graph = build_graph(feats)
         node = {tuple(np.round(p, 6)): i for i, p in enumerate(graph.lonlat)}
@@ -457,7 +473,7 @@ class SmallPointGateTests(unittest.TestCase):
     S = (105.02, 21.0)
 
     def world(self):
-        from spectral_clusters import build_graph
+        from clusters import build_graph
         chain = [self.a1, self.a2, self.b1, self.b2, self.c1, self.c2]
         feats = [line(300 + k, [p, q]) for k, (p, q) in enumerate(zip(chain, chain[1:]))]
         feats += [line(400 + k, [p, (p[0] + 0.002, p[1] + 0.002)]) for k, p in enumerate(chain[1:-1])]
@@ -492,10 +508,10 @@ class NodeLabelRequiredTests(unittest.TestCase):
             (root / "big_roads.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": features()}), encoding="utf-8")
             (root / "big_roads.meta.json").write_text(json.dumps({"pbf_sha256": "map-a", "policy_version": 6}), encoding="utf-8")
             (root / "big_road_clusters.json").write_text(json.dumps(doc), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "node_labels.*spectral_clusters"):
+            with self.assertRaisesRegex(ValueError, "node_labels.*model/clusters"):
                 run(root / "big_roads.geojson", root / "big_road_clusters.json", root / "out.json", FakeRouter(ROADS))
             ring = [(104.9, 20.9), (106.1, 20.9), (106.1, 21.1), (104.9, 21.1), (104.9, 20.9)]
-            with self.assertRaisesRegex(ValueError, "node_labels.*spectral_clusters"):
+            with self.assertRaisesRegex(ValueError, "node_labels.*model/clusters"):
                 run_stratified(root / "big_roads.geojson", root / "big_road_clusters.json", root / "r2.json", root / "w.geojson",
                                EuclidRouter(), FakeEdges(), ring, band_pairs=(2, 0, 0, 0))
             self.assertEqual(sorted(p.name for p in root.iterdir()), ["big_road_clusters.json", "big_roads.geojson", "big_roads.meta.json"])
@@ -520,7 +536,7 @@ class StratifiedRunTests(unittest.TestCase):
         self.assertEqual(leftovers, [])
         self.assertEqual(report["sample"]["pairs"], 16)
         item, = report["partitions"]
-        self.assertEqual(item["name"], "spectral_3")
+        self.assertEqual(item["name"], "natural")
         self.assertIn(item["pass"], (True, False, None))
         self.assertEqual(set(item["far_metrics"]) >= {"pairs", "p95", "max"}, True)
         self.assertTrue(all(c["relation"] == "far" and c["case"] == "worst" for c in item["inspected"]))
@@ -557,7 +573,7 @@ class SnapRouter(FakeRouter):
 
 class NaturalGateTests(unittest.TestCase):
     def setUp(self):
-        from spectral_clusters import build_graph
+        from clusters import build_graph
         self.graph = build_graph(features())
         self.node = {tuple(np.round(p, 6)): i for i, p in enumerate(self.graph.lonlat)}
 

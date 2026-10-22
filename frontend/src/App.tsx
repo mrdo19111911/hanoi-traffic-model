@@ -3,8 +3,8 @@ import {ArrowDownUp,ArrowRight,ArrowUpRight,Check,ChevronRight,Clock3,Database,F
 import TrafficMap from './TrafficMap';
 import {api,type Point,type Health,type Options,type DataStatus,type Route,type Experiment,type Job,type BigRoads,type BigRoadMeta,type BigRoadView,type BigRoadReview,type BigRoadClusters,type ReviewEntry,type ReviewStatus,type MapFocus,type TrialRoute} from './api';
 import type {Feature,FeatureCollection} from 'geojson';
-import {GROUPS,type Group,searchRoutes,routeStats,normalizeRef,visibleGroups,reviewItems,filterReview,availableKs,pickPartition,provincePartition,naturalPartition,twoLevelPartition,isSpectral,type PartitionChoice,partitionAdjacency,colorClusters,cutInfo,clustersOutdated,type ReviewItem,type ReviewFilter,type RouteHit} from './bigRoads';
-import {BigToolbar,BigStats,BigLegend,ClusterPanel,ComparePanel,ReviewPanel,RouteSummary,SegmentDetail,TrialPanel,PartitionPicker,number,type LayerState} from './BigRoadPanels';
+import {GROUPS,type Group,searchRoutes,routeStats,normalizeRef,visibleGroups,reviewItems,filterReview,pickPartition,provincePartition,naturalPartition,type PartitionChoice,partitionAdjacency,colorClusters,cutInfo,clustersOutdated,type ReviewItem,type ReviewFilter,type RouteHit} from './bigRoads';
+import {BigToolbar,BigStats,BigLegend,ClusterPanel,ReviewPanel,RouteSummary,SegmentDetail,TrialPanel,PartitionPicker,number,type LayerState} from './BigRoadPanels';
 
 type LatLon=[number,number];
 const days=['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ nhật'];
@@ -76,7 +76,6 @@ export default function App(){
  const localZoom=zoom!=null&&zoom>=MIN_LOCAL_JUNCTION_ZOOM,compact=zoom==null||zoom<MIN_FULL_MARKER_ZOOM;
  const {showB,showC,showBorder,showDead,showFerries,showClusters}=layers;
  const partition=useMemo(()=>showClusters?pickPartition(bigData?.clusters,partChoice):null,[showClusters,bigData,partChoice]);
- const province=partition?provincePartition(bigData?.clusters):null,spectral32=partition?bigData?.clusters?.partitions.find(p=>isSpectral(p)&&p.k===32)??null:null;
  const clusterOn=!!partition;
  // Spec 18.14: adjacent clusters (ways meeting at a vertex, or the two sides of a cut) get different colours.
  const clusterDrawing=useMemo(()=>partition&&bigMainland?{colors:colorClusters(partitionAdjacency(partition,bigMainland.roads)),cuts:cutInfo(partition,bigMainland.roads)}:null,[partition,bigMainland]);
@@ -91,7 +90,7 @@ export default function App(){
   if(!bigMode||!bigData||!bigMainland)return null;
   // Border crossings and mainline dead ends always show; B/C and other dead ends only from zoom 11.
   const junctions=bigMainland.junctions.filter(f=>{const type=f.properties?.type;return type==='border'?showBorder:type==='deadend'?showDead&&(localZoom||!!f.properties?.mainline):localZoom&&(type==='B'?showB:showC);});
-  return{roads:{...bigData.roads,features:shownRoads},junctions:{...bigData.junctions,features:junctions},junctionKey:`${showB}-${showC}-${showBorder}-${showDead}-${localZoom}-${compact}`,roadKey:`${GROUPS.map(g=>groups[g]?1:0).join('')}-${showFerries}`,land:bigData.land,boundary:bigData.boundary??null,compact,colorBy:partition?'cluster':colorBy,clusters:partition?.ways??null,clusterColors:clusterDrawing?.colors??null,cuts:clusterDrawing?.cuts??null,boundaryNodes:partition?.boundary??null,cutKey:partition?`${partition.method??'spectral'}-${partition.k}`:'',provinces:layers.showProvinces?bigData.provinces??null:null,highlight,focus,trial,trialPoints};
+  return{roads:{...bigData.roads,features:shownRoads},junctions:{...bigData.junctions,features:junctions},junctionKey:`${showB}-${showC}-${showBorder}-${showDead}-${localZoom}-${compact}`,roadKey:`${GROUPS.map(g=>groups[g]?1:0).join('')}-${showFerries}`,land:bigData.land,boundary:bigData.boundary??null,compact,colorBy:partition?'cluster':colorBy,clusters:partition?.ways??null,clusterColors:clusterDrawing?.colors??null,cuts:clusterDrawing?.cuts??null,boundaryNodes:partition?.boundary??null,cutKey:partition?`${partition.method}-${partition.k}`:'',provinces:layers.showProvinces?bigData.provinces??null:null,highlight,focus,trial,trialPoints};
  },[bigMode,bigData,bigMainland,shownRoads,showB,showC,showBorder,showDead,showFerries,localZoom,compact,groups,partition,clusterDrawing,layers.showProvinces,colorBy,highlight,focus,trial,trialPoints]);
 
  const flyTo=(at:[number,number])=>setFocus({seq:++focusSeq.current,kind:'point',at});
@@ -155,9 +154,8 @@ export default function App(){
   {big?<>
    {tabPanel('layers',<BigToolbar query={query} onQuery={setQuery} suggestions={suggestions} selected={routeHit} onSelectRoute={selectRoute} onClearRoute={clearRoute} groups={groups} onToggleGroup={g=>setGroups(s=>({...s,[g]:!s[g]}))} colorBy={colorBy} onColorBy={setColorBy} layers={{...layers,basemap}} onLayer={setLayer} clusters={bigData!.clusters??null} hasProvinces={!!bigData!.provinces}/>)}
    {tabPanel('clusters',partition&&bigData?.clusters?<>
-    <div className="side-panel"><PartitionPicker ks={availableKs(bigData.clusters)} k={partition.k} onK={setPartChoice} provinceK={province?.k??null} provinceOn={partition.method==='province'} onProvince={()=>setPartChoice('province')} naturalK={naturalPartition(bigData.clusters)?.k??null} naturalOn={partition.method==='natural'} onNatural={()=>setPartChoice('natural')} twoLevelK={twoLevelPartition(bigData.clusters)?.k??null} twoLevelOn={partition.method==='natural_spectral'} onTwoLevel={()=>setPartChoice('natural_spectral')}/></div>
+    <div className="side-panel"><PartitionPicker naturalK={naturalPartition(bigData.clusters)?.k??null} naturalOn={partition.method==='natural'} onNatural={()=>setPartChoice('natural')} provinceK={provincePartition(bigData.clusters)?.k??null} provinceOn={partition.method==='province'} onProvince={()=>setPartChoice('province')}/></div>
     <ClusterPanel clusters={bigData.clusters} partition={partition}/>
-    {spectral32&&province&&<ComparePanel spectral={spectral32} province={province}/>}
    </>:<p className="side-empty drawer-empty">Bật lớp Cụm trong thẻ Lớp để chọn cách chia.</p>)}
    {tabPanel('review',detail?<SegmentDetail feature={detail} onClose={()=>setDetail(null)} onPaintRoute={paintRoute}/>:<ReviewPanel items={reviewList} filter={reviewFilter} onFilter={setReviewFilter} selectedId={selectedReview} onSelect={selectReview} onSave={saveReview} error={reviewError} loadError={reviewLoadError}/>)}
    {tabPanel('trial',<TrialPanel points={trialPoints} picking={trialPicking} onPick={setTrialPicking} onFromForm={trialFromForm} onRun={()=>void runTrial()} onClear={clearTrial} busy={trialBusy} error={trialError} trial={trial}/>)}
