@@ -163,11 +163,11 @@ def prepare(con, out, work, bbox):
                ST_X(ST_Centroid(geometry)) cx, ST_Y(ST_Centroid(geometry)) cy,
                ST_AsWKB(ST_MakeValid(ST_Transform(geometry, {UTM}))) wkb
         FROM '{p('vn_buildings_merged.parquet')}') {where}
-        ORDER BY floor(cy / {CELL}), floor(cx / {CELL})) TO '{w('b.parquet')}' (FORMAT parquet, ROW_GROUP_SIZE 100000)""")
+        ORDER BY floor(cy / {CELL}), floor(cx / {CELL}), id) TO '{w('b.parquet')}' (FORMAT parquet, ROW_GROUP_SIZE 100000)""")
     con.execute(f"""COPY (SELECT ST_XMin(geometry) x0, ST_YMin(geometry) y0, ST_XMax(geometry) x1, ST_YMax(geometry) y1,
                ({HALF}) + {ROUND_M} half, ST_AsWKB(ST_Transform(geometry, {UTM})) wkb
         FROM '{p('osm_roads.parquet')}' WHERE {HALF} IS NOT NULL AND {SKIP}
-        ORDER BY floor(y0 / {CELL}), floor(x0 / {CELL})) TO '{w('r.parquet')}' (FORMAT parquet, ROW_GROUP_SIZE 50000)""")
+        ORDER BY floor(y0 / {CELL}), floor(x0 / {CELL}), x0, y0, x1, y1, half, wkb) TO '{w('r.parquet')}' (FORMAT parquet, ROW_GROUP_SIZE 50000)""")
     # Largest cells first, so the dense city cells do not run alone at the end.
     return [tuple(r[:2]) for r in con.execute(f"""SELECT floor(cx / {CELL})::INT i, floor(cy / {CELL})::INT j, count(*) n
                                                FROM '{w('b.parquet')}' GROUP BY 1, 2 ORDER BY n DESC, j, i""").fetchall()]
