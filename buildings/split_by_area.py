@@ -33,37 +33,70 @@ def slug(name, drop_prefix=False):
     return re.sub(r'[^a-z0-9]+', '_', s.lower()).strip('_')
 
 
+def admin_kind(t):
+    lvl, name = t.get('admin_level'), t.get('name') or ''
+    if t.get('boundary') != 'administrative':
+        return None
+    if lvl == '4' and t.get('ISO3166-2', '').startswith('VN-'):
+        return 'province'
+    if lvl == '6' and name.startswith(COMMUNE_PREFIX):
+        return 'commune'
+    return None
+
+
 class Admin(osmium.SimpleHandler):
-    def __init__(self):
+    """Assembles the wanted boundaries; also keeps their member ways for the fallback below."""
+    def __init__(self, members):
         super().__init__()
         self.wkb = osmium.geom.WKBFactory()
-        self.rows = []
+        self.members, self.lines, self.rows = members, {}, []
+
+    def way(self, w):
+        if w.id in self.members:
+            try:
+                self.lines[w.id] = shapely.from_wkb(bytes.fromhex(self.wkb.create_linestring(w)))
+            except (osmium.InvalidLocationError, RuntimeError):
+                pass
 
     def area(self, a):
         t = a.tags
-        if a.from_way() or t.get('boundary') != 'administrative':
-            return
-        lvl, name = t.get('admin_level'), t.get('name') or ''
-        if lvl == '4' and t.get('ISO3166-2', '').startswith('VN-'):
-            kind = 'province'
-        elif lvl == '6' and name.startswith(COMMUNE_PREFIX):
-            kind = 'commune'
-        else:
+        kind = None if a.from_way() else admin_kind(t)
+        if not kind:
             return
         try:
             g = self.wkb.create_multipolygon(a)
         except (osmium.InvalidLocationError, RuntimeError):
             return
-        self.rows.append({'kind': kind, 'rel_id': a.orig_id(), 'name': name, 'iso': t.get('ISO3166-2'), 'wkb': bytes.fromhex(g)})
+        self.rows.append({'kind': kind, 'rel_id': a.orig_id(), 'name': t.get('name'), 'iso': t.get('ISO3166-2'), 'wkb': bytes.fromhex(g)})
 
 
 def load_admin(path, pbf):
     if not os.path.exists(path):
         t = time.time()
-        h = Admin()
+        want = {}
+        for r in osmium.FileProcessor(pbf, osmium.osm.RELATION):
+            k = admin_kind(r.tags)
+            if k:
+                want[r.id] = {'kind': k, 'name': r.tags.get('name'), 'iso': r.tags.get('ISO3166-2'),
+                              'ways': [m.ref for m in r.members if m.type == 'w' and m.role in ('outer', '')]}
+        h = Admin({w for v in want.values() for w in v['ways']})
         h.apply_file(pbf, locations=True, idx='flex_mem')
+        # The extract cuts off some offshore boundary ways (Trường Sa), so osmium cannot close the ring and drops the
+        # whole unit (Khánh Hòa with it). Fallback: polygonize the member ways that are present; keep the closed faces.
+        done = {r['rel_id'] for r in h.rows}
+        for rid, v in want.items():
+            if rid in done:
+                continue
+            lines = [h.lines[w] for w in v['ways'] if w in h.lines]
+            faces = list(shapely.get_parts(shapely.polygonize(shapely.get_parts(shapely.union_all(lines))))) if lines else []
+            if faces:
+                g = shapely.union_all(faces)
+                h.rows.append({'kind': v['kind'], 'rel_id': rid, 'name': v['name'], 'iso': v['iso'], 'wkb': shapely.to_wkb(g)})
+                print(f"fallback: {v['name']} rebuilt from {len(lines)}/{len(v['ways'])} member ways, {len(faces)} closed faces", flush=True)
+            else:
+                print(f"skipped: {v['name']} has no closed outline in this extract", flush=True)
         pq.write_table(pa.Table.from_pylist(h.rows), path, compression='zstd')
-        print('boundaries assembled from', pbf, len(h.rows), f'{time.time() - t:.0f}s', flush=True)
+        print('boundaries assembled from', pbf, len(h.rows), 'of', len(want), f'{time.time() - t:.0f}s', flush=True)
     rows = pq.read_table(path).to_pylist()
     for r in rows:
         r['geom'] = shapely.make_valid(shapely.from_wkb(r.pop('wkb')))
