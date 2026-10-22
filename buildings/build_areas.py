@@ -52,9 +52,12 @@ HEIGHT_THREADS = 2                 # tiles read at once per worker (network boun
 PUSH_EVERY, PUSH_SECONDS = 10, 120
 START_GAP_S = 45                   # at least this long between two starts, so the pass B peaks of the areas interleave
 AFTER_B_SHARE = 0.65               # an area past pass B holds about this share of its peak (heights 1.2, check 1.6 of 2.4 GB)
-MEM_BASE, MEM_PER_BUILDING = 1.0e9, 7.0e3   # peak private bytes of a worker for an area of n buildings, with
+MEM_BASE, MEM_PER_BUILDING = 0.7e9, 5.5e3   # peak private bytes of a worker for an area of n buildings, with
                                    # margin: measured 1.3 GB at n = 110k, 2.4 GB at 308k (its window 506k)
-MEM_HEADROOM = 2e9                 # kept free when starting another area
+MEM_HEADROOM = 1.5e9               # kept free when starting another area
+# The scheduling knobs above can be changed while a run goes on: <work>/tune.json, re-read before every start, may set
+# workers (up to the logical CPU count), start_gap_s, after_b_share, mem_base, mem_per_building and mem_headroom.
+TUNE_KEYS = ('workers', 'start_gap_s', 'after_b_share', 'mem_base', 'mem_per_building', 'mem_headroom')
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _W = {}                            # per worker: admin units and the group of each commune
 
@@ -253,9 +256,19 @@ def build_area(args):
             'seconds': round(time.time() - t0), 'seconds_fit': round(t_fit), 'seconds_heights': round(t_h)}
 
 
-def mem_estimate(n):
+def mem_estimate(n, t=None):
     """Estimated peak private bytes of a worker building an area of n buildings (areas.json 'n')."""
-    return MEM_BASE + MEM_PER_BUILDING * n
+    t = t or {}
+    return t.get('mem_base', MEM_BASE) + t.get('mem_per_building', MEM_PER_BUILDING) * n
+
+
+def read_tune(path, defaults):
+    """The scheduling knobs: defaults, overridden by the keys of <work>/tune.json when it exists and parses."""
+    try:
+        t = json.load(open(path, encoding='utf-8'))
+    except (OSError, ValueError):
+        return defaults
+    return {**defaults, **{k: t[k] for k in TUNE_KEYS if isinstance(t.get(k), (int, float))}}
 
 
 class _MemStatus(ctypes.Structure):
@@ -369,22 +382,27 @@ def main():
             finish(e)
     jobs = [(work, a.dst_dir, x, st['tiles'], test) for x in todo]
     phase_dir = os.path.join(work, 'phase'); shutil.rmtree(phase_dir, ignore_errors=True); os.makedirs(phase_dir)
-    with ProcessPoolExecutor(max(1, a.workers), initializer=_init, initargs=(a.admin, a.pbf, a.groups)) as ex:
+    defaults = {'workers': max(1, a.workers), 'start_gap_s': START_GAP_S, 'after_b_share': AFTER_B_SHARE,
+                'mem_base': MEM_BASE, 'mem_per_building': MEM_PER_BUILDING, 'mem_headroom': MEM_HEADROOM}
+    pool = max(defaults['workers'], os.cpu_count() or 1)      # processes start on demand; 'workers' is the cap in use
+    with ProcessPoolExecutor(pool, initializer=_init, initargs=(a.admin, a.pbf, a.groups)) as ex:
         running, k, last = {}, 0, 0.0              # future -> (file, estimated peak bytes of its area)
         while k < len(jobs) or running:
+            t = read_tune(os.path.join(work, 'tune.json'), defaults)
+            cap = min(pool, max(1, int(t['workers'])))
             # Memory gate, at most one start per START_GAP_S: free memory, less what the running areas are still
             # expected to grow by, must hold the next area's estimated peak plus MEM_HEADROOM (one area always runs).
             # An area past pass B is counted at AFTER_B_SHARE of its peak, so starts that interleave in time let more
             # areas run than peaks that coincide.
-            if k < len(jobs) and len(running) < a.workers and time.time() - last >= START_GAP_S:
-                need = mem_estimate(jobs[k][2]['n'])
+            if k < len(jobs) and len(running) < cap and time.time() - last >= t['start_gap_s']:
+                need = mem_estimate(jobs[k][2]['n'], t)
                 past = set(os.listdir(phase_dir))
-                held = sum(p * (AFTER_B_SHARE if f in past else 1.0) for f, p in running.values())
+                held = sum(p * (t['after_b_share'] if f in past else 1.0) for f, p in running.values())
                 grow = max(0.0, held - private_bytes(list(getattr(ex, '_processes', None) or {})))
                 free = avail_bytes() - grow
-                if not running or free >= need + MEM_HEADROOM:
+                if not running or free >= need + t['mem_headroom']:
                     print(f"start {jobs[k][2]['file']} ({jobs[k][2]['n']} buildings) | est {need / 1e9:.1f} GB | "
-                          f"free {free / 1e9:.1f} GB after {grow / 1e9:.1f} GB still to grow | running {len(running) + 1}", flush=True)
+                          f"free {free / 1e9:.1f} GB after {grow / 1e9:.1f} GB still to grow | running {len(running) + 1} of {cap}", flush=True)
                     running[ex.submit(build_area, jobs[k])] = (jobs[k][2]['file'], need); k += 1; last = time.time()
             fin, _ = wait(list(running), timeout=5 if k < len(jobs) else 30, return_when=FIRST_COMPLETED)
             for f in fin:
