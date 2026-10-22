@@ -25,7 +25,8 @@ _T = Transformer.from_crs(4326, 32648, always_xy=True)
 
 def utm(geoms):
     """lon/lat footprints -> valid UTM 48N polygons."""
-    return np.array([shapely.make_valid(shapely.transform(x, lambda c: np.column_stack(_T.transform(c[:, 0], c[:, 1])))) for x in geoms], object)
+    g = np.empty(len(geoms), object); g[:] = list(geoms)
+    return shapely.make_valid(shapely.transform(g, lambda c: np.column_stack(_T.transform(c[:, 0], c[:, 1]))))
 
 
 def carriageways(con, roads_parquet, bbox):
@@ -37,21 +38,24 @@ def carriageways(con, roads_parquet, bbox):
     return R, STRtree(R)
 
 
-def on_road_m2(geoms, R, tree):
-    """Area (m2) of each lon/lat footprint on the carriageways R (UTM polygons, tree = STRtree(R))."""
+def on_road_m2(geoms, R, tree, projected=False):
+    """Area (m2) of each lon/lat footprint (UTM polygons from utm() when projected) on the carriageways R
+    (UTM polygons, tree = STRtree(R))."""
     out = []
-    for g in utm(geoms):
+    for g in (geoms if projected else utm(geoms)):
         hit = tree.query(g, predicate='intersects')
         out.append(shapely.union_all([R[j] for j in hit]).intersection(g).area if len(hit) else 0.0)
     return np.array(out)
 
 
-def pair_overlaps(geoms):
-    """Overlap area (m2) of every pair of intersecting lon/lat footprints."""
-    g = utm(geoms)
+def pair_overlaps(geoms, projected=False, pairs=False):
+    """Overlap area (m2) of every pair of intersecting lon/lat footprints (UTM polygons from utm() when projected);
+    with pairs, (i, j, area) with i < j the positions of the two footprints."""
+    g = np.asarray(geoms, object) if projected else utm(geoms)
     i, j = STRtree(g).query(g, predicate='intersects')
     m = i < j
-    return np.array([shapely.intersection(g[x], g[y]).area for x, y in zip(i[m], j[m])])
+    a = np.array([shapely.intersection(g[x], g[y]).area for x, y in zip(i[m], j[m])])
+    return (i[m], j[m], a) if pairs else a
 
 
 def main():

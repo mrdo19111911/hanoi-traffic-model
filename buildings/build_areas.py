@@ -8,34 +8,39 @@ Per area (worker process):
      on a building and the roads near it, so recomputing it in the margin gives the same footprints.
   2. pass B (shared walls) for the window, the margin buildings as neighbours.
   3. keep the buildings whose final centroid falls in one of the area's communes (split_by_area.assign_communes, the
-     rule split_by_area.py uses), read their 2.5D heights from the tiles covering them, one tile after another in
-     manifest order (first valid value wins), heights and floors as heights_25d.py computes them;
-  4. encode as compact_layer.py, write buildings/by_area/<file>;
-  5. check as check_road_overlap.py: no building on a carriageway and no overlapping pair over 0.05 m2, file under
-     95 MB. A failed area is written to the state file and never committed.
+     rule split_by_area.py uses), read their 2.5D heights from the tiles covering them (HEIGHT_THREADS tiles at a
+     time, values taken in manifest order: first valid value wins), heights and floors as heights_25d.py computes them;
+  4. encode as compact_layer.py;
+  5. check as check_road_overlap.py, on the compact rows (decoded) and the clean rows: no building on a carriageway
+     and no overlapping pair over 0.05 m2. Buildings that fail are deleted from both (on a road: the building; an
+     overlapping pair: the lower-ranked one, pass B order) and the check runs again, up to CHECK_ROUNDS times;
+     the count is 'dropped_check'. Write buildings/by_area/<file>, under 95 MB. An area still failing is written
+     to the state file and never committed; the next run builds it again.
 Parent: prepares the work copies once (fit_footprints.prepare), runs the areas largest first on --workers processes
 (default 60 % of the logical CPUs; the first ones start 10 s apart), commits each passed file with git and pushes
 every 10 commits or 2 minutes, and at the end writes and commits buildings/by_area/index.json. Re-running skips
-areas already done (state in <out>/_areas/done/).
+areas that passed (state in <out>/_areas/done/) and builds failed ones again.
 
     .venv/Scripts/python.exe buildings/build_areas.py [--out data/buildings] [--workers N] [--no-push]
     .venv/Scripts/python.exe buildings/build_areas.py --area ha_noi_15.parquet --bbox 105.815 20.985 105.82 20.99 --no-push
         (test: one area, only its buildings inside the box, which is then also the whole input window)
 """
 import argparse, json, os, subprocess, sys, time
-from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
 import duckdb, numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 from pyproj import Transformer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fit_footprints as fit
-from check_road_overlap import carriageways, on_road_m2, pair_overlaps
+from check_road_overlap import carriageways, on_road_m2, pair_overlaps, utm
 from compact_layer import SCHEMA, decode, encode_rows
 from heights_25d import attrs_query, tile_heights, tiles_for
 from split_by_area import assign_communes, load_admin
 
 MAX_MB = 95                        # GitHub refuses files over 100 MB
 OVER_M2 = 0.05                     # check threshold, as check_road_overlap.py reports
+CHECK_ROUNDS = 3                   # rounds of deleting what fails the check before an area is marked failed
+HEIGHT_THREADS = 2                 # tiles read at once per worker (network bound)
 PUSH_EVERY, PUSH_SECONDS = 10, 120
 START_GAP_S = 10
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -140,20 +145,24 @@ def build_area(args):
     if not len(ids):
         return {**entry, 'buildings': 0, 'status': 'ok', 'seconds': round(time.time() - t0)}
 
-    # Heights, tile by tile in manifest order; a building keeps the first valid value.
+    # Heights: every tile covering buildings is read (HEIGHT_THREADS at a time, the reads wait on the network), then
+    # the values are taken in manifest order; a building keeps the first valid value. A tile's value for a building
+    # does not depend on which other buildings are read with it, so this equals reading tile after tile.
     h = np.full(len(ids), np.nan, np.float32)
     pos = {int(k): x for x, k in enumerate(ids)}
     tb = np.array([t[6:] for t in tiles], float)
     near = (tb[:, 0] <= hx.max()) & (tb[:, 2] >= hx.min()) & (tb[:, 1] <= hy.max()) & (tb[:, 3] >= hy.min())
+    jobs = []
     for tile in (tiles[x] for x in np.flatnonzero(near)):
         lo0, la0, lo1, la1 = tile[6:]
-        s = np.flatnonzero((hx >= lo0) & (hx <= lo1) & (hy >= la0) & (hy <= la1) & np.isnan(h))
-        if not len(s):
-            continue
-        fi, fh, nwin, _ = tile_heights(tuple(tile), ids[s], hx[s], hy[s], wkb[s])
-        for k, v in zip(fi.tolist(), fh.tolist()):
-            if np.isnan(h[pos[k]]):
-                h[pos[k]] = v
+        s = np.flatnonzero((hx >= lo0) & (hx <= lo1) & (hy >= la0) & (hy <= la1))
+        if len(s):
+            jobs.append((tuple(tile), s))
+    with ThreadPoolExecutor(HEIGHT_THREADS) as ex:
+        for fi, fh, nwin, _ in ex.map(lambda j: tile_heights(j[0], ids[j[1]], hx[j[1]], hy[j[1]], wkb[j[1]]), jobs):
+            for k, v in zip(fi.tolist(), fh.tolist()):
+                if np.isnan(h[pos[k]]):
+                    h[pos[k]] = v
     t_h = time.time() - t0 - t_fit
     con.register('hh', pa.table({'id': ids.astype(np.uint32), 'h25': h}))
     con.execute(f"CREATE TABLE attrs AS {attrs_query('clean', 'hh')}")
@@ -162,30 +171,62 @@ def build_area(args):
     rows = con.execute(f"""SELECT m.id, m.src, ST_AsWKB(m.geometry) wkb, b.height_dm, b.height_src, b.floors, {gap} gap
                            FROM clean m JOIN attrs b USING (id) ORDER BY m.id""").fetchall()
     tbl, is_rect, geoms = encode_rows(*zip(*rows))
+
+    # Check what is published (decoded) and the fitted footprints. A building on a carriageway, and the lower-ranked
+    # building of each overlapping pair (pass B rank: OSM, then rank_conf, then larger pass A area, then lower id),
+    # in either layer, is deleted from both; then the check runs again, up to CHECK_ROUNDS times.
+    lon, lat = tbl['lon_e6'].to_numpy() / 1e6, tbl['lat_e6'].to_numpy() / 1e6
+    bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
+    R, tree = carriageways(con, os.path.join(test['out'] if test else os.path.dirname(work), 'osm_roads.parquet').replace('\\', '/'),
+                           [bbox[0] - 0.001, bbox[1] - 0.001, bbox[2] + 0.001, bbox[3] + 0.001])
+    cols = ['lon_e6', 'lat_e6', 'length_dm', 'width_dm', 'angle_cdeg', 'ring']
+    gd = utm([decode(r) for r in tbl.select(cols).to_pylist()])
+    gc = utm(geoms)
+    ri = {int(k): x for x, k in enumerate(ta['id'].to_numpy())}
+    ti = np.array([ri[int(k)] for k in tbl['id'].to_numpy()])
+    key = np.lexsort((tbl['id'].to_numpy(), -ta['a1'].to_numpy()[ti], -ta['rank_conf'].to_numpy()[ti]))
+    rank = np.empty(len(key), np.int64); rank[key] = np.arange(len(key))      # 0 = highest
+    alive = np.ones(tbl.num_rows, bool)
+    for rnd in range(CHECK_ROUNDS + 1):
+        k = np.flatnonzero(alive)
+        res_c = {}
+        for name, gu in (('', gd), ('_clean', gc)):
+            onr = on_road_m2(gu[k], R, tree, projected=True)
+            pi, pj, ov = pair_overlaps(gu[k], projected=True, pairs=True)
+            o = ov > OVER_M2
+            res_c[name] = (k[onr > OVER_M2], np.where(rank[k[pi[o]]] > rank[k[pj[o]]], k[pi[o]], k[pj[o]]))
+        chk = {'on_road': len(res_c[''][0]), 'overlaps': len(res_c[''][1]),
+               'on_road_clean': len(res_c['_clean'][0]), 'overlaps_clean': len(res_c['_clean'][1])}
+        if not any(chk.values()) or rnd == CHECK_ROUNDS:
+            break
+        alive[np.concatenate([x for v in res_c.values() for x in v])] = False
+    dropped = int((~alive).sum())
+    if dropped:
+        gone = tbl['id'].to_numpy()[~alive]
+        tbl, geoms, is_rect = tbl.filter(pa.array(alive)), geoms[alive], is_rect[alive]
+        con.register('gone', pa.table({'id': gone}))
+        con.execute("DELETE FROM attrs WHERE id IN (SELECT id FROM gone)")
+        con.execute("DELETE FROM clean WHERE id IN (SELECT id FROM gone)")
+        keep_c = ~np.isin(q['id'][mine], gone)
+    else:
+        keep_c = np.ones(int(mine.sum()), bool)
+    lon, lat = tbl['lon_e6'].to_numpy() / 1e6, tbl['lat_e6'].to_numpy() / 1e6
+    bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
     os.makedirs(dst_dir, exist_ok=True)
     path = os.path.join(dst_dir, file)
     pq.write_table(tbl, path, compression='zstd', compression_level=19, row_group_size=500_000)
     if test and test.get('attrs_out'):
         con.execute(f"COPY attrs TO '{test['attrs_out']}' (FORMAT parquet)")
         con.execute(f"COPY (SELECT * FROM clean WHERE id IN (SELECT id FROM attrs)) TO '{test['clean_out']}' (FORMAT parquet)")
-
-    # Check what is published (decoded) and the fitted footprints.
-    lon, lat = tbl['lon_e6'].to_numpy() / 1e6, tbl['lat_e6'].to_numpy() / 1e6
-    bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
-    R, tree = carriageways(con, os.path.join(test['out'] if test else os.path.dirname(work), 'osm_roads.parquet').replace('\\', '/'),
-                           [bbox[0] - 0.001, bbox[1] - 0.001, bbox[2] + 0.001, bbox[3] + 0.001])
-    dec = [decode(r) for r in tbl.select(['lon_e6', 'lat_e6', 'length_dm', 'width_dm', 'angle_cdeg', 'ring']).to_pylist()]
-    chk = {'on_road': int((on_road_m2(dec, R, tree) > OVER_M2).sum()), 'overlaps': int((pair_overlaps(dec) > OVER_M2).sum()),
-           'on_road_clean': int((on_road_m2(geoms, R, tree) > OVER_M2).sum()), 'overlaps_clean': int((pair_overlaps(geoms) > OVER_M2).sum())}
     mb = os.path.getsize(path) / 1e6
     bad = [k for k, v in chk.items() if v] + ([f'{mb:.0f} MB'] if mb >= MAX_MB else [])
     per_c = {}
-    kc = assign_communes(_W['prov'], _W['comm'], q['lon_e6'][mine] / 1e6, q['lat_e6'][mine] / 1e6)[0]
+    kc = assign_communes(_W['prov'], _W['comm'], q['lon_e6'][mine][keep_c] / 1e6, q['lat_e6'][mine][keep_c] / 1e6)[0]
     for x in kc.tolist():
         rid = _W['comm'][x]['rel_id']; per_c[rid] = per_c.get(rid, 0) + 1
     return {**entry, 'buildings': int(tbl.num_rows), 'bytes': os.path.getsize(path), 'bbox': bbox,
             'communes': [{'name': c['name'], 'osm_relation': c['osm_relation'], 'buildings': per_c.get(c['osm_relation'], 0)} for c in g['communes']],
-            'check': chk, 'rect_share': round(float(is_rect.mean()), 3), 'pass_a': sa, 'pass_b': sb,
+            'check': chk, 'dropped_check': dropped, 'rect_share': round(float(is_rect.mean()), 3), 'pass_a': sa, 'pass_b': sb,
             'status': 'ok' if not bad else 'failed: ' + ', '.join(bad),
             'seconds': round(time.time() - t0), 'seconds_fit': round(t_fit), 'seconds_heights': round(t_h)}
 
@@ -228,6 +269,7 @@ def main():
     print('areas', len(st['areas']), '| tiles', len(st['tiles']), f'| prepared {time.time() - t0:.0f}s', flush=True)
     done_dir = os.path.join(work, 'done'); os.makedirs(done_dir, exist_ok=True)
     done = {f[:-5]: json.load(open(os.path.join(done_dir, f), encoding='utf-8')) for f in os.listdir(done_dir) if f.endswith('.json')}
+    done = {f: e for f, e in done.items() if e['status'] == 'ok'}      # a failed area is built again
     todo = [x for x in st['areas'] if (not a.area or x['file'] == a.area) and x['file'] not in done]
     test = None
     if a.bbox:
@@ -254,7 +296,7 @@ def main():
                 e['committed'] = True; state['commits'] += 1
         json.dump(e, open(os.path.join(done_dir, e['file'] + '.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         done[e['file']] = e
-        print(f"{e['file']}: {e['status']} | {e['buildings']} buildings | {e.get('check')} | {e['seconds']}s "
+        print(f"{e['file']}: {e['status']} | {e['buildings']} buildings | {e.get('check')} | dropped_check {e.get('dropped_check', 0)} | {e['seconds']}s "
               f"(fit {e.get('seconds_fit')}s, heights {e.get('seconds_heights')}s) | {len(done)} done | {time.time() - t0:.0f}s", flush=True)
         push()
 
@@ -285,7 +327,7 @@ def main():
                            'nearest commune / province when outside. Files group neighbouring communes as in commune_groups.json.',
                    'files_without_buildings': [g['file'] for g in groups if g['file'] not in {e['file'] for e in ok}],
                    'failed': failed, 'schema': 'see buildings/compact_layer.py (decode() turns a row into a polygon)',
-                   'files': [{k: e[k] for k in ('file', 'province', 'province_iso', 'buildings', 'bytes', 'bbox', 'communes')}
+                   'files': [{k: e.get(k, 0) for k in ('file', 'province', 'province_iso', 'buildings', 'dropped_check', 'bytes', 'bbox', 'communes')}
                              for e in sorted(ok, key=lambda e: e['file'])]},
                   open(idx, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         if not a.no_git and commit(rel('index.json'), f'Buildings: by_area/index.json ({len(ok)} files, {sum(e["buildings"] for e in ok)} buildings)'):
