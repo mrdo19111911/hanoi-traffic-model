@@ -15,10 +15,10 @@ Dependencies: `requirements-buildings.txt` (duckdb with the spatial extension, r
 .venv/Scripts/python.exe buildings/fetch_open_buildings.py     # 37 GeoParquet files, 8.69 GB -> data/open_buildings/vnm
 .venv/Scripts/python.exe buildings/extract_osm.py              # PBF -> data/buildings/osm_{buildings,roads,water}.parquet
 .venv/Scripts/python.exe buildings/merge_buildings.py          # -> vn_buildings_merged.parquet (+ .meta.json)
-.venv/Scripts/python.exe buildings/fit_footprints.py          # -> vn_buildings_clean.parquet (+ .meta.json): off roads, no overlaps
+.venv/Scripts/python.exe buildings/fit_footprints.py          # -> vn_buildings_clean.parquet (+ .meta.json): off roads, no overlaps, shared walls
 .venv/Scripts/python.exe buildings/heights_25d.py              # -> vn_buildings.parquet (attributes and heights)
 .venv/Scripts/python.exe buildings/compact_layer.py            # -> vn_buildings_compact.parquet (footprint + height, small)
-.venv/Scripts/python.exe buildings/check_road_overlap.py --bbox 105.81 20.98 105.83 21.00   # both counts must be 0
+.venv/Scripts/python.exe buildings/check_road_overlap.py --bbox 105.81 20.98 105.83 21.00   # on-road and overlap counts must be 0
 .venv/Scripts/python.exe buildings/group_communes.py          # -> buildings/commune_groups.{json,md} (table of contents)
 .venv/Scripts/python.exe buildings/split_by_area.py            # -> by_area/<province>_<NN>.parquet + index.json
 .venv/Scripts/python.exe buildings/strip_buildings.py          # -> osrm/data/vietnam-nobuildings.osm.pbf
@@ -38,19 +38,24 @@ Every step can be re-run. The download resumes partial files. The merge works in
 - Overlaps are measured against the union of the touching features, in UTM 48N.
 - The thresholds and the outcome counts are written to `vn_buildings_merged.meta.json`.
 
-## Off roads, no overlaps (`fit_footprints.py`)
+## Off roads, no overlaps, shared walls (`fit_footprints.py`)
 
 No house in Vietnam sticks out into a street or a ngõ, and no two buildings overlap (tube houses share walls, they do not cross). In the raw data both happen: Open Buildings is often 1–2 m off, and the merge keeps footprints that are less than 40 % on a road. The rule applies to OSM and Open Buildings alike. It replaces `clip_to_roads.py`, which only cut; that file now only holds the carriageway definitions.
 
 - **Carriageways:** half-width lanes × 1.5 m when tagged, else motorway/trunk/primary 5 m, secondary 4 m, tertiary 3 m, links 2.5 m, residential/unclassified/living_street 1.5 m, service 1.0 m, footway/path/pedestrian/steps/cycleway 0.75 m, plus 0.1 m for coordinate rounding. Narrow on purpose, because OSM has no width for alleys. Not counted: bridges, tunnels, `covered`, `indoor`, `area=yes`, `highway=construction/proposed/platform/corridor/elevator/bus_stop`.
 - **Pass A, shift:** a footprint on a carriageway moves away from it (from the nearest point of the road's centre line toward the footprint's centroid, weighted by overlap area), by the smallest distance up to 3 m that clears every carriageway nearby.
 - **Cut, when no shift works** (a house between two alleys, or more than 3 m on the road): footprint minus the carriageways, largest part kept, dropped under 50 % or 6 m².
-- **Pass B, overlaps:** rank OSM first, then Open Buildings by confidence (Microsoft after Google), then larger first. Each footprint loses whatever lies within 0.1 m of a higher-ranked one, so overlaps go and touching walls end up 10 cm apart, which coordinate rounding cannot close. Dropped when under 50 % or 6 m² is left (a duplicate).
-- Work runs in 0.25° cells on 8 processes; pass B reads the pass A result of neighbours in adjacent cells, so overlaps across cell edges are removed too.
-- Output adds `shift_m`, `clip_m2`, `overlap_m2`, `road_gap_m` and `nb_gap_m` (distance to the nearest carriageway / other building, up to 5 m).
-- **Bùi Xương Trạch test** (11,600 footprints): 2,486 shifted (median 0.82 m; 804 of them OSM), 668 cut, 84 dropped on a road, 5,936 trimmed at a neighbour, 50 duplicates dropped, 11,466 left.
-  - `check_road_overlap.py` before: 0 on roads but 1,341 overlapping pairs over 0.5 m².
-  - After: 0 on roads and 0 overlapping pairs over 0.05 m², both before and after compression.
+- **Pass B, shared walls.** Houses in Hanoi and Ho Chi Minh City stand wall to wall, while detected footprints usually stop 0.3–1 m short of each other. Pass B works on the storage grid (1e-6°, what the compact layer keeps), so storing the result moves nothing.
+  - **Close narrow gaps:** gaps under 1 m between buildings (closing of their union at 0.5 m, minus carriageways) are filled; each building grows into them by up to 0.5 m.
+  - **Share the ground:** the outlines of touching footprints are noded together and cut the ground into faces. Each face goes to the highest-ranked footprint covering it: OSM first, then Open Buildings by confidence (Microsoft after Google), then larger first. Neighbours are built from the same faces, so they share each wall vertex for vertex: no overlap, no gap.
+  - A footprint left with under 50 % of its area or under 6 m² was a duplicate and is dropped; its faces go to the next in rank.
+- Work runs in 0.25° cells on 8 processes. Pass B reads the pass A result of neighbours in adjacent cells and only looks at a building's surroundings, so a building on a cell edge comes out the same from both sides (tested with 0.005° cells: same counts).
+- Output adds `shift_m`, `clip_m2`, `fill_m2`, `overlap_m2`, `road_gap_m` and `nb_gap_m` (distance to the nearest carriageway / other building, up to 5 m).
+- **Bùi Xương Trạch test** (11,600 footprints): 2,486 shifted (median 0.82 m; 804 of them OSM), 668 cut, 84 dropped on a road, 4,501 grown into a gap, 5,491 gave ground to a neighbour, 49 duplicates dropped, 11,467 left.
+  - `check_road_overlap.py` on the raw footprints: 1,341 overlapping pairs over 0.5 m².
+  - With 10 cm between walls (the previous rule): 0 overlaps, but 10,303 pairs 2 cm–1 m apart and 9,722 m² of gaps under 1 m wide.
+  - Now: 0 on roads, 0 overlapping pairs over 0.05 m², 9,615 pairs sharing a wall, 79 m² of gaps under 1 m wide left. The same after compression.
+  - The 815 pairs still 2 cm–1 m apart: 565 are corner to corner (houses in different rows), 63 are under 10 cm (less than one grid step), 187 are small pockets, 34 m² in all.
 
 ## Heights (`heights_25d.py`)
 
@@ -80,7 +85,7 @@ No house in Vietnam sticks out into a street or a ngõ, and no two buildings ove
 
 ## Compact layer `data/buildings/vn_buildings_compact.parquet` (`compact_layer.py`)
 
-Footprint plus height in about 24 bytes per building (Bùi Xương Trạch test: 24.3 B; 18.9 B before overlaps were removed, when touching tube houses could still be rectangles), zstd level 19. `decode()` in `compact_layer.py` turns a row back into a polygon.
+Footprint plus height in about 27 bytes per building (Bùi Xương Trạch test: 26.8 B; 18.9 B before overlaps were removed and walls shared, when touching tube houses could still be rectangles), zstd level 19. `decode()` in `compact_layer.py` turns a row back into a polygon.
 
 - **Rectangle**, when the footprint fills ≥ 95 % of its rotated bounding rectangle, has no hole, and the rectangle cannot reach a road or another building: its largest bulge past the footprint plus 0.15 m is less than `road_gap_m` and `nb_gap_m`. Stored as centre (`lon_e6`, `lat_e6`), `length_dm`, `width_dm` and `angle_cdeg` (long side, clockwise from north). Round-trip IoU median 0.97.
 - **Ring** otherwise, including every footprint that was cut: first vertex in `lon_e6`/`lat_e6`, then int16 (dx, dy) steps in 1e-6 degrees. Holes are dropped. Round-trip IoU median 0.99.
