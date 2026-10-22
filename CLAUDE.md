@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Hanoi travel-time estimator: OSRM routes a trip, then travel time is computed from TomTom-derived speed samples interpolated per road class, weekday and time slot. Local Windows app: FastAPI backend + React/Leaflet frontend. User-facing strings (API errors, UI) are Vietnamese; new code and docstrings are English. Git repository, published publicly on GitHub (mrdo19111911/hanoi-traffic-model): TomTom-derived data (`data/*.json*`, `reports/spatial_crawl.json`) and large generated data are gitignored and must stay out of it.
+Hanoi travel-time estimator: OSRM routes a trip, then travel time is computed from TomTom-derived speed samples interpolated per road class, weekday and time slot. Local Windows app: FastAPI backend + React/Leaflet frontend. User-facing strings (API errors, UI) are Vietnamese; new code and docstrings are English. Git repository, published publicly on GitHub (mrdo19111911/hanoi-traffic-model): TomTom-derived data (`data/*.json*`, `reports/spatial_crawl.json`) is gitignored and must stay out of it. Intermediate generated data (`data/buildings/`, `data/open_buildings/`, OSRM files) stays gitignored too. The published building layer is committed: one file per commune group in `buildings/by_area/`, each kept under GitHub's 100 MB file limit.
 
 ## Commands
 
