@@ -2,15 +2,16 @@
 
 Footprint encoding (all coordinates in 1e-6 degrees, about 0.1 m):
 - rect: the footprint covers >= 95 % of its minimum rotated rectangle, has no holes, and the rectangle stays clear
-  of every carriageway: its largest bulge past the footprint (Hausdorff distance) plus RECT_SAFE_M is less than the
-  footprint's road_gap_m from clip_to_roads.py. A cut footprint touches the road, so it is always a ring. Stored as centre
+  of every carriageway and every other building: its largest bulge past the footprint (Hausdorff distance) plus
+  RECT_SAFE_M is less than the footprint's road_gap_m and nb_gap_m from fit_footprints.py. A footprint that touches
+  a road or a neighbour (most tube houses) is therefore always a ring. Stored as centre
   (lon_e6, lat_e6), length_dm, width_dm (metres x 10) and angle_cdeg (direction of the long side,
   clockwise from north, hundredths of a degree, 0-17999). No ring.
 - ring: everything else. lon_e6/lat_e6 is the first vertex and `ring` holds int16 little-endian
   (dx, dy) steps to each next vertex of the outer ring (closing vertex dropped). Holes are dropped.
 decode() in this file turns a row back into a shapely polygon.
 
-Inputs: vn_buildings_clean.parquet (geometry, clipped off roads) and vn_buildings.parquet (heights), joined on id.
+Inputs: vn_buildings_clean.parquet (fitted geometry and gaps) and vn_buildings.parquet (heights), joined on id.
 Output: data/buildings/vn_buildings_compact.parquet, zstd level 19.
 
     .venv/Scripts/python.exe buildings/compact_layer.py [--out data/buildings] [--batch 1000000]
@@ -103,7 +104,11 @@ def main():
     t0 = time.time()
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
     con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
-    q = con.execute(f"""SELECT m.id, m.src, ST_AsWKB(m.geometry) wkb, b.height_dm, b.height_src, b.floors, m.road_gap_m
+    cols = {c[0] for c in con.execute(f"DESCRIBE SELECT * FROM '{p(a.src)}'").fetchall()}
+    # Distance to the nearest thing a rectangle must not reach; files from clip_to_roads.py have no nb_gap_m.
+    gap = ("CASE WHEN m.road_gap_m IS NULL AND m.nb_gap_m IS NULL THEN NULL "
+           "ELSE least(coalesce(m.road_gap_m, 1e9), coalesce(m.nb_gap_m, 1e9)) END") if 'nb_gap_m' in cols else 'm.road_gap_m'
+    q = con.execute(f"""SELECT m.id, m.src, ST_AsWKB(m.geometry) wkb, b.height_dm, b.height_src, b.floors, {gap} gap
                         FROM '{p(a.src)}' m JOIN '{p(a.attrs)}' b USING (id) ORDER BY m.id""")
     writer = pq.ParquetWriter(p(a.dst), SCHEMA, compression='zstd', compression_level=19)
     n = n_rect = 0

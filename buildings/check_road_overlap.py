@@ -1,8 +1,10 @@
-"""Check the "no building on a carriageway or alley" rule on the finished layers, inside a lon/lat box.
+"""Check the two footprint rules on the finished layers, inside a lon/lat box:
+no building on a carriageway or alley, and no two buildings overlapping.
 
-Carriageways are the same polygons clip_to_roads.py cuts with (half-widths HALF, exclusions SKIP, no rounding
-margin). For the clean footprints and for the compact layer as decoded by compact_layer.decode(), it prints how
-many buildings overlap a carriageway by more than 0.5 m2 and 2 m2. Both counts should be 0.
+Carriageways are the polygons fit_footprints.py works with (half-widths HALF, exclusions SKIP, no rounding margin).
+For the clean footprints and for the compact layer as decoded by compact_layer.decode(), it prints how many
+buildings overlap a carriageway, and how many pairs of buildings overlap each other, by more than 0.05, 0.5 and
+2 m2. Touching walls do not count. The 0.5 and 2 m2 counts must be 0.
 
     .venv/Scripts/python.exe buildings/check_road_overlap.py --bbox W S E N [--out data/buildings]
         [--clean vn_buildings_clean.parquet] [--compact vn_buildings_compact.parquet]
@@ -42,18 +44,27 @@ def main():
             out.append(shapely.union_all([R[j] for j in hit]).intersection(g).area if len(hit) else 0.0)
         return np.array(out)
 
-    def report(name, v):
-        print(f'{name:24s} n={len(v):8d}  over 0.5 m2: {(v > 0.5).sum():6d}  over 2 m2: {(v > 2).sum():6d}  max {v.max(initial=0):.2f} m2')
+    def report(name, v, what='on a road'):
+        print(f'{name:24s} n={len(v):8d}  {what} over 0.05 m2: {(v > 0.05).sum():6d}  over 0.5 m2: {(v > 0.5).sum():6d}  '
+              f'over 2 m2: {(v > 2).sum():6d}  max {v.max(initial=0):.2f} m2')
+
+    def pair_overlaps(geoms):
+        g = np.array([shapely.make_valid(shapely.transform(x, lambda c: np.column_stack(T.transform(c[:, 0], c[:, 1])))) for x in geoms], object)
+        i, j = STRtree(g).query(g, predicate='intersects')
+        m = i < j
+        return np.array([shapely.intersection(g[x], g[y]).area for x, y in zip(i[m], j[m])])
 
     clean = [shapely.from_wkb(bytes(w)) for (w,) in
              con.execute(f"SELECT ST_AsWKB(geometry) FROM '{p(a.clean)}' WHERE ST_Intersects(geometry, {env})").fetchall()]
     report('clean footprints', overlap(clean))
+    report('clean footprints', pair_overlaps(clean), 'pairs overlapping')
     if os.path.exists(p(a.compact)):
         rows = pq.read_table(p(a.compact), filters=[('lon_e6', '>=', int(W * 1e6)), ('lon_e6', '<=', int(E * 1e6)),
                                                     ('lat_e6', '>=', int(S * 1e6)), ('lat_e6', '<=', int(N * 1e6))]).to_pylist()
         is_rect = np.array([r['ring'] is None for r in rows], bool)
         v = overlap([decode(r) for r in rows])
         report('compact, decoded', v); report('  rectangles', v[is_rect]); report('  rings', v[~is_rect])
+        report('compact, decoded', pair_overlaps([decode(r) for r in rows]), 'pairs overlapping')
 
 
 if __name__ == '__main__':
