@@ -42,7 +42,15 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _W = {}                            # per worker: admin units and the group of each commune
 
 
+def limit_threads(n):
+    """DuckDB and Arrow use every core in every process by default; cap them so the run stays within its CPU budget."""
+    connect = duckdb.connect
+    duckdb.connect = lambda *a, **k: connect(*a, **{**k, 'config': {**(k.get('config') or {}), 'threads': n}})
+    pa.set_cpu_count(n)
+
+
 def _init(admin, pbf, groups_json):
+    limit_threads(1)                # one core per worker; the pool size is the budget
     prov, comm = load_admin(admin, pbf)
     gof = {c['osm_relation']: gi for gi, g in enumerate(json.load(open(groups_json, encoding='utf-8'))['groups']) for c in g['communes']}
     _W.update(prov=prov, comm=comm, cg=np.array([gof.get(r['rel_id'], -1) for r in comm], np.int32))
@@ -212,6 +220,7 @@ def main():
     ap.add_argument('--admin', default='data/buildings/vn_admin.parquet')
     ap.add_argument('--pbf', default='osrm/data/vietnam-latest.osm.pbf')
     a = ap.parse_args()
+    limit_threads(max(1, a.workers))   # the shared prepare step gets the same budget as the pool
     t0 = time.time()
     tag = '' if not a.bbox else '_test_' + '_'.join(f'{v:.4f}' for v in a.bbox)
     work = os.path.join(a.out, '_areas' + tag).replace('\\', '/')
