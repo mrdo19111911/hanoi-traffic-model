@@ -1,8 +1,6 @@
 {
  "rule": "centroid in OSM commune boundary (admin_level=6 Xã/Phường/Đặc khu) inside an admin_level=4 VN-* province; nearest commune / province when outside. Files group neighbouring communes as in commune_groups.json.",
- "files_without_buildings": [
-  "da_nang_07.parquet"
- ],
+ "files_without_buildings": [],
  "failed": [],
  "schema": "see buildings/compact_layer.py (decode() turns a row into a polygon)",
  "files": [
@@ -3576,6 +3574,37 @@
      "name": "Xã Đại Lộc",
      "osm_relation": 19337548,
      "buildings": 44142
+    }
+   ]
+  },
+  {
+   "file": "da_nang_07.parquet",
+   "province": "Thành phố Đà Nẵng",
+   "province_iso": "VN-DN",
+   "buildings": 124246,
+   "dropped_check": 48,
+   "bytes": 3068637,
+   "bbox": [
+    108.222581,
+    15.857214,
+    108.362524,
+    15.973287
+   ],
+   "communes": [
+    {
+     "name": "Phường Hội An",
+     "osm_relation": 19337535,
+     "buildings": 24615
+    },
+    {
+     "name": "Phường Hội An Tây",
+     "osm_relation": 19337533,
+     "buildings": 28814
+    },
+    {
+     "name": "Phường Điện Bàn Đông",
+     "osm_relation": 19337545,
+     "buildings": 70817
     }
    ]
   },
