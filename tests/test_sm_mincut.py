@@ -1,10 +1,12 @@
 """Offline tests for speedmatrix.mincut (the min-cut cell splitter) on small synthetic road graphs."""
 import unittest
+from unittest import mock
 
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 
+from speedmatrix import mincut
 from speedmatrix.geo import haversine_m
 from speedmatrix.mincut import (CAPACITY, DEFAULT_CAPACITY, MIN_RUN_KM, SEED, CellGraph, cell_hash, expressway_rule,
                                 merge_fragments, refine_pairs, split_cell, split_jobs, split_k, warm_split,
@@ -152,7 +154,55 @@ class RefineTests(unittest.TestCase):
         labels, rows = refine_pairs(g, np.where(col <= 4, 4, 9), band_km=0.2)
         self.assertEqual(labels.tolist(), np.where(col <= 6, 4, 9).tolist())
         self.assertEqual(rows, [{"pair": [4, 9], "edges_before": 3, "edges_after": 3, "cut_cost": 21,
-                                 "nodes_moved": 6}])
+                                 "nodes_moved": 6, "method": "scaled"}])
+
+    def test_refine_border_costs_the_min_cut_when_cuts_tie(self):
+        # 12 x 4 residential grid with a zig-zag border (cost 100); every straight column cut costs 40
+        lon, lat, edges = grid(12, 4, 105.800, 21.000)
+        g = make(lon, lat, edges)
+        col, row = np.arange(48) % 12, np.arange(48) // 12
+        zigzag = np.where(col <= 4 + row % 2 * 2, 0, 1)
+        self.assertEqual(int(g.cap[zigzag[g.lo] != zigzag[g.hi]].astype(int).sum()), 100)
+        for band in (0.15, 0.25, 0.35):
+            labels, rows = refine_pairs(g, zigzag, band_km=band)
+            self.assertEqual(len(rows), 1)
+            border = labels[g.lo] != labels[g.hi]
+            self.assertEqual(int(g.cap[border].astype(int).sum()), rows[0]["cut_cost"], band)
+            self.assertEqual(rows[0]["cut_cost"], 40, band)
+            self.assertEqual(rows[0]["edges_after"], 4, band)
+            self.assertTrue((labels[col <= 4] == 0).all() and (labels[col >= 7] == 1).all(), band)
+            # the fewest nodes move: the new column is 4|5 or 5|6, where only 4 of the 8 zig-zag nodes change
+            self.assertEqual(rows[0]["nodes_moved"], 4, band)
+        # at 0.5 km every node is within the band: no fixed node on either side, so the pair is left as it is
+        labels, rows = refine_pairs(g, zigzag, band_km=0.5)
+        np.testing.assert_array_equal(labels, zigzag)
+        self.assertEqual((rows[0]["skipped"], rows[0]["cut_cost"], rows[0]["nodes_moved"]), ("no fixed node", None, 0))
+
+    def test_refine_tie_break_survives_an_int32_overflow(self):
+        # with a tiny flow limit the scaled network "overflows" and the extreme-cut fallback must still give 40
+        lon, lat, edges = grid(12, 4, 105.800, 21.000)
+        g = make(lon, lat, edges)
+        col, row = np.arange(48) % 12, np.arange(48) // 12
+        zigzag = np.where(col <= 4 + row % 2 * 2, 0, 1)
+        with mock.patch.object(mincut, "_FLOW_LIMIT", 100):
+            labels, rows = refine_pairs(g, zigzag, band_km=0.25)
+        self.assertEqual(rows[0]["method"], "extreme")
+        self.assertEqual(int(g.cap[labels[g.lo] != labels[g.hi]].astype(int).sum()), rows[0]["cut_cost"])
+        self.assertEqual(rows[0]["cut_cost"], 40)
+
+    def test_weighted_cut_prefer_decides_every_free_node(self):
+        # A -7- x -10- y -7- B: two cuts of 7; without a preference x and y are undecided
+        lo, hi, cap = np.array([0, 1, 2]), np.array([1, 2, 3]), np.array([7, 10, 7], np.int8)
+        side = np.array([1, 0, 0, 2], np.int8)
+        value, a, b = weighted_cut(lo, hi, cap, side, 4)
+        self.assertEqual(value, 7)
+        self.assertFalse(a[1:3].any() or b[1:3].any())
+        value, a, b = weighted_cut(lo, hi, cap, side, 4, prefer=np.array([0, 1, 2, 0], np.int8))
+        self.assertEqual(value, 7)                                       # the real cut value, not the scaled one
+        self.assertTrue((a ^ b).all())                                   # every node decided
+        self.assertEqual(int(a[2]) + int(b[1]), 1)                       # A-x or y-B: one node moves, never both
+        value, a, b = weighted_cut(lo, hi, cap, side, 4, prefer=np.array([0, 1, 1, 0], np.int8))
+        self.assertEqual((value, a.tolist()), (7, [True, True, True, False]))   # both stay A: the y-B cut
 
     def test_refine_leaves_unlabelled_nodes(self):
         lon, lat, edges = grid(4, 1, 105.800, 21.000)
@@ -228,6 +278,25 @@ class ExpresswayTests(unittest.TestCase):
         self.assertEqual(labels[:21].tolist(), self.road.tolist())          # ordinary nodes never change
         self.assertEqual(info["expressway_only_nodes"], 40)
         self.assertEqual(info["expressway_cut_edges_after"], 1)
+        self.assertEqual((info["expressway_detached"], info["expressway_detached_nodes"]), (0, 0))
+
+    def test_expressway_run_without_interchange_is_counted_detached(self):
+        # road 105.800-105.860 in cell 0 except a 2.6 km stretch of cell 1 (105.820-105.845); the motorway above it
+        # links to the road only at both ends (cell 0), so its run over cell 1 is longer than MIN_RUN_KM and stays
+        # in cell 1 without touching cell 1's road
+        road_lon = [105.800 + 0.001 * i for i in range(61)]
+        mw_lon = [105.8002 + 0.0005 * i for i in range(120)]
+        lon, lat = road_lon + mw_lon, [21.000] * 61 + [21.0005] * 120
+        edges = [(i, i + 1) for i in range(60)] + [(61 + i, 62 + i) for i in range(119)] + [(0, 61), (60, 180)]
+        g = make(lon, lat, edges, highway=[0] * 60 + [1] * 119 + [2, 2],
+                 names=("residential", "motorway", "motorway_link"))
+        road = np.array([1 if 105.8195 < x < 105.8455 else 0 for x in road_lon])
+        labels, info = expressway_rule(g, np.r_[road, np.zeros(120, np.int64)])
+        over_b = 61 + np.flatnonzero((np.array(mw_lon) > 105.8195) & (np.array(mw_lon) < 105.8455))
+        self.assertTrue((labels[over_b] == 1).all())
+        self.assertEqual(info["short_runs_absorbed"], 0)
+        self.assertEqual(info["expressway_detached"], 1)
+        self.assertEqual(info["expressway_detached_nodes"], len(over_b))
 
     def test_expressway_rule_respects_parent_and_unlabelled_nodes(self):
         lx = self.lx.copy()
@@ -309,6 +378,15 @@ class SplitTests(unittest.TestCase):
         self.assertEqual(cell_hash(g), cell_hash(g_permuted))
         self.assertNotEqual(cell_hash(g), cell_hash(g_primary))
         self.assertRegex(cell_hash(g), "^[0-9a-f]{64}$")
+
+    def test_cell_hash_tells_motorway_from_trunk(self):
+        # motorway and trunk both have capacity 6; a reclassification must still change the hash (Ruling T6-a)
+        lon, lat, edges = grid(3, 3, 105.800, 21.000)
+        names = ("residential", "trunk", "motorway")
+        g_trunk = make(lon, lat, edges, highway=[1] + [0] * (len(edges) - 1), names=names)
+        g_motorway = make(lon, lat, edges, highway=[2] + [0] * (len(edges) - 1), names=names)
+        self.assertEqual(g_trunk.cap.tolist(), g_motorway.cap.tolist())
+        self.assertNotEqual(cell_hash(g_trunk), cell_hash(g_motorway))
 
     def test_split_k(self):
         self.assertEqual(split_k(5400, 1000, 1800), 3)

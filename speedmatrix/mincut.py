@@ -41,6 +41,7 @@ BAND_MARGIN_KM = 1.0  # refine_pairs keeps edges with an end this far beyond the
 MIN_LENGTH_M = 1e-3   # Voronoi edge length floor, so a zero-length edge is still an edge
 PER_WORKER_GB_L3 = 0.5
 PER_WORKER_GB_L2 = 3.0
+_FLOW_LIMIT = 2**31 - 1  # scipy's maximum_flow works in int32 and truncates larger values
 
 
 @dataclass
@@ -134,27 +135,22 @@ def _cut_edges(g: CellGraph, labels: np.ndarray) -> np.ndarray:
     return (la >= 0) & (lb >= 0) & (la != lb)
 
 
-def weighted_cut(lo, hi, cap, side: np.ndarray, n: int) -> "tuple[int, np.ndarray, np.ndarray]":
-    """Min cut between the side-1 and side-2 nodes; returns (value, a_side mask, b_side mask) over the n nodes.
-
-    ``a_side`` holds the side-1 nodes and the nodes reached from them in the residual graph, ``b_side`` the side-2
-    nodes and the other nodes that reach them; a free node in neither may go either way. Capacity-0 edges carry no flow, so they never connect the two sides.
-    """
-    lo = np.asarray(lo, dtype=np.int64)
-    hi = np.asarray(hi, dtype=np.int64)
-    cap = np.asarray(cap).astype(np.int32)
-    side = np.asarray(side)
-    s_node, t_node = n, n + 1
-    u = np.where(side[lo] == 1, s_node, np.where(side[lo] == 2, t_node, lo))
-    v = np.where(side[hi] == 1, s_node, np.where(side[hi] == 2, t_node, hi))
-    keep = (u != v) & (cap > 0)
-    u, v, c = u[keep], v[keep], cap[keep]
-    nodes = np.unique(np.concatenate([u, v, [s_node, t_node]]))
+def _flow_sides(u, v, c, s_node, t_node, n, directed_extra=None):
+    """Max flow from s_node to t_node over undirected (u, v, c) edges plus directed extra edges; returns
+    (flow value, nodes, from_s, to_t) with the two residual reachability masks over ``nodes``. Raises OverflowError
+    when a capacity or the flow could pass int32, which scipy's maximum_flow would silently truncate."""
+    eu, ev, ec = directed_extra if directed_extra is not None else (np.zeros(0, np.int64),) * 3
+    nodes = np.unique(np.concatenate([u, v, eu, ev, [s_node, t_node]]))
     cu, cv = np.searchsorted(nodes, u), np.searchsorted(nodes, v)
+    xu, xv = np.searchsorted(nodes, eu), np.searchsorted(nodes, ev)
     m = len(nodes)
-    graph = csr_matrix((np.r_[c, c], (np.r_[cu, cv], np.r_[cv, cu])), shape=(m, m), dtype=np.int32)
+    graph = csr_matrix((np.r_[c, c, ec].astype(np.int64), (np.r_[cu, cv, xu], np.r_[cv, cu, xv])), shape=(m, m))
     graph.sum_duplicates()
     s, t = int(np.searchsorted(nodes, s_node)), int(np.searchsorted(nodes, t_node))
+    bound = min(graph[s].sum(), graph[:, t].sum())
+    if graph.nnz and (int(graph.data.max()) > _FLOW_LIMIT or int(bound) > _FLOW_LIMIT):
+        raise OverflowError("max-flow capacities exceed int32")
+    graph = graph.astype(np.int32)
     res = maximum_flow(graph, s, t)
     residual = (graph - res.flow).tocsr()
     residual.data = (residual.data > 0).astype(np.int8)
@@ -163,11 +159,73 @@ def weighted_cut(lo, hi, cap, side: np.ndarray, n: int) -> "tuple[int, np.ndarra
     from_s[breadth_first_order(residual, s, directed=True, return_predecessors=False)] = True
     to_t = np.zeros(m, dtype=bool)
     to_t[breadth_first_order(residual.T.tocsr(), t, directed=True, return_predecessors=False)] = True
+    return int(res.flow_value), nodes, from_s, to_t
+
+
+def _cut(lo, hi, cap, side, n, prefer=None):
+    """weighted_cut plus the tie-break method used: "none", "scaled" or "extreme" (see weighted_cut)."""
+    lo = np.asarray(lo, dtype=np.int64)
+    hi = np.asarray(hi, dtype=np.int64)
+    cap = np.asarray(cap).astype(np.int64)
+    side = np.asarray(side)
+    s_node, t_node = n, n + 1
+    u = np.where(side[lo] == 1, s_node, np.where(side[lo] == 2, t_node, lo))
+    v = np.where(side[hi] == 1, s_node, np.where(side[hi] == 2, t_node, hi))
+    keep = (u != v) & (cap > 0)
+    u, v, c = u[keep], v[keep], cap[keep]
     a_side, b_side = side[:n] == 1, side[:n] == 2
-    real = nodes < n
-    a_side[nodes[real & from_s]] = True
-    b_side[nodes[real & to_t & ~from_s]] = True
-    return int(res.flow_value), a_side, b_side
+    if prefer is None:
+        value, nodes, from_s, to_t = _flow_sides(u, v, c, s_node, t_node, n)
+        real = nodes < n
+        a_side[nodes[real & from_s]] = True
+        b_side[nodes[real & to_t & ~from_s]] = True
+        return value, a_side, b_side, "none"
+    prefer = np.asarray(prefer)[:n]
+    free_a = np.flatnonzero((side[:n] == 0) & (prefer == 1))
+    free_b = np.flatnonzero((side[:n] == 0) & (prefer == 2))
+    scale = len(free_a) + len(free_b) + 1
+    extra = (np.r_[np.full(len(free_a), s_node), free_b], np.r_[free_a, np.full(len(free_b), t_node)],
+             np.ones(len(free_a) + len(free_b), dtype=np.int64))
+    decided = np.r_[free_a, free_b]
+    try:
+        flow, nodes, from_s, _ = _flow_sides(u, v, c * scale, s_node, t_node, n, extra)
+        value, method = flow // scale, "scaled"
+        a_nodes = nodes[(nodes < n) & from_s]
+    except OverflowError:
+        # Fallback: of the two extreme minimum cuts (the source side reached from s, or everything that does not
+        # reach t) take the one that moves fewer preferring nodes; ties go to the first.
+        value, nodes, from_s, to_t = _flow_sides(u, v, c, s_node, t_node, n)
+        real = nodes < n
+        first = np.zeros(n, dtype=bool)
+        first[nodes[real & from_s]] = True
+        second = np.ones(n, dtype=bool)
+        second[nodes[real & to_t]] = False
+        moves = [int((x[free_b]).sum() + (~x[free_a]).sum()) for x in (first, second)]
+        a_nodes = np.flatnonzero(first if moves[0] <= moves[1] else second)
+        method = "extreme"
+    in_a = np.zeros(n, dtype=bool)
+    in_a[a_nodes] = True
+    a_side[decided[in_a[decided]]] = True
+    b_side[decided[~in_a[decided]]] = True
+    return int(value), a_side, b_side, method
+
+
+def weighted_cut(lo, hi, cap, side: np.ndarray, n: int, prefer: "np.ndarray | None" = None
+                 ) -> "tuple[int, np.ndarray, np.ndarray]":
+    """Min cut between the side-1 and side-2 nodes; returns (value, a_side mask, b_side mask) over the n nodes.
+
+    ``a_side`` holds the side-1 nodes and the nodes reached from them in the residual graph, ``b_side`` the side-2
+    nodes and the other nodes that reach them. Capacity-0 edges carry no flow, so they never connect the two sides.
+
+    Without ``prefer`` a free node in neither residual set is left undecided (both masks False). With ``prefer``
+    (int8 (n,): 1 = stays on side A unless the cut says otherwise, 2 = side B), every free node with a preference is
+    decided: capacities are scaled by M = (number of such nodes + 1) and each preferring node gets a capacity-1 edge
+    from the source (prefer 1) or to the sink (prefer 2), so the cut is the minimum cut that moves the fewest nodes.
+    ``value`` is always the unscaled cut. When the scaled network would pass int32, the extreme minimum cut that moves
+    fewer nodes is taken instead.
+    """
+    value, a_side, b_side, _ = _cut(lo, hi, cap, side, n, prefer)
+    return value, a_side, b_side
 
 
 def refine_pairs(g: CellGraph, labels, band_km: float) -> "tuple[np.ndarray, list[dict]]":
@@ -175,8 +233,10 @@ def refine_pairs(g: CellGraph, labels, band_km: float) -> "tuple[np.ndarray, lis
 
     Pairs of cells sharing edges run one after another, largest current cut first (ties by codes), each on the labels
     left by the previous ones. In a pair (A, B), nodes farther than ``band_km`` from the current A-B border are fixed
-    (A to the source, B to the sink); the min cut over the rest decides the new border. Nodes reached from the source
-    become A, nodes reaching the sink become B, the others keep their label. Labels below 0 never change.
+    (A to the source, B to the sink); the min cut over the rest decides the new border. When several cuts are
+    minimal, the one that moves the fewest nodes wins (``weighted_cut`` with ``prefer`` = the current labels), so every
+    free node is decided and the border always costs exactly ``cut_cost``. A pair with no fixed node on either side
+    is left as it is (row ``skipped``). Labels below 0 never change. Each row records the tie-break ``method``.
     """
     labels = np.asarray(labels, dtype=np.int64).copy()
     lo, hi = g.lo.astype(np.int64), g.hi.astype(np.int64)
@@ -206,15 +266,21 @@ def refine_pairs(g: CellGraph, labels, band_km: float) -> "tuple[np.ndarray, lis
         far = dist[nodes] > band_km
         side[nodes[far & (labels[nodes] == ca)]] = 1
         side[nodes[far & (labels[nodes] == cb)]] = 2
+        if not (side[nodes] > 0).any():
+            rows.append({"pair": [int(ca), int(cb)], "edges_before": before, "edges_after": before, "cut_cost": None,
+                         "nodes_moved": 0, "skipped": "no fixed node"})
+            continue
         band = (dist[e_lo] <= band_km + BAND_MARGIN_KM) | (dist[e_hi] <= band_km + BAND_MARGIN_KM)
-        value, a_side, b_side = weighted_cut(e_lo[band], e_hi[band], cap[in_pair][band], side, n)
         free = nodes[side[nodes] == 0]
+        prefer = np.zeros(n, dtype=np.int8)
+        prefer[free] = np.where(labels[free] == ca, 1, 2)
+        value, a_side, b_side, method = _cut(e_lo[band], e_hi[band], cap[in_pair][band], side, n, prefer)
         moved = int(((labels[free] == cb) & a_side[free]).sum() + ((labels[free] == ca) & b_side[free]).sum())
         labels[free[a_side[free]]] = ca
         labels[free[b_side[free]]] = cb
         after = int((labels[e_lo] != labels[e_hi]).sum())
         rows.append({"pair": [int(ca), int(cb)], "edges_before": before, "edges_after": after, "cut_cost": value,
-                     "nodes_moved": moved})
+                     "nodes_moved": moved, "method": method})
     return labels, rows
 
 
@@ -352,9 +418,24 @@ def _absorb_short_runs(g: CellGraph, labels: np.ndarray, only: np.ndarray, paren
         absorbed += 1
 
 
+def _detached_expressway(g: CellGraph, labels: np.ndarray, xonly: np.ndarray) -> "tuple[int, int]":
+    """(pieces, nodes) of expressway-only pieces whose label also has a piece containing an ordinary node."""
+    valid = labels >= 0
+    comp = _pieces(g, labels)
+    ordinary_piece = np.zeros(g.n, dtype=bool)
+    ordinary_piece[comp[valid & ~xonly]] = True
+    ordinary_labels = np.unique(labels[valid & ~xonly])
+    cand = valid & xonly & ~ordinary_piece[comp] & np.isin(labels, ordinary_labels)
+    return int(len(np.unique(comp[cand]))), int(cand.sum())
+
+
 def expressway_rule(g: CellGraph, labels, parent: "np.ndarray | None" = None) -> "tuple[np.ndarray, dict]":
     """Decision 13: expressway-only nodes (every edge motorway/motorway_link) take the label of the nearest
     non-expressway node with the same parent, then short runs are absorbed (``MIN_RUN_KM``).
+
+    ``expressway_detached`` counts the pieces (connected nodes of one label) made only of expressway-only nodes whose
+    label also has a piece with ordinary roads: runs left apart from their cell's network, typically a run of
+    ``MIN_RUN_KM`` or more over a cell it has no interchange with; ``expressway_detached_nodes`` counts their nodes.
 
     Only nodes with a label >= 0 move; candidates are non-expressway nodes with a label >= 0 and, when ``parent`` is
     given, the same parent. An expressway-only node whose parent has no candidate keeps its label (counted). The
@@ -378,11 +459,13 @@ def expressway_rule(g: CellGraph, labels, parent: "np.ndarray | None" = None) ->
     labels[moved_nodes] = new_labels
     absorbed = _absorb_short_runs(g, labels, only, parent)
     cut_after = _cut_edges(g, labels)
+    detached, detached_nodes = _detached_expressway(g, labels, (deg_ex > 0) & (deg_other == 0))
     return labels, {"expressway_only_nodes": int(only.sum()), "nodes_relabelled": int((labels != original).sum()),
                     "nodes_without_candidate_kept": int(kept), "short_runs_absorbed": absorbed,
                     "cut_edges_before": int(cut_before.sum()), "cut_edges_after": int(cut_after.sum()),
                     "expressway_cut_edges_before": int((cut_before & ex).sum()),
-                    "expressway_cut_edges_after": int((cut_after & ex).sum())}
+                    "expressway_cut_edges_after": int((cut_after & ex).sum()),
+                    "expressway_detached": detached, "expressway_detached_nodes": detached_nodes}
 
 
 def split_k(nodes: int, junctions: int, nodes_per_cell: int, min_k: int = 2) -> int:
@@ -418,8 +501,8 @@ def split_cell(g: CellGraph, k: int, band_km: float, seed: int = SEED) -> "tuple
     if k >= 2 and len(junction) >= 2:
         k_fit = min(int(k), len(np.unique(xy[junction], axis=0)))
         if k_fit >= 2:
-            with warnings.catch_warnings():  # "one of the clusters is empty": its centre still snaps to a junction
-                warnings.simplefilter("ignore")
+            with warnings.catch_warnings():  # an empty cluster's centre still snaps to a junction
+                warnings.filterwarnings("ignore", message="One of the clusters is empty")
                 centres, _ = kmeans2(xy[junction], k_fit, minit="++", seed=seed)
             seeds = np.unique(junction[cKDTree(xy[junction]).query(centres)[1]])
     info["seeds"] = int(len(seeds))
@@ -467,11 +550,17 @@ def warm_split(g: CellGraph, old, band_km: float) -> "tuple[np.ndarray, dict]":
 
 
 def cell_hash(g: CellGraph) -> str:
-    """sha256 over the sorted OSM node ids and the inner edges as sorted (min osm, max osm, capacity) rows."""
+    """sha256 identifying a cell's network: its nodes and its inner edges with their capacity and expressway flag.
+
+    Hashed bytes, in order: the ASCII header ``"cell nodes=<n> edges=<m>\\n"``; ``np.sort(g.osm)`` as little-endian
+    int64; the edges as rows ``(min osm, max osm, cap, expressway)`` sorted lexicographically, as little-endian int64.
+    The expressway flag (Ruling T6-a) makes a motorway <-> trunk reclassification, which keeps capacity 6, change
+    the hash, so the expressway rule is re-applied there.
+    """
     osm = np.sort(np.asarray(g.osm, dtype=np.int64))
     a, b = g.osm[g.lo].astype(np.int64), g.osm[g.hi].astype(np.int64)
-    rows = np.c_[np.minimum(a, b), np.maximum(a, b), g.cap.astype(np.int64)]
-    rows = rows[np.lexsort((rows[:, 2], rows[:, 1], rows[:, 0]))]
+    rows = np.c_[np.minimum(a, b), np.maximum(a, b), g.cap.astype(np.int64), g.expressway.astype(np.int64)]
+    rows = rows[np.lexsort(rows.T[::-1])]
     h = hashlib.sha256(f"cell nodes={len(osm)} edges={len(rows)}\n".encode("ascii"))
     h.update(osm.astype("<i8").tobytes())
     h.update(np.ascontiguousarray(rows, dtype="<i8").tobytes())
