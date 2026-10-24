@@ -1,6 +1,7 @@
 """Offline tests for speedmatrix.matrix_osrm (a fake runner stands in for the OSRM binaries)."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -108,6 +109,28 @@ class BuildTests(unittest.TestCase):
             build_matrix_osrm(self.pbf, self.out, 2, tools=self.tools, runner=fake_runner([], version="v26.11.0"))
 
     def test_failed_step_leaves_no_build_json(self):
+        with self.assertRaisesRegex(RuntimeError, "osrm-extract failed"):
+            build_matrix_osrm(self.pbf, self.out, 2, tools=self.tools, runner=fake_runner([], code=1))
+        self.assertFalse((self.out / "build_matrix.json").exists())
+
+    def test_relative_out_gives_the_children_absolute_paths(self):
+        (ROOT / "runtime").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT / "runtime", ignore_cleanup_errors=True) as work:
+            work = Path(work)
+            pbf = work / "tiny.osm.pbf"
+            pbf.write_bytes(b"pbf bytes")
+            calls = []
+            build_matrix_osrm(pbf.relative_to(ROOT), (work / "out").relative_to(ROOT), 2, tools=self.tools,
+                              runner=fake_runner(calls))
+            for call in calls[1:]:
+                paths = [c for c in call[1:] if c.endswith((".pbf", ".osrm", ".lua"))]
+                self.assertTrue(paths)
+                for path in paths:
+                    self.assertTrue(Path(path).is_absolute(), path)
+
+    def test_failed_rerun_removes_the_stale_build_json(self):
+        build_matrix_osrm(self.pbf, self.out, 2, tools=self.tools, runner=fake_runner([]))
+        self.assertTrue((self.out / "build_matrix.json").exists())
         with self.assertRaisesRegex(RuntimeError, "osrm-extract failed"):
             build_matrix_osrm(self.pbf, self.out, 2, tools=self.tools, runner=fake_runner([], code=1))
         self.assertFalse((self.out / "build_matrix.json").exists())

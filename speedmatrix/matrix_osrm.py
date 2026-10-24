@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 
@@ -101,19 +102,26 @@ def profiles_sha256(directory):
 
 def build_matrix_osrm(pbf, out, threads, tools=manage.TOOLS, runner=run_measured):
     """Extract, partition and customize ``pbf`` into ``out``; the build record (also ``out/build_matrix.json``)."""
-    pbf, out, tools = Path(pbf), Path(out), Path(tools)
+    pbf, out, tools = Path(pbf).resolve(), Path(out).resolve(), Path(tools).resolve()  # children run with cwd=data
     data = out / "data"
     data.mkdir(parents=True, exist_ok=True)
     logs = out / "logs"
+    target = out / "build_matrix.json"
+    target.unlink(missing_ok=True)  # a failed re-run must not leave the previous build's record
     expected = OSRM_VERSION.lstrip("v")
     found = runner([tools / "osrm-extract.exe", "--version"], logs / "version.log", out).last_line
-    if expected not in found:
+    if not re.search(r"(?<![\d.])" + re.escape(expected) + r"(?![\d.])", found):
         raise RuntimeError(f"osrm-extract reports {found}, expected {OSRM_VERSION}")
     applied = patch_profiles(tools / "profiles", out / "profiles")
     pbf_copy = data / pbf.name
     shutil.copyfile(pbf, pbf_copy)
     sha = manage.digest(pbf_copy)
-    base = data / pbf_copy.name.replace(".osm.pbf", ".osrm")
+    stem = pbf_copy.name
+    for suffix in (".osm.pbf", ".pbf", ".osm"):
+        if stem.endswith(suffix):
+            stem = stem[:-len(suffix)]
+            break
+    base = data / (stem + ".osrm")
     commands = {
         "extract": [tools / "osrm-extract.exe", "-p", out / "profiles" / "car.lua", "-t", str(threads), pbf_copy],
         "partition": [tools / "osrm-partition.exe", "-t", str(threads), base],
@@ -129,7 +137,6 @@ def build_matrix_osrm(pbf, out, threads, tools=manage.TOOLS, runner=run_measured
     info = {"input": {"pbf_sha256": sha, "osrm_version": OSRM_VERSION},
             "pbf_md5": manage.digest(pbf_copy, "md5"), "profiles_sha256": profiles_sha256(out / "profiles"),
             "patches": applied, "steps": steps}
-    target = out / "build_matrix.json"
     target.write_text(json.dumps(info, indent=1), encoding="utf-8")
     check_build_json(target)
     info["pbf_copy"] = pbf_copy
