@@ -1285,7 +1285,7 @@
       "source": "https://caselaw.vn/van-ban-phap-luat/323635-quyet-dinh-23-2018-qd-ubnd-quy-dinh-ve-han-che-va-cap-phep-o-to-cho-hang-o-to-tai-luu-thong-trong-khu-vuc-noi-do-thanh-pho-ho-chi-minh https://luatvietnam.vn/giao-thong/quyet-dinh-23-2018-qd-ubnd-hcm-han-che-o-to-cho-hang-o-to-tai-luu-thong-169430-d2.html",
       "valid_from": "2018-08-01",
       "valid_to": null,
-      "note": "Phụ lục 1 QĐ 23/2018 (không bị QĐ 23/2019 sửa): hành lang cho xe tải nặng. Mở cho payload_t > 2,5 t (xe tải nhẹ không được Phụ lục 1 miễn giờ cao điểm). Mục 13–14: Lê Trọng Tấn từ QL1 vào KCN Tân Bình, và đường nội bộ KCN Tân Bình (D7 – M1), 9h–16h và 21h–22h. Lê Trọng Tấn được lấy từ QL1 đến cuối đường. Đường D7 không có trên OSM; chỉ có Đường M1.",
+      "note": "Phụ lục 1 QĐ 23/2018 (không bị QĐ 23/2019 sửa): hành lang cho xe tải nặng. Mở cho payload_t > 2,5 t (xe tải nhẹ không được Phụ lục 1 miễn giờ cao điểm). Mục 13–14: Lê Trọng Tấn từ QL1 vào KCN Tân Bình, và đường nội bộ KCN Tân Bình (D7 – M1), 9h–16h và 21h–22h. Lê Trọng Tấn được lấy từ QL1 đến cuối đường. Đường D7 không có trên OSM; chỉ có Đường M1. Sửa 2026-10-22: văn bản chỉ ghi 'Lê Trọng Tấn (QL1 → KCN Tân Bình)', không nêu đầu mút; người dùng xác nhận ngày 22/10/2026 lấy cả Lê Trọng Tấn trong bbox (7,45 km). Đoạn cũ {'name': 'Lê Trọng Tấn', 'from': 'QL1'} chỉ phủ 1,67 km vì hai làn ngoài bị 'Đường CN1' (đường có tên) cắt, nên thay bằng cả tên.",
       "body": {
         "vehicle": {
           "payload_t": [
@@ -1314,8 +1314,7 @@
         "scope": {
           "routes": [
             {
-              "name": "Lê Trọng Tấn",
-              "from": "QL1"
+              "name": "Lê Trọng Tấn"
             },
             {
               "name": "Đường M1"

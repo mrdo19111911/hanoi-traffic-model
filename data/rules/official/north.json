@@ -107,13 +107,13 @@
       "source": "https://baohaiphong.vn/han-che-xe-tai-tu-4-truc-tro-len-tren-duong-390-tu-ngay-15-10-555724.html",
       "valid_from": "2026-10-15",
       "valid_to": null,
-      "note": "Xe tải từ 4 trục trở lên cấm 6h–8h và 17h–19h hằng ngày, Km15+100 – Km35+280 (các xã, phường Ái Quốc, Hà Tây, Thanh Hà, Hà Đông). Chỉ cấm CHIỀU từ QL5 đi cầu Quang Thanh; chiều ngược lại giữ nguyên. Định dạng không mã hóa được chiều đi nên ở đây cấm cả hai chiều (chặt hơn). Mốc Km15+100 và Km35+280 không có trong OSM nên lấy cả đoạn QL5 – cầu Quang Thanh. Bài không nêu ngày kết thúc. Task 9 (đối chiếu OSM 2026-10-22): cầu Quang Thanh mang ref 'ĐT.360;ĐT.390' nên thuộc chính tuyến, không phải đường giao; ĐT.390 trong OSM đứt khoảng 100 m ở phía nam nút Ba Hàng (QL5). Dùng một đầu 'to' Tỉnh lộ 360 (đường nối sau cầu): đoạn chạy từ chỗ đứt gần QL5 tới hết cầu Quang Thanh (22,2 km); khoảng 360 m từ nút QL5 tới chỗ đứt chưa phủ.",
+      "note": "Xe tải từ 4 trục trở lên cấm 6h–8h và 17h–19h hằng ngày, Km15+100 – Km35+280 (các xã, phường Ái Quốc, Hà Tây, Thanh Hà, Hà Đông). Chỉ cấm CHIỀU từ QL5 đi cầu Quang Thanh; chiều ngược lại giữ nguyên. Định dạng không mã hóa được chiều đi nên ở đây cấm cả hai chiều (chặt hơn). Mốc Km15+100 và Km35+280 không có trong OSM nên lấy cả đoạn QL5 – cầu Quang Thanh. Bài không nêu ngày kết thúc. Task 9 (đối chiếu OSM 2026-10-22): cầu Quang Thanh mang ref 'ĐT.360;ĐT.390' nên thuộc chính tuyến, không phải đường giao; ĐT.390 trong OSM đứt khoảng 100 m ở phía nam nút Ba Hàng (QL5). Dùng một đầu 'to' Tỉnh lộ 360 (đường nối sau cầu): đoạn chạy từ chỗ đứt gần QL5 tới hết cầu Quang Thanh (22,2 km); khoảng 360 m từ nút QL5 tới chỗ đứt chưa phủ. Sửa 2026-10-22 (vòng sửa route_piece 2): thêm đầu 'from' 'Quốc lộ 5' theo bài báo (chiều QL5 → cầu Quang Thanh). Trong OSM, các đường mang ref QL.5 vượt cấp qua ĐT.390 tại nút Ba Hàng và không chung nút, nên không dùng 'QL5'; các đường mang tên 'Quốc lộ 5' chung 3 nút với ĐT.390 tại nút. Chỗ đứt khoảng 100 m phía nam nút được nối qua đường nối không tên. Nay đoạn chạy từ nút Ba Hàng tới hết cầu Quang Thanh (25,0 km, gồm cả 360 m trước đây chưa phủ) và không còn lấy ĐT.390 phía tây bắc QL5 tới hết đường; chỉ còn phần vượt quá đầu mút do phép tìm đoạn cho phép (tối đa 0,05 × chiều dài + 100 m), ở đây khoảng 1 km phía tây bắc nút.",
       "body": {
         "vehicle": {"axles": [">=", 4]},
         "action": "close",
         "when": {"daytypes": ["weekday", "sat", "sun"], "times": [["06:00", "08:00"], ["17:00", "19:00"]]},
         "scope": {
-          "routes": [{"ref": "ĐT.390", "to": "Tỉnh lộ 360"}],
+          "routes": [{"ref": "ĐT.390", "from": "Quốc lộ 5", "to": "Tỉnh lộ 360"}],
           "bbox": [106.32, 20.825, 106.505, 21.0]
         }
       }

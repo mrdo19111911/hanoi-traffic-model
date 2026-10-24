@@ -34,9 +34,15 @@ M_PER_DEG = 111320.0
 PIECE_SLACK = 1.1           # a piece keeps nodes with d_from + d_to <= PIECE_SLACK * D + PIECE_EXTRA_M
 PIECE_EXTRA_M = 200.0
 CROSSING_SEED_M = 60.0      # road nodes this close to a crossing node also seed the piece (other carriageway)
-CARRIAGEWAY_M = 60.0        # a dropped part of the road this close to the kept piece runs beside it ...
-CARRIAGEWAY_DETOUR_M = 300.0  # ... when along the road it is farther than this from the piece: a lost carriageway
-CARRIAGEWAY_STEP_M = 10.0   # sampling step along segments for that test
+CARRIAGEWAY_M = 60.0        # a point this close to the found piece, foot between its ends, is beside the piece
+CARRIAGEWAY_DETOUR_M = 300.0  # a beside point left out and farther than this along the road: a lost carriageway
+CARRIAGEWAY_STEP_M = 10.0   # sampling step along segments for the corridor
+SPAN_EPS_M = 0.5            # a foot this close to an end of the span counts as past it
+GAP_FILL_M = 100.0          # longest joining way (unnamed, a bridge or a tunnel) that fills a gap in the road
+GAP_MAX_M = 3000.0          # longest gap along the piece between two parts of the road that is looked at
+BRIDGE_NAMES = ("cầu ", "hầm ")  # name prefixes of a bridge (or tunnel), for a table without the OSM flag
+CUT_REACH_M = 300.0         # same-named road this close past the far end of a one-sided piece: the road goes on
+CUT_ROUNDS = 8              # most cuts crossed past the far end of one piece
 EXEMPT_PAD_DEG = 0.02       # exempt pieces of a scope without bbox are searched around the scope's extent
 MAX_ZONE_CELLS = 60_000_000
 _NAME_PREFIXES = ("đường ", "phố ")
@@ -176,7 +182,12 @@ class _TableIndex:
         """Sorted segment indices whose midpoint lies in [west, south, east, north]."""
         mid_lat, mid_lon, order, sorted_lat = self.spatial()
         west, south, east, north = (float(v) for v in bbox)
-        lo, hi = np.searchsorted(sorted_lat, south, "left"), np.searchsorted(sorted_lat, north, "right")
+        # search with float32 keys (a float64 key would copy the whole float32 array): the smallest float32 not
+        # below south and the largest not above north select exactly the float32 latitudes in [south, north]
+        lo_key, hi_key = np.float32(south), np.float32(north)
+        lo_key = np.nextafter(lo_key, np.float32(np.inf)) if float(lo_key) < south else lo_key
+        hi_key = np.nextafter(hi_key, np.float32(-np.inf)) if float(hi_key) > north else hi_key
+        lo, hi = np.searchsorted(sorted_lat, lo_key, "left"), np.searchsorted(sorted_lat, hi_key, "right")
         cand = order[lo:hi]
         lon = mid_lon[cand]
         return np.sort(cand[(lon >= west) & (lon <= east)]).astype(np.int64)
@@ -266,18 +277,31 @@ def route_piece(table, piece: dict, bbox) -> tuple:
     d_F, d_T the distances on the road from the ``from`` and ``to`` crossing nodes and
     D = min d_F over the ``to`` nodes, a segment is kept when both its ends satisfy
     d_F + d_T <= 1.1 D + 200 m. With one crossing only, the other end is the far end
-    of the road from that crossing.
+    of the road from that crossing (with the nodes of its own carriageway within 60 m, as at a crossing).
 
-    A carriageway can still be lost: one with no node within 60 m of a crossing node gets no
-    source, and with one crossing, carriageways joined only at it share a single far end. When a
-    dropped part of the road runs beside the kept piece (see ``_lost_carriageway``), the kept
-    segments are returned with the orphan ``{"missing": "carriageway"}``.
+    That finds a carriageway only when it is joined to a crossing. One with no node within 60 m of a
+    crossing node, or cut off from it by another way, gets no source; with one crossing, carriageways
+    joined only at it share a single far end. So the piece then takes in its corridor (``_Corridor``):
+    every other segment of the same road that runs beside the found piece, between its two ends, for at
+    least half its length. A road loss is then either filled or reported, never dropped silently:
+
+    - a part of the same road that comes beside the piece but could not be taken in, and is not joined to
+      the piece along the road within CARRIAGEWAY_DETOUR_M: orphan ``{"missing": "carriageway"}``;
+    - a gap between two parts of the road along the piece is filled by a joining way of at most GAP_FILL_M
+      (``_fill_gaps``), else reported: orphan ``{"missing": "gap", "at": [[lat, lon], ...]}``;
+    - with one crossing, where the same-named road goes on within CUT_REACH_M past the far end, cut off
+      from the piece (a junction way, a roundabout), the cut is crossed the same way and the far end
+      looked for again past it (``_cross_cuts``), else reported as a gap at the far end;
+    - with two crossings on parts of the road cut apart, the cut is crossed the same way
+      (``_join_crossings``), else the piece is the orphan ``{"missing": "path"}``. The piece then runs
+      between the crossings as usual, so it stops at the requested crossing, not at the road's end.
+
+    A crossing is matched by name or by ref (``ways_by_text``: "QL5" finds the ways with ref "QL.5"); one that
+    shares no node with the road is the orphan ``{"missing": "from" | "to"}``.
+
+    The segments found are returned with the orphan, so a rule applies what it has.
     """
     index = _index(table)
-
-    def orphan(what):
-        return _EMPTY, {"route": dict(piece), "missing": what}
-
     parts = []
     if piece.get("name"):
         parts.append(index.ways_by_text(piece["name"]))
@@ -286,10 +310,33 @@ def route_piece(table, piece: dict, bbox) -> tuple:
     ways = np.unique(np.concatenate(parts)) if parts else _EMPTY
     road = _mid_in(table, index.segments_of_ways(ways), bbox)
     if len(road) == 0:
-        return orphan("name")
-    start, end = piece.get("from"), piece.get("to")
-    if not start and not end:
+        return _EMPTY, {"route": dict(piece), "missing": "name"}
+    if not piece.get("from") and not piece.get("to"):
         return road, None
+    joins = _EMPTY
+    for rounds_left in range(CUT_ROUNDS, 0, -1):
+        found = _piece(table, index, piece, bbox, ways, np.union1d(road, joins) if len(joins) else road,
+                       cross=rounds_left > 1)
+        if isinstance(found, str):
+            return _EMPTY, {"route": dict(piece), "missing": found}
+        idx, lost, at, crossed = found
+        if len(crossed) == 0:
+            break
+        joins = np.union1d(joins, crossed)
+    if lost:
+        orphan = {"route": dict(piece), "missing": "carriageway"}
+        if at:
+            orphan["at"] = at
+        return idx, orphan
+    return idx, ({"route": dict(piece), "missing": "gap", "at": at} if at else None)
+
+
+def _piece(table, index, piece, bbox, ways, road, cross):
+    """One pass of ``route_piece`` over the segments ``road``: (indices, lost, gaps, crossed) where ``lost``
+    says a carriageway was left out, ``gaps`` lists [lat, lon] of the gaps not filled and ``crossed`` holds
+    the segments that cross a cut past the far end (the caller adds them to the road and looks again);
+    or the missing part as a string ("from", "to", "path")."""
+    start, end = piece.get("from"), piece.get("to")
     nodes, inverse = np.unique(np.concatenate([table.a[road], table.b[road]]), return_inverse=True)
     ea, eb = inverse[:len(road)], inverse[len(road):]
 
@@ -303,33 +350,76 @@ def route_piece(table, piece: dict, bbox) -> tuple:
 
     near = crossing(start) if start else None
     if near is not None and len(near) == 0:
-        return orphan("from")
+        return "from"
     far = crossing(end) if end else None
     if far is not None and len(far) == 0:
-        return orphan("to")
+        return "to"
     # every road node near a crossing node seeds the piece too, so a carriageway that the crossing
     # street does not touch (T-junction) gets its own source
     near = None if near is None else _nodes_near(lat, lon, near, CROSSING_SEED_M)
     far = None if far is None else _nodes_near(lat, lon, far, CROSSING_SEED_M)
-    graph = _graph(len(nodes), ea, eb, table.length_m[road])
+    length = table.length_m[road]
+    graph = _graph(len(nodes), ea, eb, length)
     n_comp, labels = connected_components(graph, directed=False)
+    # the far end of the road stands in for a missing crossing, and like one it takes in the nodes within
+    # 60 m (both arms of a road that ends in a fork), but only of its own component: another carriageway
+    # passing near it keeps its own far end
+    inferred = _EMPTY
     if near is None:
-        near = _far_ends(graph, labels, far)
+        inferred = _far_ends(graph, labels, far)
+        near = _nodes_near(lat, lon, inferred, CROSSING_SEED_M, labels)
     if far is None:
-        far = _far_ends(graph, labels, near)
+        inferred = _far_ends(graph, labels, near)
+        far = _nodes_near(lat, lon, inferred, CROSSING_SEED_M, labels)
     d_near = dijkstra(graph, directed=False, indices=near, min_only=True)
     d_far = dijkstra(graph, directed=False, indices=far, min_only=True)
     # D per connected component (a carriageway, a stub): each runs between its own crossing nodes
     span = np.full(n_comp, np.inf)
     np.minimum.at(span, labels[far], d_near[far])
     if not np.isfinite(span).any():
-        return orphan("path")
+        # the road is cut between the crossings: cross the cut like one past a far end, then look again
+        joined = _join_crossings(table, index, bbox, road, nodes, lat, lon, labels, near, far) if cross else _EMPTY
+        return (_EMPTY, False, [], joined) if len(joined) else "path"
     total = d_near + d_far
     ok = np.isfinite(total) & (total <= PIECE_SLACK * span[labels] + PIECE_EXTRA_M)
     keep = ok[ea] & ok[eb]
-    if _lost_carriageway(graph, lat, lon, ea, eb, table.length_m[road], keep):
-        return road[keep], {"route": dict(piece), "missing": "carriageway"}
-    return road[keep], None
+    if not keep.any():
+        return road[keep], False, [], _EMPTY
+
+    lost, gaps, fills = False, [], _EMPTY
+    if not keep.all():
+        kx = M_PER_DEG * math.cos(math.radians(float(np.mean(lat))))
+        lat0, lon0 = float(lat[0]), float(lon[0])
+
+        def project(la, lo):
+            return ((np.asarray(lo, dtype=np.float64) - lon0) * kx,
+                    (np.asarray(la, dtype=np.float64) - lat0) * M_PER_DEG)
+
+        x, y = project(lat, lon)
+        corridor = _Corridor(x, y, ea, eb, length, keep, d_near, d_far, span[labels])
+        drop = np.flatnonzero(~keep)
+        runs, beside, seg, t = corridor.split(x[ea[drop]], y[ea[drop]], x[eb[drop]], y[eb[drop]])
+        keep[drop[runs]] = True
+        take, fills, gaps = _fill_gaps(table, index, bbox, road, nodes, lat, lon, ea, eb, length, keep, graph,
+                                       corridor)
+        keep |= take
+
+        # safety net: a beside point of the road that was left out and is not joined to the piece along the road
+        loose = beside & ~runs[seg]
+        if loose.any():
+            along = dijkstra(graph, directed=False, indices=np.unique(np.concatenate([ea[keep], eb[keep]])),
+                             min_only=True)
+            seg_len = np.maximum(length[drop].astype(np.float64), 0.01)
+            sample_along = np.minimum(along[ea[drop]][seg] + t * seg_len[seg],
+                                      along[eb[drop]][seg] + (1 - t) * seg_len[seg])
+            lost = bool((loose & (sample_along > CARRIAGEWAY_DETOUR_M)).any())
+    crossed = _EMPTY
+    if len(inferred):
+        crossed, cuts = _cross_cuts(table, index, bbox, road, nodes, lat, lon, n_comp, labels, ea[keep], eb[keep],
+                                    inferred, cross)
+        gaps = gaps + cuts
+    idx = np.union1d(road[keep], fills) if len(fills) else road[keep]
+    return idx, lost, gaps, crossed
 
 
 def _samples(x, y, ea, eb, step):
@@ -342,46 +432,283 @@ def _samples(x, y, ea, eb, step):
     return x[a] + t * (x[b] - x[a]), y[a] + t * (y[b] - y[a]), seg, t
 
 
-def _lost_carriageway(graph, lat, lon, ea, eb, length, keep) -> bool:
-    """Does a dropped part of the road run beside the kept piece, i.e. is a carriageway lost?
+class _Corridor:
+    """The found piece as a corridor, in local metres (x east, y north).
 
-    A point of a dropped segment counts when it lies within CARRIAGEWAY_M (straight line) of a kept
-    segment while along the road it is more than CARRIAGEWAY_DETOUR_M from every kept segment, or not
-    connected to them at all. The road beyond the piece's ends is near the piece only where it is also
-    near along the road, so it does not count.
+    One definition serves the inclusion and the safety net. A point is *beside* the piece when it lies
+    within CARRIAGEWAY_M of a found segment whose foot (the nearest point of that segment) falls strictly
+    between the piece's two ends. The foot is past an end when it stops at a dead end of the piece, or
+    when along the road it is as far from either crossing as the crossings are from each other
+    (d_F >= D or d_T >= D, with D of the foot's own component), so the piece's own overrun past its
+    crossings (the 1.1 D + 200 m slack) lies outside the span.
     """
-    if keep.all() or not keep.any():
-        return False
-    kept_nodes = np.unique(np.concatenate([ea[keep], eb[keep]]))
-    along = dijkstra(graph, directed=False, indices=kept_nodes, min_only=True)
-    drop = np.flatnonzero(~keep)
-    seg_len = np.maximum(length[drop].astype(np.float64), 0.01)
-    lo = np.minimum(along[ea[drop]], along[eb[drop]])
-    reach = lo + seg_len > CARRIAGEWAY_DETOUR_M          # some point may be farther than the detour
-    drop, seg_len = drop[reach], seg_len[reach]
-    if drop.size == 0:
-        return False
+
+    def __init__(self, x, y, ea, eb, length, keep, d_from, d_to, span_of_node):
+        a, b = ea[keep], eb[keep]
+        self.dead_end = _dead_ends(a, b, len(x))
+        self.x, self.y, self.a, self.b = x, y, a, b
+        self.length = np.maximum(length[keep].astype(np.float64), 0.01)
+        self.d_from, self.d_to, self.span = d_from, d_to, span_of_node[a]
+        sx, sy, self.sample_seg, _ = _samples(x, y, a, b, CARRIAGEWAY_STEP_M)
+        self.tree = cKDTree(np.column_stack([sx, sy]))
+
+    def locate(self, px, py):
+        """Per point: its distance to the piece through a foot between the ends (inf when there is none
+        within CARRIAGEWAY_M), and that foot's distance along the road from the ``from`` end (nan)."""
+        dist, pos = np.full(len(px), np.inf), np.full(len(px), np.nan)
+        if len(px) == 0:
+            return dist, pos
+        lists = self.tree.query_ball_point(np.column_stack([px, py]), r=CARRIAGEWAY_M + CARRIAGEWAY_STEP_M)
+        count = np.fromiter((len(c) for c in lists), dtype=np.int64, count=len(lists))
+        if count.sum() == 0:
+            return dist, pos
+        point = np.repeat(np.arange(len(px)), count)
+        found = self.sample_seg[np.fromiter((s for c in lists for s in c), dtype=np.int64, count=int(count.sum()))]
+        pairs = np.unique(np.column_stack([point, found]), axis=0)
+        point, seg = pairs[:, 0], pairs[:, 1]
+        a, b = self.a[seg], self.b[seg]
+        ax, ay = self.x[a], self.y[a]
+        dx, dy = self.x[b] - ax, self.y[b] - ay
+        t_raw = ((px[point] - ax) * dx + (py[point] - ay) * dy) / np.maximum(dx * dx + dy * dy, 1e-12)
+        t = np.clip(t_raw, 0.0, 1.0)
+        d = np.hypot(ax + t * dx - px[point], ay + t * dy - py[point])
+        stop = np.where(t_raw <= 0, a, np.where(t_raw >= 1, b, -1))
+        length = self.length[seg]
+        along_from = np.minimum(self.d_from[a] + t * length, self.d_from[b] + (1 - t) * length)
+        along_to = np.minimum(self.d_to[a] + t * length, self.d_to[b] + (1 - t) * length)
+        limit = self.span[seg] - SPAN_EPS_M
+        between = ~((stop >= 0) & self.dead_end[np.maximum(stop, 0)]) & (along_from < limit) & (along_to < limit)
+        d = np.where(between & (d <= CARRIAGEWAY_M), d, np.inf)
+        order = np.lexsort((d, point))
+        best = order[np.r_[True, point[order][1:] != point[order][:-1]]]
+        dist[point[best]] = d[best]
+        pos[point[best]] = np.where(np.isfinite(d[best]), along_from[best], np.nan)
+        return dist, pos
+
+    def split(self, x1, y1, x2, y2):
+        """For segments from (x1, y1) to (x2, y2): (runs, beside, seg, t). A segment *runs beside* the piece
+        when at least half of its points, sampled every CARRIAGEWAY_STEP_M, are beside it; ``beside`` holds
+        the sample points' test, ``seg`` and ``t`` their segment and place on it."""
+        n = len(x1)
+        runs = np.zeros(n, dtype=bool)
+        if n == 0:
+            return runs, np.zeros(0, dtype=bool), _EMPTY, np.zeros(0)
+        # a segment whose nearer end is farther than this from every sample of the piece cannot come beside it
+        end_d, _ = self.tree.query(np.column_stack([np.r_[x1, x2], np.r_[y1, y2]]))
+        reach = np.minimum(end_d[:n], end_d[n:]) - np.hypot(x2 - x1, y2 - y1) / 2
+        cand = np.flatnonzero(reach <= CARRIAGEWAY_M + CARRIAGEWAY_STEP_M)
+        m = len(cand)
+        px, py, sub, t = _samples(np.r_[x1[cand], x2[cand]], np.r_[y1[cand], y2[cand]],
+                                  np.arange(m), np.arange(m, 2 * m), CARRIAGEWAY_STEP_M)
+        beside = np.isfinite(self.locate(px, py)[0])
+        seg = cand[sub]
+        share = np.bincount(seg, weights=beside, minlength=n) / np.maximum(np.bincount(seg, minlength=n), 1)
+        runs[cand] = share[cand] >= 0.5
+        return runs, beside, seg, t
+
+
+def _dead_ends(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
+    """Per node: does it have exactly one distinct neighbour over the segments (a, b)?"""
+    lo, hi = np.minimum(a, b), np.maximum(a, b)
+    links = np.unique(np.column_stack([lo, hi])[lo != hi], axis=0)
+    return np.bincount(links.ravel(), minlength=n) == 1
+
+
+def _bridge_name(text: str) -> bool:
+    """Is a way named as a bridge or tunnel ("Cầu X", "Hầm Y")? "Đường Cầu Giấy" is a street."""
+    text = " ".join(unicodedata.normalize("NFC", (text or "").casefold()).split())
+    return text.startswith(BRIDGE_NAMES)
+
+
+def _may_join(table, idx: np.ndarray) -> np.ndarray:
+    """Per segment: may its way join two cut parts of a road? Unnamed ways may, and bridges or tunnels: by the
+    table's per-way OSM flag ``bridge`` (bridge or tunnel) when it has one, else by the name (``_bridge_name``).
+    A ferry never does."""
+    way = table.way[idx]
+    code = table.name[way]
+    flag = getattr(table, "bridge", None)
+    if flag is not None:
+        ok = (code < 0) | (np.asarray(flag)[way] != 0)
+    else:
+        codes, inverse = np.unique(code, return_inverse=True)
+        ok = np.array([c < 0 or _bridge_name(table.strings[c]) for c in codes.tolist()], dtype=bool)[inverse]
+    return ok & (table.road_class[way] != ROAD_CLASSES.index("pha"))
+
+
+def _connector(table, index, bbox, road, sources, targets, la, lo) -> tuple:
+    """The shortest path of at most GAP_FILL_M from a table node in ``sources`` to one in ``targets`` over
+    segments that are not ``road`` and may join a road (``_may_join``), searched around the points (la, lo):
+    (segment indices, length), or (None, inf)."""
+    pad_lat = GAP_FILL_M / M_PER_DEG
+    pad_lon = pad_lat / max(math.cos(math.radians(float(np.mean(la)))), 0.1)
+    cand = index.query_bbox([float(lo.min()) - pad_lon, float(la.min()) - pad_lat,
+                             float(lo.max()) + pad_lon, float(la.max()) + pad_lat])
+    cand = np.setdiff1d(_mid_in(table, cand, bbox), road)
+    cand = cand[_may_join(table, cand)] if len(cand) else cand
+    if len(cand) == 0:
+        return None, np.inf
+    cnodes, inv = np.unique(np.concatenate([table.a[cand], table.b[cand]]), return_inverse=True)
+    ca, cb = inv[:len(cand)], inv[len(cand):]
+    src = np.flatnonzero(np.isin(cnodes, sources))
+    dst = np.flatnonzero(np.isin(cnodes, targets))
+    if len(src) == 0 or len(dst) == 0:
+        return None, np.inf
+    seg_len = table.length_m[cand].astype(np.float64)
+    dist, prev, _ = dijkstra(_graph(len(cnodes), ca, cb, seg_len), directed=False, indices=src, min_only=True,
+                             return_predecessors=True)
+    node = dst[np.argmin(dist[dst])]
+    path_len = float(dist[node])
+    if not path_len <= GAP_FILL_M or prev[node] < 0:
+        return None, np.inf
+    path = []
+    while prev[node] >= 0:
+        back = prev[node]
+        on = np.flatnonzero(((ca == back) & (cb == node)) | ((ca == node) & (cb == back)))
+        path.append(cand[on[np.argmin(seg_len[on])]])
+        node = back
+    return np.array(path, dtype=np.int64), path_len
+
+
+def _fill_gaps(table, index, bbox, road, nodes, lat, lon, ea, eb, length, keep, graph, corridor) -> tuple:
+    """Gaps in a carriageway along the piece: (road segments that fill them as a mask over ``road``, other
+    segments that fill them, [[lat, lon], ...] of the gaps left open).
+
+    A gap runs from a dead end of the piece where traffic arrives to one ahead of it where traffic departs in
+    the same direction (a two-way end does both), at most GAP_MAX_M apart, when the piece does not join them
+    within their distance plus CARRIAGEWAY_DETOUR_M. Ends of opposite carriageways, or a lane that ends, form
+    no gap. When one end is beside the piece, the road's own left-out segments (``graph``) fill the gap if
+    they join the ends within their distance plus CARRIAGEWAY_DETOUR_M (a carriageway that runs on more than
+    60 m from the found piece, or past a junction where the piece is cut). When both are, a joining way of at
+    most GAP_FILL_M (``_connector``: unnamed, or a bridge or tunnel, such as a roundabout's arc) fills it; a
+    street or a longer way does not, and the gap is reported at its middle. A pair with an end outside the
+    corridor lies past the span and is not reported.
+    """
+    take = np.zeros(len(keep), dtype=bool)
+    ka, kb = ea[keep], eb[keep]
+    ends = np.flatnonzero(_dead_ends(ka, kb, len(nodes)))
+    if len(ends) < 2:
+        return take, _EMPTY, []
+    beside = np.isfinite(corridor.locate(corridor.x[ends], corridor.y[ends])[0])
+    # the kept segment at each end, and the way traffic runs there (a unit vector) when it arrives or departs
+    kept = np.flatnonzero(keep)
+    at_node, at_seg = np.concatenate([ea[kept], eb[kept]]), np.concatenate([kept, kept])
+    order = np.argsort(at_node, kind="stable")
+    seg = at_seg[order][np.searchsorted(at_node[order], ends)]
+    x, y = corridor.x[ends], corridor.y[ends]
+    other = np.where(eb[seg] == ends, ea[seg], eb[seg])
+    out = np.column_stack([x - corridor.x[other], y - corridor.y[other]])       # from the segment into the end
+    out /= np.maximum(np.hypot(out[:, 0], out[:, 1]), 1e-9)[:, None]
+    oneway = table.oneway[table.way[road[seg]]].astype(np.int64)
+    forward = np.where(eb[seg] == ends, 1, -1) * oneway          # +1: traffic runs into the end, -1: out of it
+    arrive, depart = forward >= 0, forward <= 0
+    straight = np.hypot(x[None, :] - x[:, None], y[None, :] - y[:, None])
+    ahead = ((x[None, :] - x[:, None]) * out[:, 0:1] + (y[None, :] - y[:, None]) * out[:, 1:2]) > 0
+    same_way = (out[:, None, 0] * -out[None, :, 0] + out[:, None, 1] * -out[None, :, 1]) > 0
+    cand = (arrive[:, None] & depart[None, :] & ahead & same_way & (straight <= GAP_MAX_M)
+            & (beside[:, None] | beside[None, :]))
+    if not cand.any():
+        return take, _EMPTY, []
+    on_piece = dijkstra(_graph(len(nodes), ka, kb, length[keep]), directed=False, indices=ends)[:, ends]
+    pairs = np.argwhere(cand & (on_piece > straight + CARRIAGEWAY_DETOUR_M))
+    if len(pairs) == 0:
+        return take, _EMPTY, []
+    on_road, back = dijkstra(graph, directed=False, indices=ends, return_predecessors=True)
+
+    fills, used, at = [], set(), []
+    for i, j in sorted(pairs.tolist(), key=lambda p: straight[p[0], p[1]]):
+        if i in used or j in used:
+            continue
+        used.update((i, j))
+        if on_road[i, ends[j]] <= straight[i, j] + CARRIAGEWAY_DETOUR_M:
+            node = ends[j]
+            while node != ends[i]:
+                prev = back[i, node]
+                on = np.flatnonzero(((ea == prev) & (eb == node)) | ((ea == node) & (eb == prev)))
+                take[on[np.argmin(length[on])]] = True
+                node = prev
+            continue
+        if not (beside[i] and beside[j]):
+            continue
+        if straight[i, j] <= GAP_FILL_M:
+            pair = np.array([ends[i], ends[j]])
+            path, path_len = _connector(table, index, bbox, road, nodes[pair[:1]], nodes[pair[1:]], lat[pair],
+                                        lon[pair])
+            if path is not None and on_piece[i, j] > path_len + CARRIAGEWAY_DETOUR_M:
+                fills.append(path)
+                continue
+        at.append([round(float(lat[ends[i]] + lat[ends[j]]) / 2, 6), round(float(lon[ends[i]] + lon[ends[j]]) / 2, 6)])
+    return take, (np.unique(np.concatenate(fills)) if fills else _EMPTY), at
+
+
+def _cross_cuts(table, index, bbox, road, nodes, lat, lon, n_comp, labels, ka, kb, ends, cross) -> tuple:
+    """Cuts past the inferred far ends ``ends`` of a one-sided piece whose found segments run over (ka, kb):
+    (segments that cross them, [[lat, lon], ...] of the ends at a cut not crossed).
+
+    The far end is the end of the road only when the road does not go on. Where a component of the same road
+    that the piece does not reach has a node within CUT_REACH_M of a far end, the road was cut there (a
+    junction way, a roundabout): with ``cross``, a joining way of at most GAP_FILL_M (``_connector``) from the
+    end's own nodes within 60 m to that component crosses it, else the far end is reported.
+    """
+    reached = np.zeros(n_comp, dtype=bool)
+    reached[labels[np.concatenate([ka, kb])]] = True
+    loose = np.flatnonzero(~reached[labels])
+    if len(loose) == 0:
+        return _EMPTY, []
+    crossed, at = [], []
+    for e in ends.tolist():
+        past = loose[haversine_m(np.full(len(loose), lat[e]), np.full(len(loose), lon[e]), lat[loose], lon[loose])
+                     <= CUT_REACH_M]
+        if len(past) == 0:
+            continue
+        path = None
+        if cross:
+            src = _nodes_near(lat, lon, np.array([e]), CROSSING_SEED_M, labels)
+            ids = np.concatenate([src, past])
+            path, _ = _connector(table, index, bbox, road, nodes[src], nodes[past], lat[ids], lon[ids])
+        if path is None:
+            at.append([round(float(lat[e]), 6), round(float(lon[e]), 6)])
+        else:
+            crossed.append(path)
+    return (np.unique(np.concatenate(crossed)) if crossed else _EMPTY), at
+
+
+def _join_crossings(table, index, bbox, road, nodes, lat, lon, labels, near, far) -> np.ndarray:
+    """Segments that cross a cut between the road's parts at the two crossings (``near``, ``far``), or none.
+
+    Where the parts holding the ``near`` nodes come within CUT_REACH_M of the parts holding the ``far`` nodes,
+    a joining way of at most GAP_FILL_M (``_connector``) between their nodes within CUT_REACH_M of that
+    closest approach crosses the cut."""
+    a_comp = np.unique(labels[near])
+    b_comp = np.setdiff1d(np.unique(labels[far]), a_comp)
+    side_a = np.flatnonzero(np.isin(labels, a_comp))
+    side_b = np.flatnonzero(np.isin(labels, b_comp))
+    if len(side_a) == 0 or len(side_b) == 0:
+        return _EMPTY
     kx = M_PER_DEG * math.cos(math.radians(float(np.mean(lat))))
-    x, y = (lon - lon[0]) * kx, (lat - lat[0]) * M_PER_DEG
-    px, py, seg, t = _samples(x, y, ea[drop], eb[drop], CARRIAGEWAY_STEP_M)
-    sample_along = np.minimum(along[ea[drop]][seg] + t * seg_len[seg], along[eb[drop]][seg] + (1 - t) * seg_len[seg])
-    far = sample_along > CARRIAGEWAY_DETOUR_M
-    if not far.any():
-        return False
-    kx_pts, ky_pts, _, _ = _samples(x, y, ea[keep], eb[keep], CARRIAGEWAY_STEP_M)
-    near, _ = cKDTree(np.column_stack([kx_pts, ky_pts])).query(
-        np.column_stack([px[far], py[far]]), distance_upper_bound=CARRIAGEWAY_M)
-    return bool(np.isfinite(near).any())
+    xy = np.column_stack([(lon - lon[0]) * kx, (lat - lat[0]) * M_PER_DEG])
+    dist, j = cKDTree(xy[side_b]).query(xy[side_a], distance_upper_bound=CUT_REACH_M)
+    if not np.isfinite(dist).any():
+        return _EMPTY
+    k = int(np.argmin(dist))
+    u, v = side_a[k], side_b[j[k]]
+    src = side_a[np.hypot(*(xy[side_a] - xy[v]).T) <= CUT_REACH_M]
+    dst = side_b[np.hypot(*(xy[side_b] - xy[u]).T) <= CUT_REACH_M]
+    ids = np.concatenate([src, dst])
+    path, _ = _connector(table, index, bbox, road, nodes[src], nodes[dst], lat[ids], lon[ids])
+    return _EMPTY if path is None else path
 
 
-def _nodes_near(lat: np.ndarray, lon: np.ndarray, found: np.ndarray, radius_m: float) -> np.ndarray:
-    """Nodes within ``radius_m`` (haversine) of any ``found`` node, the found nodes included."""
+def _nodes_near(lat: np.ndarray, lon: np.ndarray, found: np.ndarray, radius_m: float, labels=None) -> np.ndarray:
+    """Nodes within ``radius_m`` (haversine) of any ``found`` node, the found nodes included; with ``labels``
+    (connected components), only nodes of the same component as the found node they are near."""
     kx = M_PER_DEG * math.cos(math.radians(float(np.mean(lat[found]))))
     xy = np.column_stack([(lon - lon[found[0]]) * kx, (lat - lat[found[0]]) * M_PER_DEG])
     lists = cKDTree(xy).query_ball_point(xy[found], r=radius_m * 1.01 + 1.0)
     pair_f = np.repeat(found, [len(c) for c in lists])
     pair_c = np.fromiter((c for cs in lists for c in cs), dtype=np.int64, count=len(pair_f))
     close = haversine_m(lat[pair_f], lon[pair_f], lat[pair_c], lon[pair_c]) <= radius_m
+    if labels is not None:
+        close &= labels[pair_f] == labels[pair_c]
     return np.union1d(found, pair_c[close])
 
 
@@ -451,8 +778,8 @@ def zone_segments(table, boundary_names, seed, bbox, area_km2, cell_m=20.0, seal
                 continue
         else:
             segs, orphan = route_piece(table, entry, bbox)
-            if orphan is not None and orphan["missing"] == "carriageway":
-                orphan = None           # the kept side still bounds the zone (the leak and area checks hold)
+            if orphan is not None and orphan["missing"] in ("carriageway", "gap"):
+                orphan = None           # the found piece still bounds the zone (the leak and area checks hold)
             if orphan is not None or len(segs) == 0:
                 missing.append(label + (f" (missing {orphan['missing']})" if orphan else ""))
                 continue

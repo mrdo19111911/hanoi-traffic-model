@@ -361,7 +361,7 @@
       "source": "https://baophapluat.vn/quang-nam-bo-lenh-cam-xe-5-tan-tren-tuyen-cao-toc-ven-bien-post541191.html",
       "valid_from": "2025-03-01",
       "valid_to": null,
-      "note": "Đoạn 1: ĐT603B từ giáp Đà Nẵng cũ đến đầu Võ Chí Công, rồi Võ Chí Công đến cầu Cửa Đại (Hội An): cấm xe đầu kéo sơ mi rơ moóc và xe kéo rơ moóc. Bài báo không ghi giờ cho lệnh cấm này nên mã hóa cả ngày. Ngày bắt đầu lấy theo ngày đăng báo. Nay thuộc TP Đà Nẵng (sáp nhập 7/2025); chưa thấy Đà Nẵng ban hành lại. Trong OSM, ĐT603B là 'Võ Nguyên Giáp' và 'Lạc Long Quân'.",
+      "note": "Đoạn 1: ĐT603B từ giáp Đà Nẵng cũ đến đầu Võ Chí Công, rồi Võ Chí Công đến cầu Cửa Đại (Hội An): cấm xe đầu kéo sơ mi rơ moóc và xe kéo rơ moóc. Bài báo không ghi giờ cho lệnh cấm này nên mã hóa cả ngày. Ngày bắt đầu lấy theo ngày đăng báo. Nay thuộc TP Đà Nẵng (sáp nhập 7/2025); chưa thấy Đà Nẵng ban hành lại. Trong OSM, ĐT603B là 'Võ Nguyên Giáp' và 'Lạc Long Quân'. Sửa 2026-10-22 (vòng sửa route_piece 2): thay đoạn {'name': 'Võ Chí Công', 'to': 'Cầu Cửa Đại'} bằng {'ref': 'ĐT619'}, đúng tên văn bản dùng ('ĐT619 (Võ Chí Công)'). Trong OSM, Võ Chí Công đứt ở cầu Đế Võng (259 m), ở các nút giao và ở hai đoạn khoảng 30 m mang tên 'Đường Ven Biển 129 (Võ Chí Công)', nên đoạn cũ chỉ phủ 783 m sát cầu Cửa Đại. Mọi đoạn trên đều mang ref ĐT.619; trong bbox, ĐT.619 chạy đúng từ chỗ nối ĐT603B (Võ Nguyên Giáp, đầu Võ Chí Công) tới hết cầu Cửa Đại (12,4 km: Võ Chí Công 8,8 km, cầu Cửa Đại 3,0 km, cầu Đế Võng 0,5 km, Đường Ven Biển 129 61 m).",
       "body": {
         "vehicle": {"kind": ["in", ["tractor"]]},
         "action": "close",
@@ -369,7 +369,7 @@
           "bbox": [108.28, 15.86, 108.38, 15.97],
           "routes": [
             {"ref": "ĐT603B"},
-            {"name": "Võ Chí Công", "to": "Cầu Cửa Đại"},
+            {"ref": "ĐT619"},
             {"name": "Cầu Cửa Đại"}
           ]
         }
@@ -384,7 +384,7 @@
       "source": "https://baophapluat.vn/quang-nam-bo-lenh-cam-xe-5-tan-tren-tuyen-cao-toc-ven-bien-post541191.html",
       "valid_from": "2025-03-01",
       "valid_to": null,
-      "note": "Đoạn 1 như dng_dt603b_hoian_somi: xe tải chở trên 10 tấn cấm 5h-22h; 22h-5h được đi, tối đa 50 km/h. Đoạn 2 và 3 (cầu Cửa Đại - Chu Lai) cho mọi xe, xe đầu kéo tối đa 50 km/h. 'Chở trên 10 tấn' hiểu là khối lượng chuyên chở.",
+      "note": "Đoạn 1 như dng_dt603b_hoian_somi: xe tải chở trên 10 tấn cấm 5h-22h; 22h-5h được đi, tối đa 50 km/h. Đoạn 2 và 3 (cầu Cửa Đại - Chu Lai) cho mọi xe, xe đầu kéo tối đa 50 km/h. 'Chở trên 10 tấn' hiểu là khối lượng chuyên chở. Sửa 2026-10-22 (vòng sửa route_piece 2): như dng_dt603b_hoian_somi, đoạn Võ Chí Công thay bằng {'ref': 'ĐT619'} (Võ Chí Công từ chỗ nối ĐT603B tới hết cầu Cửa Đại, gồm cầu Đế Võng và hai đoạn 'Đường Ven Biển 129 (Võ Chí Công)' mà đoạn cũ không vượt được).",
       "body": {
         "vehicle": {"payload_t": [">", 10]},
         "action": "close",
@@ -393,7 +393,7 @@
           "bbox": [108.28, 15.86, 108.38, 15.97],
           "routes": [
             {"ref": "ĐT603B"},
-            {"name": "Võ Chí Công", "to": "Cầu Cửa Đại"},
+            {"ref": "ĐT619"},
             {"name": "Cầu Cửa Đại"}
           ]
         }

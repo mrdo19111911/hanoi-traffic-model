@@ -22,8 +22,24 @@ Ngày chạy: 22/10/2026. Máy: Windows, Python 3.14 trong `.venv`, `PYTHONIOENC
 | 8 | `rules-check … --as-of 2026-10-01` (sau đợt sửa review cuối) | khoảng 14 s | – | – | 84 rule, **19 lỗi**, 19 rule "partial", exit 2 |
 | 8 | `groups … --as-of 2026-10-22` (dựng lại) | 50,3 s | 3,46 GB | 4,89 GB | thay view cũ |
 | 8 | `groups … --as-of 2026-10-01` (dựng lại) | 48,8 s | 3,46 GB | 4,89 GB | thay view cũ (view trước chưa có sửa vòng 1) |
+| 9 | `rules-check … --as-of 2026-10-22` (sau vòng sửa `route_piece`) | 12 s | – | – | 88 rule, **0 lỗi**, 0 rule "partial", exit 0 |
+| 9 | `rules-check … --as-of 2026-10-01` (sau vòng sửa `route_piece`) | 13 s | – | – | 84 rule, **0 lỗi**, 0 rule "partial", exit 0 |
+| 9 | `groups … --as-of 2026-10-22` (dựng lại) | 57,0 s | 3,46 GB | 4,90 GB | thay view cũ |
+| 9 | `groups … --as-of 2026-10-01` (dựng lại) | 57,6 s | 3,46 GB | 4,89 GB | thay view cũ |
+| 9.1 | `rules-check … --as-of 2026-10-22` (sau sửa vòng 1 của `route_piece`) | 10 s | – | – | 88 rule, **3 lỗi** (orphan `gap`), 3 rule "partial", exit 2 |
+| 9.1 | `rules-check … --as-of 2026-10-01` (sau sửa vòng 1 của `route_piece`) | 11 s | – | – | 84 rule, **3 lỗi**, 3 rule "partial", exit 2 |
+| 9.1 | `groups … --as-of 2026-10-22` (dựng lại) | 48,4 s | 3,46 GB | 4,90 GB | thay view cũ |
+| 9.1 | `groups … --as-of 2026-10-01` (dựng lại) | 45,3 s | 3,46 GB | 4,89 GB | thay view cũ |
+| 9.1 vòng 2 | `rules-check … --as-of 2026-10-22` (sau vòng sửa 2: seed ĐT.390, Võ Chí Công) | 11 s | – | – | 88 rule, **1 lỗi** (orphan `gap`), 1 rule "partial", exit 2 |
+| 9.1 vòng 2 | `rules-check … --as-of 2026-10-01` (sau vòng sửa 2) | 11 s | – | – | 84 rule, **1 lỗi**, 1 rule "partial", exit 2 |
+| 9.1 vòng 2 | `groups … --as-of 2026-10-22` (dựng lại) | 42,5 s | 3,46 GB | 4,90 GB | thay view cũ |
+| 9.1 vòng 2 | `groups … --as-of 2026-10-01` (dựng lại) | 42,0 s | 3,46 GB | 4,90 GB | thay view cũ |
+| 9.1 Lê Trọng Tấn | `rules-check … --as-of 2026-10-22` (sau khi người dùng chọn đầu mút Lê Trọng Tấn) | 12 s | – | – | 88 rule, **0 lỗi**, 0 rule "partial", exit 0 |
+| 9.1 Lê Trọng Tấn | `rules-check … --as-of 2026-10-01` | 11 s | – | – | 84 rule, **0 lỗi**, 0 rule "partial", exit 0 |
+| 9.1 Lê Trọng Tấn | `groups … --as-of 2026-10-22` (dựng lại) | 50,9 s | 3,46 GB | 4,90 GB | thay view cũ |
+| 9.1 Lê Trọng Tấn | `groups … --as-of 2026-10-01` (dựng lại) | 49,9 s | 3,31 GB | 4,89 GB | thay view cũ |
 
-Đợt sửa sau review cuối (mục 8) không đổi lớp tốc độ: `groups` chấp nhận `speeds/dba5f7c3e555` cho cả hai ngày, vì không ngày nào có rule tốc độ. Lỗi mới của `rules-check` không phải lỗi dữ liệu mới: code nay báo những chiều đường đôi mà trước đây bị bỏ lặng lẽ (mục 2.3 và 5.6).
+Đợt sửa sau review cuối (mục 8) và vòng sửa `route_piece` (mục 9, 9.1) không đổi lớp tốc độ: `groups` chấp nhận `speeds/dba5f7c3e555` cho cả hai ngày, vì không ngày nào có rule tốc độ. Ở mục 8, `rules-check` báo 20 lỗi `carriageway`; mục 9 sửa `route_piece` để lấy luôn chiều đường còn lại, và cả hai ngày trở về 0 lỗi. Mục 9.1 (sau review độc lập) bắt thêm hai kiểu mất đường mà mục 9 bỏ qua lặng lẽ. Sau mục 9.1, 3 rule lỗi vì orphan `gap`: hai rule Võ Chí Công và hành lang Lê Trọng Tấn. Vòng sửa 2 (cuối mục 9.1) cho đoạn tuyến vượt chỗ cắt giữa hai đường giao và sửa seed ĐT.390 và Võ Chí Công. Còn hành lang Lê Trọng Tấn lỗi; người dùng đã chọn lấy cả Lê Trọng Tấn trong `bbox` (22/10/2026), nên nay cả hai ngày 0 lỗi, exit 0 (mục 2.3, 5.6).
 
 Peak cao nhất là 12,18 GB working set (15,48 GB private), ở bước `speeds`.
 
@@ -97,15 +113,77 @@ Số rule `cao`/`tb` còn lỗi (orphan hoặc lỗi vùng) qua các vòng sửa
 - Rule đang tắt nhưng có hiệu lực được kiểm luôn; lỗi và orphan của chúng in thành cảnh báo `WARN` (không làm lệnh lỗi), để người dùng thấy trước khi bật.
 - Orphan loại mới `"missing": "carriageway"`: một đoạn tuyến (`from`/`to`) bỏ sót một chiều của đường đôi, tức phần đường cùng tên chạy song song trong vòng 60 m mà theo đường đi thì cách phần đã lấy hơn 300 m hoặc không nối với nó.
 
-Kết quả:
+**Sau vòng sửa `route_piece` (mục 9)**, một đoạn tuyến tự lấy cả phần đường cùng tên chạy cạnh nó giữa hai đầu mút (hành lang 60 m), và orphan `carriageway` dùng đúng định nghĩa đó:
+- Một điểm "nằm cạnh" đoạn tuyến khi cách phần tìm được không quá 60 m và chân đường vuông góc rơi hẳn vào giữa hai đầu mút. Chân rơi ra ngoài khi dừng ở một đầu cụt của đoạn, hoặc khi theo đường đi nó cách một đường giao ít nhất bằng khoảng cách giữa hai đường giao (D). Vì vậy phần đoạn tuyến tự chạy lố qua đường giao (dung sai 1,1·D + 200 m) không tính là "giữa".
+- Mỗi đoạn đường cùng tên bị bỏ mà có ít nhất một nửa số điểm (lấy mẫu 10 m) nằm cạnh đoạn tuyến thì được lấy vào.
+- Cầu mang tên riêng ("Cầu …", "Hầm …") nằm giữa hai phần của chiều đường được lấy vào thì được lấy luôn. Điều kiện: cầu chạy dọc đoạn tuyến, không cắt ngang, và lấp một chỗ hở mà bản thân con đường không nối được. Đường khác tên, nhánh không tên và vòng xuyến không bao giờ được lấy. (Mục 9.1 thay quy tắc này, xem dưới.)
+- Orphan `carriageway` nay chỉ còn là lưới an toàn: một điểm nằm cạnh đoạn tuyến (cùng định nghĩa) thuộc một đoạn không lấy được (dưới một nửa nằm cạnh), và theo đường đi cách phần đã lấy hơn 300 m hoặc không nối với nó.
+- Đầu xa của đoạn tuyến một phía (chỉ có `from` hoặc chỉ có `to`) nay cũng gieo mọi nút trong vòng 60 m như ở đường giao, để cả hai nhánh của một đường kết thúc bằng ngã ba chữ Y đều là đầu mút. (Mục 9.1: chỉ các nút cùng thành phần liên thông.)
 
-| Ngày | Rule bật | Lỗi | Partial | Rule tắt có cảnh báo | Exit |
-|---|---|---|---|---|---|
-| 22/10/2026 | 88 | 20 | 20 | 8 / 25 | 2 |
-| 1/10/2026 | 84 | 19 | 19 | 8 / 25 | 2 |
+**Sau sửa vòng 1 của `route_piece` (mục 9.1).** Nguyên tắc: mỗi phần đường bị mất phải được lấp hoặc báo thành orphan, không được bỏ lặng lẽ.
+- **Đầu xa chỉ gieo nút của chính nhánh đó.** Đầu xa của đoạn tuyến một phía chỉ lấy các nút trong vòng 60 m thuộc cùng thành phần liên thông. Trước đó nó lấy cả nút giữa một chiều đường khác chạy ngang qua, làm chiều đó bị cắt ngắn mà không báo.
+- **Chỗ hở trong một chiều đường.** Chỗ hở nối một đầu cụt nơi xe đi tới với một đầu cụt phía trước nơi xe đi tiếp cùng hướng (đầu đường hai chiều tính cả hai vai). Đầu cụt của hai chiều ngược nhau, hay một làn tự kết thúc, không tạo chỗ hở. Chỗ hở được lấp theo thứ tự:
+  1. bằng chính các đoạn cùng tên bị bỏ, nếu chúng nối hai đầu trong khoảng cách thẳng + 300 m (một chiều đường lượn ra xa hơn 60 m);
+  2. bằng một đường nối dài tối đa 100 m: đường không tên, hoặc cầu/hầm. Cầu/hầm xét theo thẻ OSM nếu bảng đoạn có cột đó; bảng hiện tại chưa có, nên xét theo tên: tên phải bắt đầu bằng "Cầu " hoặc "Hầm ". Vì thế "Đường Cầu Giấy" hay "Phố Cầu …" không phải cầu. Cung vòng xuyến không tên được tính là đường nối.
 
-- Cả 20 lỗi (19 ngày 1/10; khác nhau ở `hn_tu_lien_nghi_tam_yen_phu`, chỉ có hiệu lực ngày 22/10) đều là orphan `carriageway`. Không có lỗi vùng hay lỗi rule nào ở rule đang bật.
-- Phần định vị được của các rule này không đổi so với trước; view nhóm xe vẫn áp chúng như cũ. Chỉ khác là phần bị sót nay được báo ra. Danh sách và độ dài phần sót ở mục 5.6.
+  Chỗ hở không lấp được (hai đầu đều nằm cạnh đoạn tuyến) thành orphan `{"missing": "gap", "at": [[lat, lon], …]}`, với tọa độ là điểm giữa hai đầu. Vùng chấp nhận orphan này như orphan `carriageway`.
+- **Đoạn tuyến một phía bị cắt trước khi hết đường.** Nếu đường cùng tên còn tiếp tục trong vòng 300 m sau đầu xa nhưng bị cắt rời (một đoạn nối, một vòng xuyến), `route_piece` vượt chỗ cắt bằng cùng quy tắc đường nối rồi tìm lại đầu xa, tối đa 8 lần. Chỗ cắt không vượt được thành orphan `gap` tại đầu xa.
+
+| Vòng | Ngày | Rule bật | Lỗi | Partial | Rule tắt có cảnh báo | Exit |
+|---|---|---|---|---|---|---|
+| Mục 9.1 | 22/10/2026 | 88 | **3** | 3 | 8 / 25 | 2 |
+| Mục 9.1 | 1/10/2026 | 84 | **3** | 3 | 8 / 25 | 2 |
+
+- Ba rule lỗi ở cả hai ngày, đều vì orphan `gap`:
+  - `dng_dt603b_hoian_10t` và `dng_dt603b_hoian_somi` (Võ Chí Công tới cầu Cửa Đại). Đoạn tuyến bị cắt bởi hai đoạn khoảng 30 m mang tên "Đường Ven Biển 129 (Võ Chí Công)". Tên này không khớp "Võ Chí Công", và một đường có tên thì không được dùng làm đường nối, nên chỗ cắt không vượt được và được báo.
+  - `hcm_hl_kcn_tan_binh` (Lê Trọng Tấn từ QL1, hành lang mở). Đây là phát hiện mới: hai làn ngoài dừng ở một đường ngang ("Đường CN1"), còn Lê Trọng Tấn chạy tiếp khoảng 2,8–3,0 km mỗi chiều mà trước đây không thuộc rule.
+- Số đoạn của các rule đổi như sau:
+  - `hcm_hl_dang_kiem_5003s`: 510 → 550, cả hai ngày;
+  - `qng_5t_6_18`: 164 → 174, cả hai ngày;
+  - `hp_dt390_4truc_gio_cao_diem`: 295 → 389, chỉ ngày 22/10.
+
+  Vùng `hcm_qd23_*` và `hn_zone_*` giữ nguyên từng đoạn, cùng diện tích (272,666 km² và 229,024 km²), dù các đoạn ranh giới Võ Nguyên Giáp và Mai Chí Thọ lấy thêm đường.
+- Các dòng `WARN` của rule đang tắt giống hệt mục 9.
+
+**Sau vòng sửa 2 (cuối mục 9.1).**
+- **Đường giao theo ref.** `from`/`to` khớp theo tên hoặc theo ref, như tên đường: "QL77" tìm được đường chỉ mang `ref=QL.77`. Ref không đường nào mang, hoặc đường mang nó không chung nút với đoạn tuyến, là orphan `{"missing": "from" | "to"}`, không bao giờ chạy tiếp tới hết đường.
+- **Chỗ cắt giữa hai đường giao.** Trước đây, nếu hai đường giao nằm trên hai phần bị cắt rời của con đường thì đoạn tuyến là orphan `path`. Nay chỗ cắt được vượt bằng cùng quy tắc đường nối (không tên hoặc cầu/hầm, tối đa 100 m, trong vòng 300 m quanh chỗ hai phần gần nhau nhất). Sau đó đoạn tuyến chạy giữa hai đường giao như thường, nên dừng ở đường giao được ghi, không chạy tới hết đường. Không vượt được thì vẫn là orphan `path`.
+- **Seed:** ĐT.390 thêm đầu `from` "Quốc lộ 5"; hai rule Võ Chí Công dùng `{"ref": "ĐT619"}`. Chi tiết ở mục 5.6 b.
+
+| Vòng | Ngày | Rule bật | Lỗi | Partial | Rule tắt có cảnh báo | Exit |
+|---|---|---|---|---|---|---|
+| Vòng sửa 2 | 22/10/2026 | 88 | **1** | 1 | 8 / 25 | 2 |
+| Vòng sửa 2 | 1/10/2026 | 84 | **1** | 1 | 8 / 25 | 2 |
+
+- Rule lỗi duy nhất ở cả hai ngày: `hcm_hl_kcn_tan_binh`, orphan `gap` tại "Đường CN1". Seed giữ nguyên vì văn bản không nêu đầu mút (mục 5.6 b).
+- Số đoạn của các rule đổi như sau:
+  - `dng_dt603b_hoian_10t`, `dng_dt603b_hoian_somi`: 399 → 565, hết orphan, cả hai ngày;
+  - `hp_dt390_4truc_gio_cao_diem`: 389 → 363, chỉ ngày 22/10.
+- Mọi rule khác giữ nguyên số đoạn và orphan. Các dòng `WARN` của rule đang tắt không đổi.
+
+**Sau khi người dùng chọn đầu mút Lê Trọng Tấn (22/10/2026).** `hcm_hl_kcn_tan_binh` lấy cả Lê Trọng Tấn trong `bbox` (mục 5.6 b).
+
+| Vòng | Ngày | Rule bật | Lỗi | Partial | Rule tắt có cảnh báo | Exit |
+|---|---|---|---|---|---|---|
+| Lê Trọng Tấn | 22/10/2026 | 88 | **0** | 0 | 8 / 25 | 0 |
+| Lê Trọng Tấn | 1/10/2026 | 84 | **0** | 0 | 8 / 25 | 0 |
+
+- `hcm_hl_kcn_tan_binh`: 110 → 274 đoạn (Lê Trọng Tấn 225, Đường M1 49), hết orphan, cả hai ngày.
+- Mọi rule khác và các dòng `WARN` không đổi.
+
+Kết quả của mục 8 và mục 9:
+
+| Vòng | Ngày | Rule bật | Lỗi | Partial | Rule tắt có cảnh báo | Exit |
+|---|---|---|---|---|---|---|
+| Mục 8 | 22/10/2026 | 88 | 20 | 20 | 8 / 25 | 2 |
+| Mục 8 | 1/10/2026 | 84 | 19 | 19 | 8 / 25 | 2 |
+| Mục 9 | 22/10/2026 | 88 | **0** | 0 | 8 / 25 | 0 |
+| Mục 9 | 1/10/2026 | 84 | **0** | 0 | 8 / 25 | 0 |
+
+- Ở mục 8, cả 20 lỗi (19 ngày 1/10; khác nhau ở `hn_tu_lien_nghi_tam_yen_phu`, chỉ có hiệu lực ngày 22/10) đều là orphan `carriageway`. Không có lỗi vùng hay lỗi rule nào ở rule đang bật.
+- Ở mục 9, cả hai ngày không còn lỗi hay rule partial nào (nhưng có hai kiểu mất đường không được báo, sửa ở mục 9.1). Trên toàn bộ 185 đoạn tuyến có `from`/`to` trong seed, số đoạn có orphan `carriageway` giảm từ 32 (tính cả mục ranh giới vùng) xuống 0. Không đoạn nào mất đoạn đường nào so với trước.
+- Số đoạn của các rule đổi như sau (giống nhau cho cả hai ngày): `hcm_hl_dang_kiem_5003s` 362 → 510, `na_vinh_pl1_18t` 891 → 899, `bd_6_tuyen_*` 1.281 → 1.284, `hcm_hl_cang_nha_rong_ra` 127 → 130, `hcm_hl_nha_may_sua` 72 → 75, `hcm_hl_cang_phu_dinh` 265 → 267, `hn_zone_*` 184.833 → 184.826 (7 đoạn Tam Trinh nay được miễn), `hcm_qd23_*` 239.977 → 239.943 (vùng TP.HCM, xem mục 9). Mọi rule khác giữ nguyên số đoạn. Chi tiết ở mục 5.6.
+- Các dòng `WARN` của rule đang tắt giống hệt mục 8.
 - 8 rule `thap` đang tắt có cảnh báo: `hcm_du_thao_2026_den_1t` và `hcm_du_thao_2026_tren_1t` (vùng rò ra mép bbox phía nam và đông; nếu bật thì `groups` sẽ dừng), `gl_quynhon_thd_hv_35t`, `hcm_nguyen_van_linh_hon_hop`, `hcm_tay_lan_binh_chanh`, `hue_ql49_somi_ngay`, và hai rule Sa Pa `lc_sa_pa_31_tuyen_tren_10t_*` (6 tên không có trong OSM).
 
 ### 2.4 Bước 4: lớp tốc độ và view nhóm xe
@@ -121,20 +199,57 @@ Kết quả:
 
 | Ngày | container.npz | tu2t.npz | duoi2t.npz | report.json |
 |---|---|---|---|---|
-| 2026-10-22 | 4,05 MB | 3,46 MB | 1,65 MB | 22,6 KB |
-| 2026-10-01 | 4,05 MB | 3,46 MB | 1,65 MB | 21,8 KB |
+| 2026-10-22 | 4,05 MB | 3,46 MB | 1,65 MB | 17,6 KB |
+| 2026-10-01 | 4,05 MB | 3,46 MB | 1,65 MB | 17,0 KB |
 
 Cả thư mục `speeds/dba5f7c3e555` khoảng 20 MB.
 
-**Số đoạn bị ảnh hưởng theo nhóm** (cả hai ngày dựng lại ở đợt sửa review cuối, mục 8; trong ngoặc là ngày 1/10/2026). Từ đợt này, "bị ảnh hưởng" của nhóm gốc `duoi2t` vẫn tính so với lớp tốc độ trần, còn của `tu2t` và `container` tính so với **view của nhóm gốc**: các đoạn có tốc độ hoặc trạng thái cấm khác `duoi2t` ở ít nhất một khung giờ. Đó là các đoạn mà dự án con 2 phải dựng mảnh riêng; mọi đoạn khác dùng lại mảnh của nhóm gốc.
+**Số đoạn bị ảnh hưởng theo nhóm** (cả hai ngày dựng lại sau khi người dùng chọn đầu mút Lê Trọng Tấn, cuối mục 9.1; trong ngoặc là ngày 1/10/2026). Từ đợt này, "bị ảnh hưởng" của nhóm gốc `duoi2t` vẫn tính so với lớp tốc độ trần, còn của `tu2t` và `container` tính so với **view của nhóm gốc**: các đoạn có tốc độ hoặc trạng thái cấm khác `duoi2t` ở ít nhất một khung giờ. Đó là các đoạn mà dự án con 2 phải dựng mảnh riêng; mọi đoạn khác dùng lại mảnh của nhóm gốc.
 
 | Nhóm | Gốc | Bị ảnh hưởng | So với | Bị cấm | Bị giới hạn tốc độ | Rule áp dụng | Giới hạn tốc độ (km/h) theo lớp | Rule giới hạn |
 |---|---|---|---|---|---|---|---|---|
-| duoi2t | có | 461.551 (461.533) | lớp tốc độ | 456.253 (456.235) | 7.395 | 19 (17) | caotoc 100, quoclo 90, chinh 80, noido 50, nho 50 | vn_cap_tai_den_3_5t |
-| tu2t | không | 1.042.566 (1.042.716) | duoi2t | 562.734 (562.716) | 461.750 | 53 (51) | caotoc 90, quoclo 80, chinh 70, noido 50, nho 50 | vn_cap_tai_tren_3_5t |
-| container | không | 1.229.456 (1.229.312) | duoi2t | 569.269 (568.956) | 653.448 | 69 (66) | caotoc 90, quoclo 70, chinh 60, noido 50, nho 50 | vn_cap_dau_keo_so_mi_ro_mooc |
+| duoi2t | có | 461.512 (461.494) | lớp tốc độ | 456.214 (456.196) | 7.395 | 19 (17) | caotoc 100, quoclo 90, chinh 80, noido 50, nho 50 | vn_cap_tai_den_3_5t |
+| tu2t | không | 1.042.550 (1.042.700) | duoi2t | 562.715 (562.697) | 461.750 | 53 (51) | caotoc 90, quoclo 80, chinh 70, noido 50, nho 50 | vn_cap_tai_tren_3_5t |
+| container | không | 1.229.481 (1.229.289) | duoi2t | 569.487 (569.106) | 653.448 | 69 (66) | caotoc 90, quoclo 70, chinh 60, noido 50, nho 50 | vn_cap_dau_keo_so_mi_ro_mooc |
 
-Thay đổi so với view trước (ngày 22/10; số bị cấm và bị giới hạn không đổi):
+Thay đổi khi lấy cả Lê Trọng Tấn (so với view của vòng sửa 2, giống nhau cho hai ngày):
+- Số đoạn bị cấm, bị ảnh hưởng và bị giới hạn tốc độ của cả ba nhóm không đổi.
+- `tu2t` và `container`: 164 đoạn Lê Trọng Tấn (5.778 m) vẫn bị cấm nhưng ít khung giờ hơn, vì nay được mở 9h–16h và 21h–22h như hành lang. Các đoạn này vốn đã nằm trong tập bị ảnh hưởng.
+- `duoi2t`: không đổi (hành lang chỉ mở cho xe chở trên 2,5 t).
+- `report.json` của cả hai ngày không còn orphan nào.
+
+Thay đổi ở vòng sửa 2 so với view của mục 9.1 (số đoạn bị giới hạn tốc độ không đổi):
+- `duoi2t` và `tu2t`: không đổi ở cả hai ngày, từng đoạn và từng khung giờ. Rule Võ Chí Công (`dng_dt603b_hoian_10t`, chở trên 10 t) chỉ áp cho `container`, còn rule ĐT.390 (từ 4 trục) cũng vậy.
+- `container` ngày 22/10: bị cấm 569.347 → 569.487 (+166 đoạn, 8.600 m; −26 đoạn, 1.845 m), bị ảnh hưởng 1.229.506 → 1.229.481.
+  - Thêm 166 đoạn: Võ Chí Công 162, cầu Đế Võng 2, "Đường Ven Biển 129 (Võ Chí Công)" 2. Các đoạn này vốn đã khác `duoi2t` vì giới hạn tốc độ, nên số bị ảnh hưởng không tăng.
+  - Bớt 26 đoạn ĐT.390 phía tây bắc nút QL5 (1.845 m). 25 đoạn trong đó nay giống hệt `duoi2t` nên ra khỏi tập bị ảnh hưởng.
+- `container` ngày 1/10 (rule ĐT.390 chưa có hiệu lực): bị cấm 568.940 → 569.106 (+166 đoạn Võ Chí Công như trên), bị ảnh hưởng không đổi.
+- Không đoạn nào đổi khung giờ cấm. `report.json` của cả hai ngày nay chỉ còn orphan của `hcm_hl_kcn_tan_binh`.
+
+Thay đổi ở mục 9.1 so với view của mục 9 (số đoạn bị giới hạn tốc độ không đổi; không đoạn nào thôi bị cấm):
+- `duoi2t`: không đổi ở cả hai ngày.
+- `tu2t`: bị ảnh hưởng 1.042.540 → 1.042.550, bị cấm 562.705 → 562.715 (ngày 1/10: 1.042.690 → 1.042.700, 562.687 → 562.697).
+  - Thêm 10 đoạn (226 m) bị cấm: 201 m Quang Trung bên kia vòng xuyến Hai Bà Trưng và 25 m cung vòng xuyến. Đây là phần **thừa** so với văn bản ("Quang Trung (Hai Bà Trưng – …)"), xem mục 5.6 b.
+  - 40 đoạn (336 m) vẫn bị cấm nhưng ít khung giờ hơn: chỗ hở của hành lang Phạm Văn Đồng nay được mở 9h–16h. Gồm 6 đoạn Phạm Văn Đồng (279 m, làn song hành lượn ra xa hơn 60 m) và 34 đoạn không tên (58 m, có đoạn trunk 20,7 m, way 1219668784).
+- `container` ngày 22/10: bị ảnh hưởng 1.229.433 → 1.229.506, bị cấm 569.243 → 569.347 (+104 đoạn, 4.831 m). Gồm 10 đoạn Quang Trung như trên và 94 đoạn ĐT.390 (3.948 m ĐT.390, 486 m cầu vượt nút giao Ba Hàng, 171 m cung vòng xuyến). Phần lớn đoạn ĐT.390 thêm vào nằm phía tây bắc nút QL5, ngoài văn bản, xem mục 5.6 b. Cùng 40 đoạn Phạm Văn Đồng ít khung giờ hơn.
+- `container` ngày 1/10 (rule ĐT.390 chưa có hiệu lực): bị cấm 568.930 → 568.940 (10 đoạn Quang Trung), bị ảnh hưởng không đổi (các đoạn này vốn đã khác `duoi2t` vì giới hạn tốc độ).
+- `report.json` của cả hai ngày nay ghi orphan của `dng_dt603b_hoian_10t` và `hcm_hl_kcn_tan_binh`. Rule `dng_dt603b_hoian_somi` không áp cho nhóm nào nên không có trong view.
+
+Thay đổi ở mục 9 so với view của mục 8 (giống nhau cho hai ngày; số đoạn bị giới hạn tốc độ không đổi):
+- `duoi2t`: bị ảnh hưởng 461.551 → 461.512, bị cấm 456.253 → 456.214 (−39 đoạn, 1.517 m, không thêm đoạn nào).
+  - 7 đoạn Tam Trinh (541 m) nay được miễn khỏi vùng Hà Nội, như văn bản.
+  - 32 đoạn quanh ranh giới vùng TP.HCM ra khỏi vùng.
+    - 9 đoạn thuộc chiều còn lại của chính đường ranh giới (Mai Chí Thọ 5, Nguyễn Văn Linh 4), nay là ranh giới. Đường nằm trên ranh giới thì không thuộc vùng.
+    - 23 đoạn là nhánh hay đường khác nằm sát chiều đó, trong dải bịt kín 60 m quanh ranh giới: 13 đoạn không tên, Nguyễn Lương Bằng 4, Nguyễn Đổng Chi 3, Đường song hành 1, Thung Lũng Xanh 1, Đường số 2 1.
+    - Diện tích vùng 272,707 → 272,666 km² (khoảng cho phép 120–400 km²); vùng không bị tách. Vùng Hà Nội không đổi (229,024 km²).
+- `tu2t`: bị ảnh hưởng 1.042.566 → 1.042.540; bị cấm 562.734 → 562.705 (+8, −37).
+  - Thêm 8 đoạn V.I Lênin (825 m, chiều còn lại).
+  - Bớt 37 đoạn: 7 đoạn Tam Trinh; 27 đoạn quanh ranh giới vùng TP.HCM (các đoạn ở trên mà nhóm này vốn bị cấm); 3 đoạn Tôn Thất Thuyết (làn song song của hành lang cảng Nhà Rồng, nay được mở).
+  - Ngoài ra 153 đoạn (8.604 m) vẫn bị cấm nhưng ít khung giờ hơn: 148 đoạn Phạm Văn Đồng (chiều còn lại của hành lang đăng kiểm 50-03S, nay mở 9h–16h), 3 đoạn Võ Văn Ngân, 2 đoạn Võ Văn Kiệt. **Đính chính (mục 9.1):** sau mục 9, hành lang này vẫn chưa đi được theo chiều QL13 → QL1. Trong tập được mở có hai chỗ hở: một đoạn trunk không tên 20,7 m (way 1219668784) và 279 m làn song hành Phạm Văn Đồng lượn ra xa hơn 60 m. Mục 9.1 lấp cả hai; nay đi được cả hai chiều QL1 ↔ QL13 trong tập được mở.
+- `container`: bị ảnh hưởng 1.229.456 → 1.229.433; bị cấm 569.269 → 569.243 (+11, −37). Giống `tu2t`, thêm 3 đoạn Huỳnh Văn Cù (107 m).
+- View của cả hai ngày không còn orphan nào trong `report.json` (mục 8 có 17 rule).
+
+Thay đổi ở mục 8 so với view trước nữa (ngày 22/10; số bị cấm và bị giới hạn không đổi):
 - `tu2t`: 1.021.053 → 1.042.566. Thêm 29.558 đoạn bị cấm với `duoi2t` nhưng không với `tu2t` (chủ yếu Hải Phòng KV1/KV2, xem mục 5.3); bớt 8.045 đoạn mà `tu2t` thấy giống hệt `duoi2t` ở mọi khung giờ (cùng giờ cấm, cùng tốc độ khi mở).
 - `container`: 1.208.284 → 1.229.456 (thêm 28.998, bớt 7.826), cùng lý do.
 - `duoi2t`: không đổi.
@@ -148,11 +263,11 @@ Hai ngày khác nhau ở các rule sau:
 
 | Rule | Số đoạn | Nhóm bị cấm |
 |---|---|---|
-| hcm_qd23_dau_keo_so_mi | 239.977 | container |
-| hcm_qd23_xe_tai_nang | 239.977 | container, tu2t |
-| hcm_qd23_xe_tai_nhe | 239.977 | duoi2t |
-| hn_zone_ge2t_day | 184.833 | container, tu2t |
-| hn_zone_lt2t_peak | 184.833 | duoi2t |
+| hcm_qd23_dau_keo_so_mi | 239.943 | container |
+| hcm_qd23_xe_tai_nang | 239.943 | container, tu2t |
+| hcm_qd23_xe_tai_nhe | 239.943 | duoi2t |
+| hn_zone_ge2t_day | 184.826 | container, tu2t |
+| hn_zone_lt2t_peak | 184.826 | duoi2t |
 | ht_phuong_tren35t_ngay | 66.695 | container, tu2t |
 | hue_trungtam_35t_caodiem | 41.346 | container, tu2t |
 | hp_kv1_tai_nho_ban_ngay | 24.419 | duoi2t |
@@ -469,30 +584,75 @@ Các mục này nằm trong khóa `unresolved` của từng file seed. `import-r
    - Bình Dương cũ (`bd_6_tuyen_dau_keo`, `bd_6_tuyen_tren_10t`): bỏ đoạn ĐT743 và đoạn ĐT747 (Miếu Ông Cù).
    - ĐT.390 (`hp_dt390_4truc_gio_cao_diem`): khoảng 360 m từ nút QL5 tới chỗ OSM đứt chưa phủ.
 
-   **b) Một chiều của đường đôi bị sót** (orphan `"missing": "carriageway"`, phát hiện từ đợt sửa review cuối). Các rule này đều là `cao`/`tb`, nên `rules-check` báo lỗi. Độ dài là tổng độ dài các đoạn bị sót, đo ngày 22/10/2026:
+   **b) Một chiều của đường đôi bị sót** (orphan `"missing": "carriageway"`). Mục 8 phát hiện lỗi này ở 20 rule `cao`/`tb`. Mục 9 sửa `route_piece` để lấy hành lang 60 m cạnh đoạn tuyến (mục 2.3), nên **không còn rule nào lỗi**. Cột "Mục 8" là phần mục 8 báo bị sót; cột "Mục 9" là phần nay được lấy thêm (đo ngày 22/10/2026, cùng số cho ngày 1/10):
 
-   | Rule | Đoạn tuyến | Phần bị sót |
-   |---|---|---|
-   | `hcm_hl_dang_kiem_5003s` | Phạm Văn Đồng, cầu Gò Dưa → Ngã Tư Bình Triệu; Bình Triệu → QL13 | 8.412 m; 295 m |
-   | `na_vinh_pl1_18t` | V.I Lênin, Nguyễn Công Nghiệm → Nguyễn Sỹ Sách; Nguyễn Đức Cảnh (2 đoạn) | 1.107 m; 89 m + 83 m |
-   | `hn_zone_ge2t_day`, `hn_zone_lt2t_peak` | ngoại lệ Tam Trinh, Tân Mai → Đỗ Mười | 541 m (phần này bị cấm thay vì được miễn) |
-   | `na_vinh_pl2_4t` | Phùng Chí Kiên (2 đoạn); Nguyễn Công Trứ (2 đoạn) | 139 m + 80 m; 57 m + 129 m |
-   | `qng_10t_6_18` | Phan Bội Châu (2 đoạn) | 76 m + 205 m |
-   | `qng_5t_tonducthang_canngay` | Tôn Đức Thắng (2 đoạn) | 54 m + 65 m |
-   | `qng_5t_6_18` | Quang Trung → Lê Lợi | 84 m |
-   | `dni_dong_khoi_tren_2t`, `dni_dong_khoi_tren_5t` | Đồng Khởi, QL1 → Trương Định | 148 m |
-   | `bd_6_tuyen_dau_keo`, `bd_6_tuyen_tren_10t` | Huỳnh Văn Cù từ Ngã tư Chợ Cây Dừa | 107 m |
-   | `hcm_hl_pham_the_hien_ql50` | Phạm Thế Hiển, Trịnh Quang Nghị → cầu Bà Tàng | 100 m |
-   | `dng_dt603b_hoian_10t`, `dng_dt603b_hoian_somi` | Võ Chí Công tới cầu Cửa Đại | 91 m |
-   | `hn_tu_lien_nghi_tam_yen_phu` (chỉ ngày 22/10) | Yên Phụ, Yên Hoa → Thanh Niên | 64 m |
-   | `cm_bac_lieu_noi_o_tu_3_5t` | Cách Mạng (2 đoạn) | 63 m + 47 m |
-   | `ct_5_truc_noi_o_tren_3_5t` | Nguyễn Văn Cừ, Mậu Thân → CMT8 | 52 m |
-   | `bd_dong_hoa_dau_keo`, `bd_dong_hoa_tren_10t` | Mỹ Phước – Tân Vạn, ĐT743A → QL1 | 43 m |
+   | Rule | Đoạn tuyến | Mục 8 | Mục 9 |
+   |---|---|---|---|
+   | `hcm_hl_dang_kiem_5003s` | Phạm Văn Đồng, cầu Gò Dưa → Ngã Tư Bình Triệu | 8.412 m | **+8.275 m** (153 đoạn) |
+   | | Phạm Văn Đồng, Bình Triệu → QL13 | 295 m | 0 (phần bị báo nằm ngoài đoạn, xem dưới) |
+   | `na_vinh_pl1_18t` | V.I Lênin, Nguyễn Công Nghiệm → Nguyễn Sỹ Sách | 1.107 m | **+825 m** (8 đoạn) |
+   | | Nguyễn Đức Cảnh (2 đoạn) | 89 m + 83 m | 0 |
+   | `hn_zone_ge2t_day`, `hn_zone_lt2t_peak` | ngoại lệ Tam Trinh, Tân Mai → Đỗ Mười | 541 m | **+541 m** (7 đoạn, nay được miễn) |
+   | `bd_6_tuyen_dau_keo`, `bd_6_tuyen_tren_10t` | Huỳnh Văn Cù từ Ngã tư Chợ Cây Dừa | 107 m | **+107 m** (3 đoạn) |
+   | `na_vinh_pl2_4t` | Phùng Chí Kiên (2 đoạn); Nguyễn Công Trứ (2 đoạn) | 139 m + 80 m; 57 m + 129 m | 0 |
+   | `qng_10t_6_18` | Phan Bội Châu (2 đoạn) | 76 m + 205 m | 0 |
+   | `qng_5t_tonducthang_canngay` | Tôn Đức Thắng (2 đoạn) | 54 m + 65 m | 0 |
+   | `qng_5t_6_18` | Quang Trung → Lê Lợi | 84 m | 0 |
+   | `dni_dong_khoi_tren_2t`, `dni_dong_khoi_tren_5t` | Đồng Khởi, QL1 → Trương Định | 148 m | 0 |
+   | `hcm_hl_pham_the_hien_ql50` | Phạm Thế Hiển, Trịnh Quang Nghị → cầu Bà Tàng | 100 m | 0 |
+   | `dng_dt603b_hoian_10t`, `dng_dt603b_hoian_somi` | Võ Chí Công tới cầu Cửa Đại | 91 m | 0 (xem dưới) |
+   | `hn_tu_lien_nghi_tam_yen_phu` (chỉ ngày 22/10) | Yên Phụ, Yên Hoa → Thanh Niên | 64 m | 0 |
+   | `cm_bac_lieu_noi_o_tu_3_5t` | Cách Mạng (2 đoạn) | 63 m + 47 m | 0 |
+   | `ct_5_truc_noi_o_tren_3_5t` | Nguyễn Văn Cừ, Mậu Thân → CMT8 | 52 m | 0 |
+   | `bd_dong_hoa_dau_keo`, `bd_dong_hoa_tren_10t` | Mỹ Phước – Tân Vạn, ĐT743A → QL1 | 43 m | 0 |
 
-   - Nguyên nhân: phần đường cùng tên nằm giữa hai đầu mút nhưng không chạm đường giao nào, ví dụ một chiều đường đôi bị cầu hay nút mang tên riêng cắt rời, hoặc một làn phụ ngắn cùng tên. `route_piece` chỉ lấy các thành phần có nguồn ở đường giao, nên bỏ chúng; trước đợt sửa này việc bỏ là lặng lẽ.
-   - Đã thử gieo nguồn theo khoảng cách điểm–đoạn (thay vì nút–nút) như review gợi ý: không sửa được trường hợp nào ở trên.
-   - Các đoạn ranh giới vùng cũng sót chiều (Võ Nguyên Giáp, Nguyễn Văn Linh, Mai Chí Thọ, Nguyễn Thị Định ở TP.HCM; CT.37 ở Hà Nội), nhưng chiều còn lại vẫn khép vùng, nên vùng không đổi và không báo lỗi.
-   - Cần chọn: sửa seed (tách đoạn qua cầu, như Task 9 đã làm), chấp nhận phần sót, hay đổi code để tự gộp phần đường cùng tên chạy song song sát đoạn đã lấy.
+   - **Phần lấy thêm là chiều đường còn lại thật**, đã xem trên bản đồ từng trường hợp lớn.
+     - Phạm Văn Đồng: chiều còn lại và hai đường song hành cùng tên, song song suốt 3 km. Đây là hành lang mở (`action: open`, 9h–16h cho xe chở trên 2,5 t). Mục 9 mở thêm 148 đoạn chiều kia, nhưng **chưa đủ để đi theo chiều QL13 → QL1** (mục 9.1 đính chính): còn hở 20,7 m trunk không tên và 279 m làn song hành. Sau mục 9.1, hành lang đi được cả hai chiều.
+     - V.I Lênin: chiều kia của đường đôi, cách 15–20 m.
+     - Tam Trinh: làn song song cách khoảng 15 m.
+     - Huỳnh Văn Cù: một làn cùng tên dài 107 m.
+   - **Mười bốn rule báo ở mục 8 không có gì để lấy thêm**, cùng hai đoạn trong các rule ở trên (Nguyễn Đức Cảnh, Phạm Văn Đồng Bình Triệu → QL13). **Đính chính (mục 9.1):** điều dưới đây đúng với 12 rule. Hai rule Võ Chí Công là mất đường thật, và đoạn Phạm Văn Đồng Bình Triệu → QL13 không đánh giá được vì suy biến. Với 12 rule kia, phần bị báo không phải chiều đường bị sót. Đó là đường cùng tên **bên kia đầu mút**: đoạn kế tiếp của chính rule đó (Nguyễn Đức Cảnh, Phùng Chí Kiên, Nguyễn Công Trứ, Phan Bội Châu, Tôn Đức Thắng, Cách Mạng có hai đoạn nối nhau và báo lẫn nhau), hoặc phần đường tiếp sau một nút hay vòng xuyến (Đồng Khởi, Yên Phụ, Phạm Thế Hiển, Nguyễn Văn Cừ, Mỹ Phước – Tân Vạn, Quang Trung, Võ Chí Công). Phép kiểm ở mục 8 không biết đầu mút ở đâu nên báo nhầm. Định nghĩa mới chỉ tính điểm có chân vuông góc nằm giữa hai đầu mút, nên các trường hợp này hết báo mà đoạn tuyến không đổi.
+   - **Đoạn ranh giới vùng**: chiều còn lại nay cũng là ranh giới. Nguyễn Văn Linh +2.648 m và +2.609 m; Võ Nguyên Giáp +5.059 m, +375 m, +341 m; Mai Chí Thọ +532 m. CT.37 (Hà Nội) và Nguyễn Thị Định không thêm gì. Vùng TP.HCM bớt 34 đoạn sát ranh giới, diện tích giảm 0,04 km²; vùng Hà Nội không đổi (mục 2.4).
+   - Ba đoạn khác không có orphan cũng lấy thêm làn cùng tên chạy song song mà trước đây bị dung sai 1,1·D + 200 m cắt: Võ Văn Kiệt (QL1 → cầu Nước Lên) +327 m, Tôn Thất Thuyết +182 m, Võ Văn Ngân +139 m. Cả ba đều là hành lang mở ở TP.HCM.
+   - **Còn lại, cần người dùng xem:**
+     - **(Đã sửa ở vòng sửa 2, xem dưới.)** Võ Chí Công tới cầu Cửa Đại (`dng_dt603b_*`): đoạn tuyến một phía dừng ở chỗ cả hai chiều bị cắt, nên chỉ phủ 783 m gần cầu. Phần Võ Chí Công phía bắc chỗ cắt (khoảng 2,4 km mỗi chiều, tới QL14H) không thuộc rule. Mục 9 tả nhầm chỗ cắt là đoạn nối không tên: thật ra là hai đoạn khoảng 30 m mang tên "Đường Ven Biển 129 (Võ Chí Công)". Từ mục 9.1, `rules-check` báo orphan `gap` tại chỗ cắt và hai rule này lỗi. Muốn phủ thì thêm vào seed một đoạn cho phần phía bắc, hoặc thêm tên "Đường Ven Biển 129 (Võ Chí Công)".
+     - Phạm Văn Đồng, Bình Triệu → QL13 (`hcm_hl_dang_kiem_5003s`): hai đầu mút cùng nằm ở nút Bình Triệu, nên đoạn tuyến chỉ còn 465 m nhánh nối quanh nút. Phạm Văn Đồng hai bên nút nằm ngoài đoạn. Cần xem lại đầu mút của đoạn này trong seed. Văn bản ghi "QL1 – Phạm Văn Đồng – QL13", và vị trí trung tâm đăng kiểm trên QL13 chưa biết.
+     - Không có cầu mang tên riêng nào được lấy vào trên bản đồ thật: không đoạn tuyến nào có chiều đường bị một cây cầu như vậy cắt giữa hai đầu mút. Một đường song song khác tên cạnh Huỳnh Văn Cù ("Nguyễn Văn Lộng" và một nhánh không tên, khoảng 580 m) không được lấy, vì không phải cầu.
+   - **Sau mục 9.1** (so với mục 9, đo ngày 22/10/2026; trên 185 đoạn tuyến, 7 đoạn lấy thêm tổng cộng 10.722 m, không đoạn nào mất đoạn đường nào):
+
+     | Rule | Đoạn tuyến | Thay đổi | Cách lấp |
+     |---|---|---|---|
+     | `hcm_hl_dang_kiem_5003s` | Phạm Văn Đồng, cầu Gò Dưa → Ngã Tư Bình Triệu | +336 m (40 đoạn) | đoạn cùng tên lượn ra ngoài 60 m (279 m); đường nối không tên (58 m, gồm way 1219668784) |
+     | `qng_5t_6_18` | Quang Trung → Lê Lợi | +226 m (10 đoạn) | vượt vòng xuyến Hai Bà Trưng (cung 25 m); 201 m bên kia **thừa** so với văn bản |
+     | `hp_dt390_4truc_gio_cao_diem` | ĐT.390 tới Tỉnh lộ 360 | +4.604 m (94 đoạn) | vượt chỗ OSM đứt (cung vòng xuyến 82 m), rồi chạy tiếp qua nút Ba Hàng (QL5) tới hết đường; phần phía tây bắc QL5 **thừa** so với văn bản |
+     | `hcm_qd23_*` (ranh giới) | Võ Nguyên Giáp từ Xa lộ Hà Nội | +5.305 m (122 đoạn) | vượt một chỗ cắt ở nút (đường nối không tên), đường chạy tiếp khoảng 1,2 km × 4 làn |
+     | `hcm_qd23_*` (ranh giới) | Võ Nguyên Giáp, cầu Rạch Chiếc → Tây Hòa / → Mai Chí Thọ; Mai Chí Thọ, Võ Nguyên Giáp → Đồng Văn Cống | +69 m, +37 m, +144 m | đường nối không tên trong chiều đường |
+     | `dng_dt603b_*` | Võ Chí Công tới cầu Cửa Đại | 0, orphan `gap` | chỗ cắt mang tên "Đường Ven Biển 129 (Võ Chí Công)", không vượt được |
+     | `hcm_hl_kcn_tan_binh` | Lê Trọng Tấn từ QL1 | 0, orphan `gap` | chỗ cắt là đường ngang có tên ("Đường CN1"); Lê Trọng Tấn còn khoảng 2,8–3,0 km mỗi chiều phía sau |
+
+     - Vùng TP.HCM và Hà Nội không đổi đoạn nào: phần ranh giới lấy thêm nằm trên chính đường ranh giới.
+     - **Hai rule nay phủ thừa** vì seed dựa vào chỗ OSM dừng làm đầu mút. Quy tắc mới (vượt chỗ cắt nếu đường cùng tên còn tiếp tục trong 300 m) đã đi qua chỗ dừng đó. Cách sửa đúng là ghi đủ đầu mút trong seed:
+       - `qng_5t_6_18`: thêm `"from": "Hai Bà Trưng"` cho Quang Trung.
+       - `hp_dt390_4truc_gio_cao_diem`: thêm đầu mút ở QL5. QL5 chỉ có ref nên không dùng được làm `from` theo tên; cần một tên giao cắt có trong OSM.
+     - **Phần lố ở đầu đoạn.** Một đoạn đường cùng tên có ít nhất một nửa nằm cạnh đoạn tuyến được lấy cả đoạn, kể cả phần chìa ra ngoài đầu mút. Ví dụ: một đoạn V.I Lênin dài 300 m, 78% nằm trong, chìa ra ngoài khoảng 66 m. Phần lố này nằm trong dung sai mà đoạn tuyến vốn có ở mỗi đường giao: tối đa 0,05·D + 100 m.
+     - Đoạn dưới một nửa nằm cạnh thì bị bỏ, nên ở đầu đoạn có thể hở tối đa nửa đoạn.
+   - **Sau vòng sửa 2** (cuối mục 9.1). Seed sửa theo văn bản và file nghiên cứu; mỗi thay đổi có ghi chú trong `note` của rule:
+
+     | Rule | Sửa | Căn cứ | Kết quả trên bản đồ thật |
+     |---|---|---|---|
+     | `hp_dt390_4truc_gio_cao_diem` | `{"ref": "ĐT.390", "from": "Quốc lộ 5", "to": "Tỉnh lộ 360"}` | research_north_v2: "chiều QL5 → cầu Quang Thanh" | 26,84 → 25,00 km, không orphan. Đoạn chạy từ nút Ba Hàng tới hết cầu Quang Thanh, gồm cả 360 m trước đây chưa phủ. |
+     | `dng_dt603b_hoian_10t`, `dng_dt603b_hoian_somi` | đoạn Võ Chí Công thay bằng `{"ref": "ĐT619"}` | tên văn bản: "ĐT619 (Võ Chí Công)"; research_central_v2: "ĐT603B và Võ Chí Công đến cầu Cửa Đại" | 0,78 km → 12,36 km, hết orphan `gap` |
+
+     - **ĐT.390.** Các đường mang `ref=QL.5` vượt cấp qua ĐT.390 ở nút Ba Hàng, không chung nút, nên `"from": "QL5"` cho orphan `from`. Các đường mang tên "Quốc lộ 5" chung 3 nút với ĐT.390 tại nút, nên seed dùng tên này. Chỗ OSM đứt khoảng 100 m phía nam nút được vượt bằng đường nối không tên (quy tắc mới, mục 2.3). So với mục 9.1, đoạn tuyến bớt 26 đoạn (1.845 m) phía tây bắc QL5. So với mục 9, thêm 2.759 m: 2.103 m ĐT.390, 486 m cầu vượt nút giao Ba Hàng và 171 m cung vòng xuyến.
+     - **Võ Chí Công.** Trong OSM, Võ Chí Công đứt ở cầu Đế Võng (259 m), ở các nút giao và ở hai đoạn khoảng 30 m mang tên "Đường Ven Biển 129 (Võ Chí Công)". Mọi đoạn này đều mang ref ĐT.619. Trong `bbox`, ĐT.619 chạy đúng từ chỗ nối ĐT603B (đầu Võ Chí Công, 15,9029; 108,3531) tới hết cầu Cửa Đại: Võ Chí Công 8,8 km, cầu Cửa Đại 3,0 km, cầu Đế Võng 0,5 km, "Đường Ven Biển 129" 61 m. Võ Chí Công không dừng ở QL14H như mục 9.1 ghi: nó cắt QL14H (15,8916; 108,3598) rồi chạy tiếp 1,6 km lên phía bắc tới ĐT603B. Văn bản tính từ đầu Võ Chí Công nên phần này cũng thuộc rule.
+   - **Cần người dùng xác nhận (seed giữ nguyên):**
+     - **Quang Trung (`qng_5t_6_18`).** Ghi chú của seed (chép TB 485) nêu "Quang Trung (Hai Bà Trưng – ranh giới Cẩm Thành)". Các file nghiên cứu chỉ liệt kê tên Quang Trung, không nêu đầu mút. Thêm `"from": "Hai Bà Trưng"` cho orphan `from`: trong OSM, Hai Bà Trưng dừng cách Quang Trung 4 m ở vòng xuyến, không chung nút. Seed giữ nguyên, nên vẫn cấm thừa 201 m Quang Trung bên kia vòng xuyến và 25 m cung vòng xuyến. Muốn bỏ phần này thì cần nối Hai Bà Trưng vào vòng xuyến trong OSM, hoặc chấp nhận phần thừa.
+     - **(Đã quyết định 22/10/2026: người dùng chọn lựa chọn (1), lấy cả Lê Trọng Tấn trong `bbox`; seed đã sửa, ghi chú trong `note`. Rule nay 274 đoạn, không orphan.)** **Lê Trọng Tấn (`hcm_hl_kcn_tan_binh`).** Văn bản ghi "Lê Trọng Tấn (QL1 → KCN Tân Bình)", không nêu đường nào là đầu mút. "Tới cuối đường" trong ghi chú seed là cách đọc của người lập seed. "Đường CN1" (đường nội bộ KCN) cắt Lê Trọng Tấn ở 10,8128; 106,6079, cách QL1 khoảng 1 km. Hai lựa chọn:
+       - (1) cả Lê Trọng Tấn trong `bbox` (`{"name": "Lê Trọng Tấn"}`): 7,45 km, không orphan, đúng ghi chú "từ QL1 đến cuối đường";
+       - (2) chỉ QL1 → cổng KCN ở "Đường CN1": `"to": "Đường CN1"` cho orphan `path`, vì CN1 là đường có tên cắt ngang nên không vượt được. Giữ seed hiện tại thì được 1,67 km kèm orphan `gap` ở CN1.
+
+       Rule này lỗi ở `rules-check` cho tới khi người dùng chọn; sau khi sửa theo lựa chọn (1), cả hai ngày 0 lỗi.
+     - **ĐT.390 còn chạy lố khoảng 1,1 km phía tây bắc QL5** (22 đoạn, 1.076 m ĐT.390). Đây không phải phần vượt chỗ cắt, mà là dung sai mọi đoạn tuyến hai đầu có ở mỗi đường giao: tối đa 0,05·D + 100 m, với D khoảng 22 km. Muốn bỏ thì phải sửa phép tìm đoạn để cắt các nút đã qua đường giao được ghi, mà không cắt chiều đường dài hơn ở gần đầu mút. Việc này đổi nhiều đoạn tuyến nên chưa làm.
 
 ## 6. Lưu ý và rủi ro còn lại
 
@@ -502,7 +662,7 @@ Các mục này nằm trong khóa `unresolved` của từng file seed. `import-r
 - **Phần chưa phủ:**
   - V.I Lênin: khoảng 400 m sát Đảo Hải Quan.
   - Lê Mao: khoảng 380 m từ ngã 5 Bưu Điện tới Ngư Hải.
-  - ĐT.390: khoảng 360 m từ nút QL5 tới chỗ OSM đứt.
+  - ĐT.390: khoảng 360 m từ nút QL5 tới chỗ OSM đứt. Đã phủ từ vòng sửa 2 (cuối mục 9.1).
   - Vùng Hà Nội: dải khoảng 0,5 km² giữa Đại lộ Thăng Long và chuỗi Đại Việt.
 - **Mỹ Phước – Tân Vạn (Bình Dương cũ)**: đoạn "từ Phú Lợi tới ĐT743A" chỉ bắt được khoảng 1 km, vì ĐT.743A cũng giao Mỹ Phước – Tân Vạn gần Phú Lợi. Chưa sửa.
 - **Mục ranh giới để cả tên** có phần chạy ra ngoài vòng: "Đại Việt" (Hà Nội), Võ Chí Công và QL1 (TP.HCM), Đình Vũ (đã bỏ ở Hải Phòng KV1). Phần đó chỉ bị loại khỏi vùng, không bị cấm thêm.
@@ -543,3 +703,70 @@ Chạy lại trên dữ liệu thật (cùng `segments/816249187dfd` và `speeds
 - `rules-check` cho 22/10 và 1/10: kết quả ở mục 2.3.
 - `groups` cho 22/10 (50,3 s) và 1/10 (48,8 s), peak WS 3,46 GB, private 4,89 GB. Số đoạn ở mục 2.4.
 - Kiểm tra trên view mới: mọi đoạn bị cấm với `duoi2t` mà không nằm trong tập bị ảnh hưởng của `tu2t` (2.964 đoạn) hay `container` (2.767 đoạn) đều bị cấm giống hệt ở nhóm đó (cùng các khung giờ), và ở các khung giờ còn mở thì tốc độ hai nhóm bằng nhau (ví dụ cùng giới hạn noido 50 km/h). Vì vậy mảnh của nhóm gốc đúng cho các nhóm này ở những đoạn đó.
+
+## 9. Vòng sửa `route_piece` (22/10/2026)
+
+Vấn đề: ở mục 8, `rules-check` báo 20 rule `cao`/`tb` lỗi vì orphan `carriageway`. `route_piece` chỉ lấy chiều đường nối được với đường giao, nên bỏ chiều còn lại khi chiều đó không có nút nào trong vòng 60 m quanh đường giao, hoặc bị một đoạn mang tên khác cắt rời.
+
+Thay đổi code (gói `speedmatrix`, có test viết trước cho từng trường hợp):
+- **Hành lang 60 m** (`_Corridor`): đoạn tuyến lấy thêm mọi đoạn đường cùng tên chạy cạnh nó giữa hai đầu mút, tức đoạn có ít nhất một nửa số điểm nằm cạnh. Việc lấy vào và orphan `carriageway` dùng chung một định nghĩa "nằm cạnh" (mục 2.3). Orphan chỉ còn là lưới an toàn.
+- Không bao giờ lấy: đường cùng tên cách quá 60 m; phần đường cùng tên bên kia đầu mút, kể cả phần nằm cạnh chỗ đoạn tuyến tự chạy lố qua đường giao; đường cùng tên ở thị xã khác (ngoài `bbox`).
+- **Cầu mang tên riêng** ("Cầu …", "Hầm …") được lấy khi nằm giữa hai phần của chiều đường được lấy vào. Lý do: chiếc cầu là một phần con đường xe đi. Nếu bỏ cầu, chỗ hở này vô hại với lệnh cấm (xe không tới được), nhưng với đoạn miễn thì nó cắt đứt hành lang được đi. Cầu phải chạy dọc đoạn tuyến (hai đầu cách nhau theo dọc đoạn ít nhất 0,8 chiều dài cầu) và lấp một chỗ hở mà chính con đường không nối được. Cầu vượt cắt ngang, đường song song khác tên, nhánh không tên và vòng xuyến không được lấy. Lần thử đầu cho phép mọi tên đã lấy nhầm 580 m đường "Nguyễn Văn Lộng" cạnh Huỳnh Văn Cù và một cung vòng xuyến 13 m ở Bắc Giang, nên mới giới hạn theo tên.
+- **Đầu xa của đoạn tuyến một phía** gieo mọi nút trong vòng 60 m như ở đường giao. Trước đây Quang Trung (Quảng Ngãi) kết thúc bằng ngã ba chữ Y ở vòng xuyến, nên một nhánh nằm "giữa" đoạn và phần đường bên kia vòng xuyến bị báo nhầm.
+- `query_bbox` tìm theo khóa float32. Khóa float64 làm sao chép cả mảng 26,7 triệu vĩ độ ở mỗi lần gọi, khoảng 50 ms. Kết quả giống hệt, có test ở biên.
+
+Chạy lại trên dữ liệu thật (cùng `segments/816249187dfd` và `speeds/dba5f7c3e555`):
+- `rules-check` ngày 22/10: 88 rule, 0 lỗi, 0 partial, exit 0 (12 s). Ngày 1/10: 84 rule, 0 lỗi, 0 partial, exit 0 (13 s). Cảnh báo của rule đang tắt không đổi.
+- Trên 185 đoạn tuyến có `from`/`to` trong seed: orphan `carriageway` giảm từ 32 xuống 0; 13 đoạn được lấy thêm tổng cộng 21.962 m; không đoạn nào mất đoạn đường nào. Tính thêm hành lang, thời gian resolve cả 185 đoạn khoảng 3,5 s, phần lớn là lần dựng chỉ mục không gian đầu tiên.
+- `groups` ngày 22/10 (57,0 s) và 1/10 (57,6 s), peak WS 3,46 GB, private 4,90 GB. Số đoạn và thay đổi ở mục 2.4; `report.json` của cả hai ngày không còn orphan.
+- Phần còn lại cần người dùng xem: mục 5.6 b (Võ Chí Công bị một đoạn nối không tên cắt, đoạn Phạm Văn Đồng Bình Triệu → QL13 gần như suy biến).
+
+### 9.1 Sửa vòng 1 sau review độc lập (22/10/2026)
+
+Review độc lập chỉ ra ba chỗ mất đường mà mục 9 bỏ qua lặng lẽ:
+- **I1.** Đoạn tuyến một phía dừng ở chỗ đường bị cắt (Võ Chí Công) mà không báo.
+- **I2.** Chỗ hở trong một chiều đường không được lấp cũng không được báo. Hành lang mở Phạm Văn Đồng vì thế không đi được theo chiều QL13 → QL1.
+- **I3.** Đầu xa của đoạn tuyến một phía gieo cả nút của chiều đường khác, làm chiều đó bị cắt ngắn.
+
+Thay đổi code (commit `3ba5aff`, chỉ `speedmatrix/scopes.py` và `tests/test_sm_scopes.py`), quy tắc ở mục 2.3:
+- **I3:** đầu xa chỉ gieo nút cùng thành phần liên thông. Có test: chiều bắc dài hơn giữ đủ 2.500 m.
+- **I2:** chỗ hở được lấp bằng chính đường cùng tên, hoặc bằng đường nối không tên hay cầu/hầm dài tối đa 100 m; không lấp được thì báo orphan `gap` kèm tọa độ.
+  - Bỏ điều kiện "cầu chạy dọc, không cắt ngang" (0,8 chiều dài). Thay vào đó, hai đầu phải cùng hướng xe chạy. Một cầu vượt nối hai làn ngược chiều vì thế không tạo chỗ hở.
+  - Bỏ việc tìm ứng viên theo ô 500 m dọc đoạn tuyến, vốn phụ thuộc mật độ nút. Nay tìm quanh từng cặp đầu.
+- **I1:** vượt chỗ cắt sau đầu xa bằng cùng quy tắc; không vượt được thì báo orphan `gap`.
+- **Tên cầu:** chỉ tên bắt đầu bằng "Cầu "/"Hầm " (không qua `normalize_name`, nên "Đường Cầu Giấy" không phải cầu). Thẻ OSM `bridge`/`tunnel` được ưu tiên nếu bảng đoạn có cột theo way; bảng hiện tại chưa có.
+- **Vùng:** chấp nhận orphan `gap` của đoạn ranh giới như orphan `carriageway`.
+
+Test: 52 test trong `test_sm_scopes` (thêm 9), toàn bộ 405 test đạt.
+- Mỗi kiểu mất đường có test: cắt ở nút không tên, cắt bởi đường có tên, chỗ hở do đường dài hơn 100 m hay đường có tên, chiều đường lượn ra ngoài 60 m, cung vòng xuyến ra ngoài hành lang, chiều đường dài hơn, vùng chấp nhận orphan `gap`.
+- Mỗi thay đổi có một đột biến làm ít nhất một test hỏng.
+
+Chạy lại trên dữ liệu thật (cùng `segments/816249187dfd` và `speeds/dba5f7c3e555`):
+- `rules-check` ngày 22/10: 88 rule, 3 lỗi, 3 partial, exit 2 (10 s). Ngày 1/10: 84 rule, 3 lỗi, 3 partial, exit 2 (11 s). Ba rule lỗi là `dng_dt603b_hoian_10t`, `dng_dt603b_hoian_somi` và `hcm_hl_kcn_tan_binh`. Cả ba lỗi vì đường thật bị mất và cần sửa seed (mục 2.3, 5.6 b).
+- Hành lang Phạm Văn Đồng: trong tập được mở, nay đi được cả QL1 → QL13 và QL13 → QL1. Ở mục 9 chỉ đi được QL1 → QL13.
+- `groups` ngày 22/10 (48,4 s) và 1/10 (45,3 s), peak WS 3,46 GB, private 4,90 GB. Thay đổi ở mục 2.4.
+- Vùng: mọi vùng giữ nguyên từng đoạn và diện tích.
+
+#### Vòng sửa 2: đường giao theo ref, sửa seed (22/10/2026)
+
+Yêu cầu:
+- (a) Đường giao ghi bằng ref ("QL5", "ĐT390") khớp theo ref như tên. Phần vượt chỗ cắt phải dừng ở đường giao được ghi khi đã tìm thấy nó. Nhờ đó `hp_dt390_4truc_gio_cao_diem` thôi lấy 4,6 km phía tây bắc QL5.
+- (b) Sửa seed theo văn bản và file nghiên cứu, không tự thêm đường hay đầu mút.
+
+Thay đổi code (commit `c0cb4de`, `speedmatrix/scopes.py` và `tests/test_sm_scopes.py`):
+- **Đường giao theo ref** vốn đã khớp: `from`/`to` đi qua `ways_by_text`, so cả tên chuẩn hóa lẫn từng phần ref chuẩn hóa. Hai test mới chốt lại:
+  - "QL77" tìm được đường chỉ mang `ref=QL.77`;
+  - ref không đường nào mang ("QL78") là orphan `{"missing": "to"}`, không chạy tiếp tới hết đường.
+- **Vượt chỗ cắt giữa hai đường giao** (`_join_crossings`). Khi hai đường giao nằm trên hai phần bị cắt rời, chỗ cắt được vượt bằng `_connector` như ở đầu xa của đoạn tuyến một phía. Sau đó `_piece` chạy lại, và đoạn tuyến là phần giữa hai đường giao, nên dừng ở đường giao được ghi. Không vượt được thì vẫn là orphan `path`. Trước đây trường hợp này luôn là `path`, nên seed ĐT.390 phải bỏ đầu QL5 và đoạn tuyến một phía chạy lố qua nút tới hết đường.
+- Test: fixture T, "Đại lộ T" từ "Phố T1" tới đường chỉ có ref "QL.77", bị cắt bởi một nút không tên 40 m; đường chạy tiếp 1 km sau QL.77. Đoạn tuyến vượt chỗ cắt và dừng ở QL.77. Bỏ `_join_crossings` thì test này hỏng.
+
+Sửa seed (`north.json`, `central.json`; giữ định dạng từng file, ghi chú trong `note`): xem mục 5.6 b. `qng_5t_6_18` và `hcm_hl_kcn_tan_binh` giữ nguyên, chờ người dùng xác nhận. Chạy `import-rules` cho hai file đã sửa: 3 rule đổi.
+
+Test: 54 test trong `test_sm_scopes` (thêm 2), toàn bộ 407 test đạt.
+
+Chạy lại trên dữ liệu thật (cùng `segments/816249187dfd` và `speeds/dba5f7c3e555`):
+- `rules-check` ngày 22/10: 88 rule, 1 lỗi, 1 partial, exit 2 (11 s). Ngày 1/10: 84 rule, 1 lỗi, 1 partial, exit 2 (11 s). Rule lỗi duy nhất là `hcm_hl_kcn_tan_binh` (mục 5.6 b).
+- `groups` ngày 22/10 (42,5 s) và 1/10 (42,0 s), peak WS 3,46 GB, private 4,90 GB, chạy lần lượt. Lần chạy đầu cho ngày 22/10 hỏng vì máy hết bộ nhớ ảo (các tiến trình Python khác chiếm gần hết); lần chạy lại chờ tới khi đủ bộ nhớ. Thay đổi ở mục 2.4: chỉ nhóm `container` đổi.
+- ĐT.390 nay bắt đầu ở nút Ba Hàng. Phần vượt tới hết đường đã bỏ (−1.845 m); còn khoảng 1,1 km chạy lố do dung sai của phép tìm đoạn (mục 5.6 b).
+
+**Đầu mút Lê Trọng Tấn (22/10/2026).** Người dùng chọn lấy cả Lê Trọng Tấn trong `bbox` (7,45 km). `south.json` thay đoạn `{"name": "Lê Trọng Tấn", "from": "QL1"}` bằng `{"name": "Lê Trọng Tấn"}`, kèm ghi chú (commit `efaa9a5`). Sau `import-rules` (1 rule đổi), `rules-check` cả hai ngày 0 lỗi, 0 partial, exit 0. Hai view được dựng lại lần lượt: số đoạn không đổi, 164 đoạn Lê Trọng Tấn được mở theo giờ hành lang cho `tu2t` và `container` (mục 2.4).
