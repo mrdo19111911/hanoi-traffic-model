@@ -14,7 +14,8 @@ import numpy as np
 
 FINGERPRINT = b"OSRP\x1a\n\x00\x02\x01\x08\xfa"
 INVALID = (1 << 22) - 1
-KMH = {"residential": 25, "primary": 65, "track": 10, "secondary": 50, "tertiary": 35}
+KMH = {"residential": 25, "primary": 65, "track": 10, "secondary": 50, "tertiary": 35, "motorway": 90,
+       "motorway_link": 45, "ferry": 5}
 
 # (lon, lat) of the fixture town; way ids are 1-based in TOWN_WAYS order.
 TOWN_COORDS = {101: (105.8000, 21.0000), 107: (105.8005, 21.0000), 102: (105.8010, 21.0000),
@@ -93,7 +94,8 @@ def write_dataset(root, coords, ways, obstacles={}, banned=set(), turn_ds=20, ut
                   short_packed=frozenset()):
     """Write ``<root>/map.osrm.*`` and ``<root>/build_matrix.json``; returns the base path ``<root>/map.osrm``.
 
-    coords {osm id: (lon, lat)}; ways [(way id, [node ids], tags)]. obstacles {(node id, "forward"|"reverse", way id):
+    coords {osm id: (lon, lat)}; ways [(way id, [node ids], tags)], a ``route=ferry`` way without highway counting as
+    highway "ferry". obstacles {(node id, "forward"|"reverse", way id):
     ds} are signals on the zero-length node move; banned {(from, via, to)} are node triples without a turn. The
     keyword options break the output on purpose: drop_blocks (block names left out), backward_edge (backward=1 on the
     first EBG edge), fingerprint_of ({suffix: 11-byte fingerprint}), enw_delta / weight_delta ({id: ds} added to the
@@ -116,7 +118,7 @@ def write_dataset(root, coords, ways, obstacles={}, banned=set(), turn_ds=20, ut
             geos.append((way_id, refs[a:b + 1], tags.get("oneway") == "yes"))
     index, nodes, fwd, rev = [0], [], [], []
     ebn_fwd_dur, ebn_rev_dur = [], []
-    highway = {w: t["highway"] for w, _, t in ways}
+    highway = {w: t.get("highway") or ("ferry" if t.get("route") == "ferry" else "") for w, _, t in ways}
     for way_id, refs, _oneway in geos:
         kmh = KMH[highway[way_id]]
         m = len(refs) - 1
@@ -235,3 +237,21 @@ def write_osm(path, coords, ways):
         lines.append("</way>")
     lines.append("</osm>")
     Path(path).write_text("\n".join(lines), encoding="utf-8")
+
+
+def make_graphs(root, coords, ways, rivers=None, obstacles={}):
+    """(SegmentTable, TurnGraph, NodeGraph) of a tiny map: ``write_osm`` -> ``build_segments`` -> ``write_dataset`` ->
+    ``build_graph`` -> ``node_graph``, all under ``root``. ``rivers`` is a main-rivers GeoJSON document (none by
+    default)."""
+    from speedmatrix.graph import build_graph
+    from speedmatrix.partition import node_graph
+    from speedmatrix.segments import _sha256_file, build_segments
+
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+    osm = root / "map.osm"
+    write_osm(osm, coords, ways)
+    table = build_segments(osm, None)
+    base = write_dataset(root, coords, ways, obstacles, pbf_sha256=_sha256_file(osm))
+    g = build_graph(base, root / "build_matrix.json", table)
+    return table, g, node_graph(g, rivers if rivers is not None else {"type": "FeatureCollection", "features": []})
