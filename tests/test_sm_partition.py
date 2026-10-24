@@ -394,7 +394,7 @@ class PartitionTests(unittest.TestCase):
         self.assertEqual(doc["k"], 3)
         self.assertEqual(len(doc["parents"]["l3"]), len(self.p3.cells[2]))
         self.assertEqual(sorted(doc), sorted(["format", "k", "config", "cells", "parents", "l2_hash", "resplit",
-                                              "rules", "checks", "stats", "previous", "polygons_sha256",
+                                              "rules", "checks", "stats", "gate_stats", "previous", "polygons_sha256",
                                               "rivers_sha256"]))
 
     def _cli(self, argv):

@@ -2,7 +2,7 @@
 
 ``python -m speedmatrix.partition import-seed --scratch DIR --out FILE``
 ``python -m speedmatrix.partition run --release DIR [--previous DIR | --seed FILE] [--polygons FILE] [--rivers FILE]
-[--workers N]``
+[--workers N] [--l2-nodes N] [--split-nodes N ...]``
 
 Levels 1 and 2 are frozen: their labels follow the nodes by OSM id from the previous release (the v3.2 seed the first
 time), and only new nodes get labels, by the v3.2 polygons (level 1) and by network propagation (level 2). Level 3
@@ -936,7 +936,8 @@ def _stats(p: Partition) -> dict:
 
 def save_partition(p: Partition, release_dir) -> None:
     """``labels_l{l}.npy``, ``node_labels.npz`` and ``partition.json`` in ``release_dir``, each written to a temp
-    file and renamed into place. ``p.info`` may carry ``checks``, ``polygons_sha256`` and ``rivers_sha256``."""
+    file and renamed into place. ``p.info`` may carry ``checks``, ``gate_stats``, ``polygons_sha256`` and
+    ``rivers_sha256``."""
     d = Path(release_dir)
     d.mkdir(parents=True, exist_ok=True)
     k = p.codes.shape[1]
@@ -951,8 +952,8 @@ def save_partition(p: Partition, release_dir) -> None:
            "cells": [c.tolist() for c in p.cells], "parents": parents,
            "l2_hash": {str(c): h for c, h in sorted(p.l2_hash.items())}, "resplit": p.info.get("resplit"),
            "rules": p.info.get("rules", {}), "checks": p.info.get("checks", {}), "stats": _stats(p),
-           "previous": p.info.get("previous"), "polygons_sha256": p.info.get("polygons_sha256"),
-           "rivers_sha256": p.info.get("rivers_sha256")}
+           "gate_stats": p.info.get("gate_stats"), "previous": p.info.get("previous"),
+           "polygons_sha256": p.info.get("polygons_sha256"), "rivers_sha256": p.info.get("rivers_sha256")}
     text = json.dumps(doc, ensure_ascii=False, indent=1, default=_json_default)
     _atomic(d / "partition.json", lambda f: f.write(text.encode("utf-8")))
 
@@ -978,22 +979,48 @@ def _cmd_import_seed(args) -> int:
     return 0
 
 
+def _config(args) -> PartitionConfig:
+    over = {}
+    if args.l2_nodes is not None:
+        over["l2_nodes"] = args.l2_nodes
+    if args.split_nodes is not None:
+        over["split_nodes"] = tuple(args.split_nodes)
+    return replace(PartitionConfig(), **over)
+
+
 def _cmd_run(args) -> int:
+    """Labels, gates and ``partition.json`` of a release; exits 0 once ``partition.json`` is written, whatever its
+    checks say (Decision 27): the caller reads the checks."""
+    try:
+        from . import gates as gt
+    except ImportError:  # pragma: no cover - run as a script
+        from speedmatrix import gates as gt
     release = Path(args.release)
+    config = _config(args)
     g = load_graph(release / "graph", mmap=True)
     rivers = json.loads(Path(args.rivers).read_text(encoding="utf-8"))
     polygons = json.loads(Path(args.polygons).read_text(encoding="utf-8"))
     ng = node_graph(g, rivers)
     previous = load_previous(args.previous) if args.previous else load_seed(args.seed) if args.seed else None
-    p = build_partition(g, ng, previous, polygons, PartitionConfig(), args.workers)
+    old_gates = gt.load_gates(Path(args.previous) / "gates.npz") if args.previous else None
+    p = build_partition(g, ng, previous, polygons, config, args.workers)
     if previous is not None:
         expected_l1 = None
     else:
         expected_l1 = len({(f.get("properties") or {}).get("region") for f in polygons.get("features") or []})
-    p.info["checks"] = check_partition(ng, p, previous, expected_l1)
+    checks = check_partition(ng, p, previous, expected_l1)
+    gates = gt.build_gates(g, p)
+    checks.update(gt.check_gates(g, ng, gates))
+    if old_gates is not None:
+        for name, d in gt.gate_drift(old_gates, g).items():
+            checks[f"gate_drift_{name}"] = {"value": d["moved"], "ok": d["moved"] == 0, "blocking": False,
+                                            "gone": d["gone"], "checked": d["checked"], "examples": d["examples"]}
+    p.info["checks"] = checks
+    p.info["gate_stats"] = gt.gate_stats(g, gates)
     p.info["polygons_sha256"] = _sha256_file(args.polygons)
     p.info["rivers_sha256"] = _sha256_file(args.rivers)
     del g
+    gt.save_gates(gates, release / "gates.npz")
     save_partition(p, release)
     print(release)
     return 0
@@ -1014,6 +1041,10 @@ def main(argv=None) -> int:
     r.add_argument("--polygons", type=Path, default=DEFAULT_POLYGONS)
     r.add_argument("--rivers", type=Path, default=DEFAULT_RIVERS)
     r.add_argument("--workers", type=int, default=None)
+    r.add_argument("--l2-nodes", type=int, default=None,
+                   help=f"nodes per L2 cell of a fresh L2 split (default {PartitionConfig.l2_nodes})")
+    r.add_argument("--split-nodes", type=int, nargs="*", default=None,
+                   help=f"nodes per cell of each re-split level L3, L4, ... (default {PartitionConfig.split_nodes})")
     r.set_defaults(func=_cmd_run)
     args = ap.parse_args(argv)
     return args.func(args)
