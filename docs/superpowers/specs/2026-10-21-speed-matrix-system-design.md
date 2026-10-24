@@ -20,6 +20,7 @@ Dữ liệu GPS của công ty chưa đưa vào.
   - Kết quả bảo đảm FIFO.
 - Mọi kết quả truy được về phiên bản bản đồ, phiên bản tốc độ, bộ luật và mã nguồn đã sinh ra nó.
 - Mọi bản dựng đều qua bước kiểm chứng tự động. Bản dựng không qua kiểm chứng thì không được đưa vào dùng.
+  - Mỗi dự án con đưa bản dựng vào dùng sau các kiểm chứng của phần nó dựng. Dự án con 1 (mục 6) đưa bản đồ vào dùng sau kiểm tra bản đồ, luật và kiểm chứng mục 12.1. Dự án con 2 thêm bước dựng mảnh (mục 9) và kiểm chứng mục 12.2–12.5 vào trước bước đưa vào dùng.
 - Không bước nào cần LLM hay cần người sửa tay dữ liệu. Mỗi sửa đổi là một luật chạy lại được.
 
 ## 2. Phạm vi
@@ -125,8 +126,9 @@ Ngoài 7 thành phần còn có một **bộ lập lịch job**. Bộ này giữ
 | File | Nội dung |
 |---|---|
 | `osrm/` | Bộ OSRM ma trận (OSRM v26.10.0, giữ cố định phiên bản) |
-| `graph.npz` | CSR của đồ thị cung rẽ. Với mỗi đoạn: nút đầu/cuối (id OSM), độ dài, loại đường (`road_class` 5 nhóm), way id và chi phí rẽ |
+| `graph/` | Đồ thị cung rẽ có hướng, lưu thành thư mục các mảng `.npy` (đọc được bằng mmap) cùng `meta.json`. Đồ thị ở mức nút cạnh (edge-based node) của OSRM: mỗi nút cạnh giữ dãy đoạn có hướng theo thứ tự đi; quãng đi tiếp trong cùng một nút cạnh có chi phí 0, còn chi phí rẽ nằm trên cung giữa hai nút cạnh. Với mỗi đoạn: nút đầu/cuối (id OSM), độ dài, loại đường (`road_class`), dòng trong bảng đoạn (way id), thời gian cố định ở nút (đèn, vật cản) và thời gian của chính OSRM |
 | `labels_l{1,2,3}.npy` | Ô của từng đoạn ở mỗi tầng |
+| `node_labels.npz`, `partition.json` | Nhãn các tầng theo id nút OSM (để mang sang bản đồ sau), mã ô ổn định, hash vùng con, kết quả kiểm tra phân vùng |
 | `gates.npz` | Gate mỗi tầng; cửa vào/cửa ra của mỗi ô |
 | `release.json` | Hash của PBF, hash profile, phiên bản code, kết quả kiểm tra |
 
@@ -198,9 +200,9 @@ Phần này mở rộng `reports/gate_compose_spike/update_matrix.py`, chuyển 
    - bỏ qua thẻ `construction` cũ.
 4. Đọc đồ thị có hướng từ file OSRM: `.nbg_nodes`, `.geometry`, `.ebg`/`.ebg_nodes`, `.turn_duration_penalties`.
    - Đọc danh sách thành viên tar để xác nhận đúng tên khối và kiểu dữ liệu.
-   - Gắn loại đường cho từng đoạn từ `road_classes.sqlite`. Hash PBF phải khớp.
+   - Gắn loại đường và way cho từng đoạn từ bảng đoạn toàn quốc của dự án con 0 (`SegmentTable`), không lấy từ `road_classes.sqlite` (file này chỉ phủ Hà Nội và phục vụ web app). Hash PBF của bảng đoạn phải khớp với hash của bộ OSRM.
 5. Phân vùng:
-   - **Tầng 1, tầng 2:** polygon v3.2 đã đóng băng. Gán lại nhãn bằng polygon trên bản đồ mới, không chia lại.
+   - **Tầng 1, tầng 2:** nhãn v3.2 đã đóng băng, không chia lại. Nhãn mang sang bản đồ mới theo id nút OSM từ bản đang chạy (lần đầu: từ bảng nhãn v3.2). Nút mới có nhãn tầng 1 theo polygon v3.2 và nhãn tầng 2 lan theo mạng đường trong cùng vùng. Không gán lại toàn bộ bằng polygon, vì polygon lệch với nhãn min-cut ở 0,1% số nút và tầng 2 không có polygon.
    - **Tầng 3:** chia lại chỉ những vùng con có đồ thị thay đổi, xác định bằng hash tập nút và tập cạnh của vùng con. Các vùng con khác giữ nhãn cũ, ghép theo id nút OSM.
    - **Min-cut ở mọi tầng**, không bao giờ chia đôi theo hình học, để số gate nhỏ nhất (người dùng yêu cầu).
    - Các luật phân vùng là luật code:
@@ -214,7 +216,7 @@ Phần này mở rộng `reports/gate_compose_spike/update_matrix.py`, chuyển 
    - số vùng không đổi;
    - mọi ô liền một khối.
 7. Gắn lại luật vào bản đồ mới (mục 5.3) và báo các luật mồ côi.
-8. Dựng lại lớp tốc độ (mục 7) và mảnh (mục 9), chạy kiểm chứng (mục 12), rồi **đưa vào dùng**: `current.json` trỏ sang bản mới. Bản lỗi không làm thay đổi bản đang chạy.
+8. Dựng lại lớp tốc độ (mục 7), chạy kiểm chứng mục 12.1, rồi **đưa vào dùng**: `current.json` trỏ sang bản mới. Bản lỗi không làm thay đổi bản đang chạy. Dự án con 2 thêm bước dựng mảnh (mục 9) và kiểm chứng mục 12.2–12.5 vào trước bước đưa vào dùng.
 
 Lịch chạy: hằng tuần, bằng Windows Scheduled Task, như `update_matrix.py schedule`.
 
