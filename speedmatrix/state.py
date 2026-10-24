@@ -1,4 +1,7 @@
-"""SQLite state store: rules with history, vehicle groups, holidays, speed versions."""
+"""SQLite state store: rules with history, vehicle groups, holidays, speed versions and jobs.
+
+Schema 2 adds the ``jobs`` table (one row per pipeline run, Decision 21); a schema-1 file is upgraded in place.
+"""
 import json
 import sqlite3
 from dataclasses import asdict
@@ -12,7 +15,7 @@ except ImportError:  # pragma: no cover - flat import
     from rules import Rule, rule_from_dict, rule_to_dict, validate_rule
     from vehicles import VehicleGroup
 
-SCHEMA = 1
+SCHEMA = 2
 _TZ = timezone(timedelta(hours=7))
 
 _DDL = """
@@ -29,6 +32,9 @@ CREATE INDEX IF NOT EXISTS rule_history_rule ON rule_history(rule_id);
 CREATE TABLE IF NOT EXISTS vehicle_groups(name TEXT PRIMARY KEY, attrs TEXT, is_base INTEGER);
 CREATE TABLE IF NOT EXISTS holidays(day TEXT PRIMARY KEY, name TEXT);
 CREATE TABLE IF NOT EXISTS speed_versions(version TEXT PRIMARY KEY, created_at TEXT, info TEXT);
+CREATE TABLE IF NOT EXISTS jobs(
+  id TEXT PRIMARY KEY, kind TEXT, status TEXT, started_at TEXT, finished_at TEXT,
+  info TEXT, error TEXT, log_path TEXT);
 """
 
 
@@ -164,12 +170,45 @@ class State:
         return [{"version": r["version"], "created_at": r["created_at"], "info": json.loads(r["info"])}
                 for r in self._db.execute("SELECT * FROM speed_versions ORDER BY created_at, version")]
 
+    # ---- jobs
+    def start_job(self, id: str, kind: str, log_path) -> None:
+        """A new job row with status ``running``; an existing id raises sqlite3.IntegrityError."""
+        self._db.execute("INSERT INTO jobs(id, kind, status, started_at, log_path) VALUES(?,?,?,?,?)",
+                         (id, kind, "running", _now(), None if log_path is None else str(log_path)))
+        self._db.commit()
+
+    def finish_job(self, id: str, status: str, info: dict, error: str | None = None) -> None:
+        cur = self._db.execute("UPDATE jobs SET status=?, finished_at=?, info=?, error=? WHERE id=?",
+                               (status, _now(), _dump(info), error, id))
+        self._db.commit()
+        if cur.rowcount == 0:
+            raise KeyError(f"job {id}")
+
+    @staticmethod
+    def _job(row) -> dict:
+        d = dict(row)
+        d["info"] = json.loads(d["info"]) if d["info"] is not None else None
+        return d
+
+    def job(self, id: str) -> dict | None:
+        row = self._db.execute("SELECT * FROM jobs WHERE id=?", (id,)).fetchone()
+        return self._job(row) if row else None
+
+    def jobs(self, kind: str | None = None, limit: int = 20) -> list:
+        """The newest ``limit`` jobs (of ``kind`` when given), newest first."""
+        sql, args = "SELECT * FROM jobs", []
+        if kind is not None:
+            sql += " WHERE kind=?"
+            args.append(kind)
+        args.append(int(limit))
+        return [self._job(r) for r in self._db.execute(sql + " ORDER BY started_at DESC, rowid DESC LIMIT ?", args)]
+
     def close(self) -> None:
         self._db.close()
 
 
 def open_state(path: Path) -> State:
-    """Open (creating if needed) the state DB; refuse a newer schema."""
+    """Open (creating if needed) the state DB; upgrade an older schema in place, refuse a newer one."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(str(path))
@@ -181,8 +220,8 @@ def open_state(path: Path) -> State:
             row = db.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
             if row and int(row["value"]) > SCHEMA:
                 raise RuntimeError(f"state schema {row['value']} is newer than supported {SCHEMA}")
-        db.executescript(_DDL)
-        db.execute("INSERT OR IGNORE INTO meta(key, value) VALUES('schema', ?)", (str(SCHEMA),))
+        db.executescript(_DDL)                  # CREATE ... IF NOT EXISTS: adds the tables a schema-1 file lacks
+        db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES('schema', ?)", (str(SCHEMA),))
         db.commit()
     except Exception:
         db.close()

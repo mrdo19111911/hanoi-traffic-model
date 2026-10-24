@@ -8,8 +8,9 @@ Commands, in pipeline order:
   ``<root>/state.sqlite`` (author "seed", reason = file name) and replaces each file's unresolved items.
 - ``speeds --segments DIR [--as-of DATE]``: base speed layer from the profile free-flow speeds and the
   active speed rules in force, into ``<root>/speeds/<version[:12]>/`` (skipped if present); prints it.
-- ``groups --segments DIR --speeds DIR [--as-of DATE]``: one view per vehicle group of the state into
-  ``<speeds>/groups/<as_of>/<name>.npz`` plus ``report.json``; prints the directory. The speed layer must
+- ``groups --segments DIR --speeds DIR [--as-of DATE] [--out DIR]``: one view per vehicle group of the state into
+  ``<speeds>/groups/<as_of>/<name>.npz`` plus ``report.json`` (into ``DIR`` with ``--out``, which the release
+  pipeline uses so the views live in the release, Decision 28); prints the directory. The speed layer must
   have been built for the speed rules in force on the date (ReleaseMismatch otherwise), and the state must
   hold exactly one base group, the one the other groups' affected segments are measured against.
 - ``rules-check --segments DIR [--as-of DATE]``: resolves every active rule's scope, one line per rule;
@@ -318,10 +319,14 @@ def cmd_groups(args) -> int:
     if len(bases) != 1:
         raise BuildError(f"need exactly one base vehicle group (is_base), got {bases}")
     groups = sorted(groups, key=lambda g: not g.is_base)        # the base view first: the others use it
-    tmp = speeds_dir / f".groups-{as_of.isoformat()}.tmp"
-    final = speeds_dir / "groups" / as_of.isoformat()
+    if args.out is None:
+        tmp = speeds_dir / f".groups-{as_of.isoformat()}.tmp"
+        final = speeds_dir / "groups" / as_of.isoformat()
+    else:
+        final = Path(args.out)
+        tmp = final.with_name(f".{final.name}.tmp")
     _remove(tmp)
-    tmp.mkdir()
+    tmp.mkdir(parents=True)
     try:
         views = []
         for group in groups:
@@ -344,7 +349,7 @@ def cmd_groups(args) -> int:
             "orphans": orphans,
             "osm": {v.group.name: {"unparsed_conditional": v.report["unparsed_conditional"],
                                    "examples": v.report["examples"]} for v in views}})
-        final.parent.mkdir(exist_ok=True)
+        final.parent.mkdir(parents=True, exist_ok=True)
         _remove(final)
         tmp.rename(final)
     except BaseException:
@@ -465,6 +470,8 @@ def _parser() -> argparse.ArgumentParser:
         p.add_argument("--segments", required=True, metavar="DIR")
         if name == "groups":
             p.add_argument("--speeds", required=True, metavar="DIR")
+            p.add_argument("--out", type=Path, default=None, metavar="DIR",
+                           help="write the views here instead of <speeds>/groups/<as_of>")
         p.add_argument("--as-of", type=_iso_date, default=None, metavar="YYYY-MM-DD",
                        help="rules in force on this day (default today, UTC+7)")
         p.set_defaults(func=func)

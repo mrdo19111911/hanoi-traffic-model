@@ -358,6 +358,22 @@ class BuildCliTests(unittest.TestCase):
         self.assertFalse((SPD / "groups" / "2026-02-15").exists())
         self.assertFalse((SPD / ".groups-2026-02-15.tmp").exists())
 
+    def test_groups_out_dir(self):
+        R = self.fresh_root()
+        self.assertEqual(run(["--root", R, "import-rules", self.seed])[0], 0)
+        code, out = run(["--root", R, "speeds", "--segments", self.SEG])
+        SPD = Path(last_line(out))
+        out_dir = R / "release" / "groups"
+        code, out = run(["--root", R, "groups", "--segments", self.SEG, "--speeds", SPD, "--out", out_dir])
+        self.assertEqual((code, last_line(out)), (0, str(out_dir)), out)
+        self.assertEqual(sorted(p.name for p in out_dir.iterdir()),
+                         ["container.npz", "duoi2t.npz", "report.json", "tu2t.npz"])
+        self.assertFalse((SPD / "groups").exists())
+        self.assertEqual([p.name for p in out_dir.parent.iterdir()], ["groups"])   # no temp dir left behind
+        # a second run replaces the views in place
+        self.assertEqual(run(["--root", R, "groups", "--segments", self.SEG, "--speeds", SPD, "--out", out_dir])[0], 0)
+        self.assertEqual([p.name for p in out_dir.parent.iterdir()], ["groups"])
+
     def test_groups_needs_exactly_one_base_group_and_measures_against_it(self):
         R = self.fresh_root()
         doc = json.loads(json.dumps(SEED_DOC))

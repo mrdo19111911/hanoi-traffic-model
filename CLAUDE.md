@@ -57,6 +57,23 @@ Two generations of model coexist. Know which one you are touching.
 
 **Import layout:** `model/` and `download/` have no `__init__.py`. Scripts in `model/` import siblings flatly (`from spatial import ...`) and are run as scripts; Modules the backend reaches (`estimate_spatial.py` and, through the legacy fallback, `compare_spatial.py`) try a relative import first and fall back to the flat one, so they work both as `model.<name>` and as scripts; keep that pattern for any `model/` module they start importing. `PackageImportTests` checks this in a fresh interpreter. `crawl_spatial.py` adds the repo root to `sys.path`. `tests/test_estimate_spatial.py` puts `model/` on `sys.path`.
 
+## Speed matrix (`speedmatrix/`)
+
+Nationwide speed layer, vehicle-group views and the gate partition for the VRP matrix (spec `docs/superpowers/specs/2026-10-21-speed-matrix-system-design.md`). Outputs live under the gitignored `runtime/matrix/` (the default `--root`). Modules import relatively first, then flat; `build.py` and `update.py` put the repo root on `sys.path`.
+
+```powershell
+.venv/Scripts/python.exe -m speedmatrix.build import-rules FILE...          # seed rules, vehicle groups, holidays -> state.sqlite
+.venv/Scripts/python.exe -m speedmatrix.build segments --pbf PBF | speeds --segments DIR | groups --segments DIR --speeds DIR [--out DIR] | rules-check --segments DIR | status
+.venv/Scripts/python.exe -m speedmatrix.update run [--pbf PATH] [--force] [--seed FILE] [--min-free-gb GB]   # weekly release pipeline
+.venv/Scripts/python.exe -m speedmatrix.update serve [--port 5059] | stop | status | schedule [--day SUN] [--time 03:00] | unschedule
+```
+
+`speedmatrix.update` replaces `reports/gate_compose_spike/update_matrix.py`. Release layout under `runtime/matrix/`: `releases/<YYYYMMDD-HHMMSS>/` (`release.json`, `osrm/`, `graph/`, `labels_l*.npy`, `node_labels.npz`, `gates.npz`, `partition.json`, `rules.json`, `groups/`, `verify.json`, `logs/`), shared `segments/<sha>/` and `speeds/<version>/`, plus `current.json` (moved only by a promotion), `state.sqlite` (rules, groups, `jobs`), `server.json`, `update.lock`, `logs/`. Ports: 5058 build/verify, 5059 served matrix; 5000 and 8000 are refused. The only network call is the Geofabrik PBF and its `.md5`.
+
+- Decision 6: L1/L2 labels are frozen and carried over by OSM node id (v3.2 seed the first time); only new nodes are labelled, by the v3.2 polygons (L1) and network propagation (L2).
+- Decision 16: blocking checks (§6.6, §12.1, graph identities, rule errors, orphans of active `cao`/`tb` rules) stop the run at that step with `failed_checks` (exit 1) and no promotion; the rest are warnings.
+- Decision 24: the scheduled task `HanoiTrafficMatrixUpdate` and lock `runtime/matrix/update.lock` are the spike's; registering the task (`update schedule`) needs the user's explicit yes.
+
 ## Conventions
 
 - Day: 0 = Monday … 6 = Sunday. Slot: `HHMM` string. Hour: decimal (8.5 = 08:30). Times are local UTC+7 (`+07:00` in TomTom `departAt`).
