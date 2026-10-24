@@ -17,8 +17,10 @@ Pass B, shared walls, on the storage grid (lon/lat in units of 1e-6 degree, what
   2. remove overlaps: buildings are ranked OSM first, then Open Buildings by confidence (Microsoft, which has
      none, after Google), then larger first. Ground covered by several grown footprints goes to the highest-ranked
      one: final = grown - union(grown of higher-ranked neighbours). Neighbours then share the same wall, with no
-     overlap and no gap. A footprint left with under 50 % of its pass A area or under 6 m2 was a duplicate and is
-     dropped.
+     overlap and no gap. Noding on the grid moves an outline by up to about one unit, so groups of touching footprints
+     whose results come out overlapping (they stood under a unit apart) are noded again as one group; a footprint
+     still overlapping a higher-ranked one then gives it the shared ground. A footprint left with under 50 % of its
+     pass A area or under 6 m2 was a duplicate and is dropped.
   Both steps only look at a building's own surroundings, so a building near a cell edge comes out the same from
   either cell. Pass B never adds carriageway area, so it cannot put a building back on a road.
   An overlay GEOS refuses (TopologyException) is retried on make_valid inputs, then on inputs snapped to the grid
@@ -58,6 +60,8 @@ NB_MARGIN_DEG = 0.0006            # neighbours read from adjacent cells for pass
 WORKERS = max(1, round(0.6 * (os.cpu_count() or 1)))   # default processes: 60 % of the machine
 BISECT = 8                        # shift precision MAX_SHIFT_M / 2**8, about 1 cm
 CONF_OSM, CONF_MICROSOFT = 1.01, 0.69
+MERGE_ROUNDS = 6                  # re-partitions of components that snap rounding made overlap
+FACE_TOL = 0.01                   # units2: a union of faces differing more in area from its faces was bent
 GEOSError = shapely.errors.GEOSException
 RETRIES = [0]                     # overlays that raised and then succeeded on repaired inputs, in this process
 
@@ -384,19 +388,42 @@ def overlap_rows(t, n_own, bufs, box):
     members = groups(comp, comp.max() + 1)
     a1 = t['a1'].to_numpy()
     small = lambda k, x: shapely.is_empty(x) | (shapely.area(x) * afac[k] < np.maximum(KEEP_SHARE * a1[k], MIN_M2))
-    final = grown[:n_own].copy()
+    cnt = {'bent': 0, 'remerged': 0, 'safety': 0}
+    fin = grown.copy()                              # every footprint of the window: own ones final, neighbours as seen here
     topo = np.zeros(n_own, bool)                    # own buildings dropped because an overlay still failed
-    for c in np.unique(comp[:n_own]):
-        mem = members[c]
-        if len(mem) == 1:
-            continue
+
+    def faces_union(fs):
+        """Union of faces of one partition. Snap rounding can bend an edge of the union to a vertex near it and
+        push it into a neighbour's face; the faces cover the ground exactly, so then their coverage union (no
+        rounding) is used. A union that only lost ground (a sliver gap, no overlap) is kept as it is."""
+        u = overlay(shapely.union_all, fs, grid_size=GRID)
+        if abs(shapely.area(u) - shapely.area(fs).sum()) > FACE_TOL:
+            try:
+                cu = shapely.coverage_union_all(fs)
+                if overlay(shapely.difference, u, cu).area > FACE_TOL:
+                    u = cu; cnt['bent'] += 1
+            except GEOSError:                       # no coverage union: the grid union stays
+                pass
+        return largest(polys(u))
+
+    def set_face(k, fs, faces):
+        try:
+            fin[k] = faces_union(faces[fs]) if fs is not None else shapely.Polygon()
+            ok = True
+        except GEOSError:                           # dropped; its faces go to the next-ranked member, as a duplicate's
+            fin[k] = shapely.Polygon(); ok = False
+        if k < n_own:
+            topo[k] = not ok
+
+    def partition(mem):
+        """Faces of the noded outlines of mem, each to its highest-ranked live member; sets fin[mem]."""
         own_k = mem[mem < n_own]
         try:
             lines = overlay(shapely.union_all, shapely.boundary(grown[mem]), grid_size=GRID)
             faces = shapely.get_parts(shapely.polygonize(shapely.get_parts(lines)))
         except GEOSError:                           # no partition for this group: its own buildings are dropped
-            final[own_k] = shapely.Polygon(); topo[own_k] = True
-            continue
+            fin[own_k] = shapely.Polygon(); topo[own_k] = True
+            return
         faces = faces[shapely.area(faces) > 0]
         fi, mi = STRtree(grown[mem]).query(shapely.point_on_surface(faces), predicate='intersects')
         mk = mem[mi]
@@ -409,19 +436,78 @@ def overlap_rows(t, n_own, bufs, box):
             o = o[np.lexsort((fi[o], mk[o]))]
             ok, st = np.unique(mk[o], return_index=True)
             owned = dict(zip(ok.tolist(), np.split(fi[o], st[1:])))
-            for k in own_k.tolist():
+            for k in mem.tolist():
                 fs = owned.get(k)
                 if k in prev and (fs is None and prev[k] is None or fs is not None and prev[k] is not None and np.array_equal(fs, prev[k])):
                     continue
                 prev[k] = fs
-                try:
-                    final[k] = largest(polys(overlay(shapely.union_all, faces[fs], grid_size=GRID))) if fs is not None else shapely.Polygon()
-                except GEOSError:                   # dropped; its faces go to the next-ranked member, as a duplicate's
-                    final[k] = shapely.Polygon(); topo[k] = True
-            gone = own_k[small(own_k, final[own_k])]
+                set_face(k, fs, faces)
+            gone = own_k[small(own_k, fin[own_k])]
             if not len(gone):
                 break
             alive &= ~np.isin(mk, gone)
+
+    def overlap_area(x, y):
+        """Overlap area (units2) of the pairs fin[x], fin[y]; inf where GEOS still refuses (counts as overlapping)."""
+        try:
+            return shapely.area(shapely.intersection(fin[x], fin[y]))
+        except GEOSError:
+            out = np.empty(len(x))
+            for n_, (p, q) in enumerate(zip(x.tolist(), y.tolist())):
+                try:
+                    out[n_] = overlay(shapely.intersection, fin[p], fin[q]).area
+                except GEOSError:
+                    out[n_] = np.inf
+            return out
+
+    done = set()
+    for c in np.unique(comp[:n_own]):
+        if len(members[c]) > 1:
+            partition(members[c]); done.add(int(c))
+    # Snap rounding moves an outline by up to about one grid unit, so footprints of two components that stood
+    # less than that apart can come out overlapping. Such components are partitioned again as one (their outlines
+    # noded together), until no own footprint overlaps one of another component.
+    root = np.arange(comp.max() + 1)                # merged components: union-find over component ids
+    rc = comp
+    for _ in range(MERGE_ROUNDS):
+        a, b = STRtree(fin).query(fin[:n_own], predicate='intersects')
+        s = rc[a] != rc[b]
+        todo = sorted({int(c) for c in rc[b[s]]} - done)
+        if todo:                                    # neighbour components not partitioned yet
+            for c in todo:
+                mem = members[c] if rc is comp else np.flatnonzero(rc == c)
+                if len(mem) > 1:
+                    partition(mem)
+                done.add(c)
+            continue
+        hit = s.copy()
+        hit[s] = overlap_area(a[s], b[s]) > 0
+        if not hit.any():
+            break
+        for x, y in zip(rc[a[hit]].tolist(), rc[b[hit]].tolist()):
+            while root[x] != x: x = root[x]
+            while root[y] != y: y = root[y]
+            root[max(x, y)] = min(x, y)
+        while not np.array_equal(root, root[root]):
+            root = root[root]
+        rc = root[comp]
+        for c in np.unique(rc[a[hit]]).tolist():
+            partition(np.flatnonzero(rc == c)); done.add(c); cnt['remerged'] += 1
+    # Safety net: an own footprint still overlapping a higher-ranked one gives it the shared ground, and keeps one grid
+    # unit from it (snap rounding of the difference could otherwise bend an edge back into it).
+    a, b = STRtree(fin).query(fin[:n_own], predicate='intersects')
+    s = (a != b) & (rank[b] < rank[a])
+    if s.any():
+        s[s] = overlap_area(a[s], b[s]) > 0
+        for k in sorted(set(a[s].tolist()), key=lambda k: rank[k]):
+            hb = b[s & (a == k)]
+            try:
+                hb = shapely.buffer(overlay(shapely.union_all, fin[hb], grid_size=GRID), GRID, join_style='mitre')
+                fin[k] = largest(polys(overlay(shapely.difference, fin[k], hb, grid_size=GRID)))
+            except GEOSError:
+                fin[k] = shapely.Polygon(); topo[k] = True
+            cnt['safety'] += 1
+    final = fin[:n_own]
     lost = (shapely.area(grown[:n_own]) - shapely.area(final)) * afac[:n_own]
     keep = ~small(np.arange(n_own), final)
     fk = final[keep]
@@ -444,7 +530,8 @@ def overlap_rows(t, n_own, bufs, box):
                     'fill_m2': fill_m2[:n_own][keep], 'overlap_m2': lost[keep], 'road_gap_m': road_gap, 'nb_gap_m': nb_gap})
     return res, {'filled': int(((fill_m2[:n_own] > 0.01) & keep).sum()),
                  'trimmed': int(((lost > 0.01) & keep).sum()), 'dropped_dup': int((~keep & ~topo).sum()),
-                 'dropped_topology': int(topo.sum()), 'skipped_topology': skipped, 'retried_topology': RETRIES[0] - retried0}
+                 'dropped_topology': int(topo.sum()), 'skipped_topology': skipped, 'retried_topology': RETRIES[0] - retried0,
+                 'bent_unions': cnt['bent'], 'remerged': cnt['remerged'], 'safety_net': cnt['safety']}
 
 
 def run(fn, jobs, workers, label, t0):
@@ -503,6 +590,7 @@ def main():
             'cut_at_road': tot(sa, 'cut'), 'dropped_on_road': tot(sa, 'dropped_road'),
             'gap_filled': tot(sb, 'filled'), 'trimmed_overlap': tot(sb, 'trimmed'), 'dropped_duplicate': tot(sb, 'dropped_dup'),
             'dropped_topology': tot(sb, 'dropped_topology'), 'skipped_topology': tot(sb, 'skipped_topology'),
+            'bent_unions': tot(sb, 'bent_unions'), 'remerged': tot(sb, 'remerged'), 'safety_net': tot(sb, 'safety_net'),
             'buildings_out': int(sum(t.num_rows for t in tabs)), 'seconds': round(time.time() - t0)}
     json.dump(meta, open(p(a.dst.replace('.parquet', '.meta.json')), 'w'), indent=1)
     print('wrote', p(a.dst), json.dumps(meta))

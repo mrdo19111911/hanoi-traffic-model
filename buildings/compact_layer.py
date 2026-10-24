@@ -7,8 +7,12 @@ Footprint encoding (all coordinates in 1e-6 degrees, about 0.1 m):
   a road or a neighbour (most tube houses) is therefore always a ring. Stored as centre
   (lon_e6, lat_e6), length_dm, width_dm (metres x 10) and angle_cdeg (direction of the long side,
   clockwise from north, hundredths of a degree, 0-17999). No ring.
+  A footprint with no neighbour or road within 5 m (gaps are recorded up to GAP_M) counts that as its gap.
 - ring: everything else. lon_e6/lat_e6 is the first vertex and `ring` holds int16 little-endian
-  (dx, dy) steps to each next vertex of the outer ring (closing vertex dropped). Holes are dropped.
+  (dx, dy) steps to each next vertex of the outer ring (closing vertex dropped). A footprint with holes (a
+  courtyard, or ground pass B gave to a building or road inside it) is stored as one keyhole ring: each hole is
+  joined to the outer ring by a zero-width slit between a vertex of each (keyhole), there and back. decode() sees
+  the repeated vertices and rebuilds the holes exactly, so the decoded footprint never covers what is in a hole.
 decode() in this file turns a row back into a shapely polygon.
 
 Inputs: vn_buildings_clean.parquet (fitted geometry and gaps) and vn_buildings.parquet (heights), joined on id.
@@ -21,6 +25,7 @@ import duckdb, numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 
 RECT_FILL = 0.95
 RECT_SAFE_M = 0.15                 # covers centre/size/angle rounding of the rectangle
+GAP_M = 5.0                        # gaps are recorded up to this distance (fit_footprints.py); NaN = further
 SCHEMA = pa.schema([
     ('id', pa.uint32()), ('src', pa.dictionary(pa.int8(), pa.string())),
     ('lon_e6', pa.int32()), ('lat_e6', pa.int32()),
@@ -31,6 +36,31 @@ SCHEMA = pa.schema([
 
 def metres_per_deg(lat):
     return 111320 * math.cos(math.radians(lat)), 110574
+
+
+def keyhole(g):
+    """Polygon with holes, vertices on the integer grid (1e-6 degree units) -> one ring (n x 2, not closed) that
+    goes round the outer ring, then along a slit to a hole, round the hole and back, for each hole. The slit joins
+    the closest pair of vertices whose segment lies inside the footprint and crosses no earlier slit. None when no
+    such pair is found among the 200 closest."""
+    shell = np.asarray(g.exterior.coords)[:-1]
+    slits = []
+    for r in g.interiors:
+        h = np.asarray(r.coords)[:-1]
+        d = ((h[:, None, :] - shell[None, :, :]) ** 2).sum(-1)
+        for f in np.argsort(d, axis=None, kind='stable')[:200]:
+            a, b = divmod(int(f), len(shell))
+            if d.flat[f] == 0:                      # the hole touches the outer ring at this vertex
+                break
+            seg = shapely.LineString([h[a], shell[b]])
+            if g.contains(seg) and not any(seg.crosses(x) or seg.overlaps(x) for x in slits):
+                slits.append(seg)
+                break
+        else:
+            return None
+        S, H = np.roll(shell, -b, axis=0), np.roll(h, -a, axis=0)
+        shell = np.vstack([S, S[:1], H, H[:1]])
+    return shell
 
 
 def encode(geoms, lat_ref, gap=None):
@@ -44,10 +74,15 @@ def encode(geoms, lat_ref, gap=None):
     kx, ky = metres_per_deg(lat_ref)
     if gap is not None:
         bulge = shapely.hausdorff_distance(geoms, rect) * max(kx, ky)
-        is_rect &= np.isnan(gap) | (bulge + RECT_SAFE_M < gap)
+        is_rect &= bulge + RECT_SAFE_M < np.where(np.isnan(gap), GAP_M, gap)
     out = {k: np.zeros(n, dt) for k, dt in (('lon_e6', np.int32), ('lat_e6', np.int32), ('length_dm', np.uint16),
                                              ('width_dm', np.uint16), ('angle_cdeg', np.uint16))}
     ring = np.full(n, None, object)
+    kh = {}
+    for i in np.flatnonzero(~is_rect & (nholes > 0)):
+        k = keyhole(shapely.transform(geoms[i], lambda c: np.round(c * 1e6)))
+        if k is not None:
+            kh[i] = k
     for i in range(n):
         if is_rect[i]:
             c = np.asarray(rect[i].exterior.coords)[:4]
@@ -60,7 +95,7 @@ def encode(geoms, lat_ref, gap=None):
             out['length_dm'][i], out['width_dm'][i] = min(round(max(l1, l2) * 10), 65535), min(round(min(l1, l2) * 10), 65535)
             out['angle_cdeg'][i] = round(ang * 100) % 18000
         else:
-            c = np.round(np.asarray(ext[i].coords)[:-1] * 1e6).astype(np.int64)
+            c = kh[i].astype(np.int64) if i in kh else np.round(np.asarray(ext[i].coords)[:-1] * 1e6).astype(np.int64)
             d = np.diff(c, axis=0)
             if len(d) and np.abs(d).max() > 32767:          # very large outline: fall back to its rectangle
                 is_rect[i] = True; ring[i] = None
@@ -90,7 +125,11 @@ def decode(row):
         return shapely.Polygon(pts)
     d = np.frombuffer(row['ring'], '<i2').reshape(-1, 2).astype(np.int64)
     c = np.vstack([[0, 0], np.cumsum(d, axis=0)]) + [row['lon_e6'], row['lat_e6']]
-    return shapely.Polygon(c / 1e6)
+    p = shapely.Polygon(c / 1e6)
+    if len(np.unique(c, axis=0)) < len(c):         # a keyhole ring (repeated vertices): rebuild its holes
+        parts = [x for x in shapely.get_parts(shapely.make_valid(p)) if x.geom_type == 'Polygon']
+        p = max(parts, key=lambda x: x.area) if parts else p
+    return p
 
 
 def encode_rows(ids, src, wkb, hdm, hsrc, fl, gap):
