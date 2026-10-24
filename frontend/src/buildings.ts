@@ -136,7 +136,7 @@ export const BUILDING_BINS:{min:number;label:string;color:string}[]=[{min:1,labe
 // Floors, or the height at 3.2 m a floor when only the height is known; null when neither is.
 export function floorsOf(f:BuildingFile,i:number){return f.floors[i]?f.floors[i]:f.height[i]?Math.max(1,Math.round(f.height[i]/32)):null;}
 export function floorColor(floors:number|null){if(!floors)return UNKNOWN_BUILDING_COLOR;let c=BUILDING_BINS[0].color;for(const b of BUILDING_BINS)if(floors>=b.min)c=b.color;return c;}
-const SRC_LABEL:Record<string,string>={osm:'OSM',google:'Google',microsoft:'Microsoft'},HSRC_LABEL:Record<string,string>={osm:'OSM',osm_part:'OSM (khối nhà)',g25:'Google 2.5D',g25cal:'Google, đã hiệu chỉnh',est:'ước tính từ nhà lân cận',wikidata:'Wikidata',sibling:'theo tòa cùng cụm'};
+const SRC_LABEL:Record<string,string>={osm:'OSM',google:'Google',microsoft:'Microsoft'},HSRC_LABEL:Record<string,string>={osm:'OSM',osm_part:'OSM (khối nhà)',g25:'Google 2.5D',g25cal:'Google, đã hiệu chỉnh',est:'ước tính từ nhà lân cận',wikidata:'Wikidata',sibling:'theo tòa cùng cụm',frontrow:'nhà mặt đường, tối thiểu 3 tầng'};
 const vn=(v:number,d=0)=>v.toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
 export const mb=(bytes:number)=>vn(bytes/1e6,1);
 export function buildingLines(f:BuildingFile,i:number):string[]{

@@ -7774,7 +7774,7 @@
    "province_iso": "VN-HN",
    "buildings": 334282,
    "dropped_check": 20,
-   "bytes": 8212243,
+   "bytes": 8225454,
    "bbox": [
     105.615872,
     21.071716,
@@ -7840,7 +7840,7 @@
    "province_iso": "VN-HN",
    "buildings": 54398,
    "dropped_check": 3,
-   "bytes": 1380731,
+   "bytes": 1382765,
    "bbox": [
     105.413907,
     21.09461,
@@ -7866,7 +7866,7 @@
    "province_iso": "VN-HN",
    "buildings": 341454,
    "dropped_check": 7,
-   "bytes": 8226928,
+   "bytes": 8243016,
    "bbox": [
     105.294439,
     20.911482,
@@ -7947,7 +7947,7 @@
    "province_iso": "VN-HN",
    "buildings": 311552,
    "dropped_check": 26,
-   "bytes": 7897376,
+   "bytes": 7916886,
    "bbox": [
     105.781933,
     20.922684,
@@ -8013,7 +8013,7 @@
    "province_iso": "VN-HN",
    "buildings": 36450,
    "dropped_check": 6,
-   "bytes": 976115,
+   "bytes": 978367,
    "bbox": [
     105.756024,
     21.051972,
@@ -8044,7 +8044,7 @@
    "province_iso": "VN-HN",
    "buildings": 281081,
    "dropped_check": 6,
-   "bytes": 7191831,
+   "bytes": 7201967,
    "bbox": [
     105.515888,
     20.970613,
@@ -8110,7 +8110,7 @@
    "province_iso": "VN-HN",
    "buildings": 36296,
    "dropped_check": 4,
-   "bytes": 991641,
+   "bytes": 994462,
    "bbox": [
     105.724136,
     21.036638,
@@ -8141,7 +8141,7 @@
    "province_iso": "VN-HN",
    "buildings": 41746,
    "dropped_check": 2,
-   "bytes": 1166621,
+   "bytes": 1168630,
    "bbox": [
     105.804685,
     21.028395,
@@ -8172,7 +8172,7 @@
    "province_iso": "VN-HN",
    "buildings": 67921,
    "dropped_check": 9,
-   "bytes": 1828999,
+   "bytes": 1832216,
    "bbox": [
     105.816977,
     21.002848,
@@ -8203,7 +8203,7 @@
    "province_iso": "VN-HN",
    "buildings": 66853,
    "dropped_check": 10,
-   "bytes": 1774527,
+   "bytes": 1777536,
    "bbox": [
     105.871395,
     20.99669,
@@ -8234,7 +8234,7 @@
    "province_iso": "VN-HN",
    "buildings": 32710,
    "dropped_check": 11,
-   "bytes": 903555,
+   "bytes": 904607,
    "bbox": [
     105.779109,
     21.011196,
@@ -8265,7 +8265,7 @@
    "province_iso": "VN-HN",
    "buildings": 28051,
    "dropped_check": 3,
-   "bytes": 797010,
+   "bytes": 797693,
    "bbox": [
     105.802301,
     21.002085,
@@ -8296,7 +8296,7 @@
    "province_iso": "VN-HN",
    "buildings": 26585,
    "dropped_check": 9,
-   "bytes": 757806,
+   "bytes": 758355,
    "bbox": [
     105.830183,
     21.008147,
@@ -8327,7 +8327,7 @@
    "province_iso": "VN-HN",
    "buildings": 49249,
    "dropped_check": 13,
-   "bytes": 1376917,
+   "bytes": 1378980,
    "bbox": [
     105.726667,
     20.990644,
@@ -8358,7 +8358,7 @@
    "province_iso": "VN-HN",
    "buildings": 36905,
    "dropped_check": 5,
-   "bytes": 1030902,
+   "bytes": 1032117,
    "bbox": [
     105.78393,
     20.979686,
@@ -8389,7 +8389,7 @@
    "province_iso": "VN-HN",
    "buildings": 34606,
    "dropped_check": 7,
-   "bytes": 967919,
+   "bytes": 969797,
    "bbox": [
     105.820816,
     20.983607,
@@ -8420,7 +8420,7 @@
    "province_iso": "VN-HN",
    "buildings": 46714,
    "dropped_check": 0,
-   "bytes": 1277313,
+   "bytes": 1279467,
    "bbox": [
     105.841297,
     20.979835,
@@ -8451,7 +8451,7 @@
    "province_iso": "VN-HN",
    "buildings": 55554,
    "dropped_check": 2,
-   "bytes": 1545985,
+   "bytes": 1549243,
    "bbox": [
     105.730413,
     20.954708,
@@ -8482,7 +8482,7 @@
    "province_iso": "VN-HN",
    "buildings": 39447,
    "dropped_check": 3,
-   "bytes": 1118545,
+   "bytes": 1120224,
    "bbox": [
     105.792456,
     20.949915,
@@ -8513,7 +8513,7 @@
    "province_iso": "VN-HN",
    "buildings": 31503,
    "dropped_check": 4,
-   "bytes": 882841,
+   "bytes": 884725,
    "bbox": [
     105.841093,
     20.943661,
@@ -8544,7 +8544,7 @@
    "province_iso": "VN-HN",
    "buildings": 13287,
    "dropped_check": 1,
-   "bytes": 368853,
+   "bytes": 369499,
    "bbox": [
     105.755346,
     20.942723,
@@ -8565,7 +8565,7 @@
    "province_iso": "VN-HN",
    "buildings": 71483,
    "dropped_check": 12,
-   "bytes": 1864068,
+   "bytes": 1870604,
    "bbox": [
     105.662715,
     20.885627,
@@ -8596,7 +8596,7 @@
    "province_iso": "VN-HN",
    "buildings": 307662,
    "dropped_check": 13,
-   "bytes": 7734357,
+   "bytes": 7761368,
    "bbox": [
     105.553029,
     20.792015,
@@ -8662,7 +8662,7 @@
    "province_iso": "VN-HN",
    "buildings": 248324,
    "dropped_check": 11,
-   "bytes": 6414524,
+   "bytes": 6423195,
    "bbox": [
     105.729242,
     20.780562,
@@ -8728,7 +8728,7 @@
    "province_iso": "VN-HN",
    "buildings": 353127,
    "dropped_check": 12,
-   "bytes": 8562250,
+   "bytes": 8575595,
    "bbox": [
     105.647917,
     20.566119,

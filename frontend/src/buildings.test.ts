@@ -104,8 +104,8 @@ describe('spatial index and draw cap',()=>{
   expect(buildingLines(f,1)).toEqual(['Nhà #2','Số tầng: chưa rõ','Chiều cao: chưa rõ','Nguồn hình: OSM']);
   const g=synthetic([105.8,105.801,105.802],true,['osm_part','g25cal','est']);
   expect([0,1,2].map(i=>buildingLines(g,i)[2])).toEqual(['Chiều cao: 9,5 m (OSM (khối nhà))','Chiều cao: 9,5 m (Google, đã hiệu chỉnh)','Chiều cao: 9,5 m (ước tính từ nhà lân cận)']);
-  const w=synthetic([105.8,105.801],true,['wikidata','sibling']);
-  expect([0,1].map(i=>buildingLines(w,i)[2])).toEqual(['Chiều cao: 9,5 m (Wikidata)','Chiều cao: 9,5 m (theo tòa cùng cụm)']);
+  const w=synthetic([105.8,105.801,105.802],true,['wikidata','sibling','frontrow']);
+  expect([0,1,2].map(i=>buildingLines(w,i)[2])).toEqual(['Chiều cao: 9,5 m (Wikidata)','Chiều cao: 9,5 m (theo tòa cùng cụm)','Chiều cao: 9,5 m (nhà mặt đường, tối thiểu 3 tầng)']);
  });
 });
 
