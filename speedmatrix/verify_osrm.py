@@ -6,13 +6,18 @@ The base speed layer at one sample slot is written as an OSRM ``--segment-speed-
 ``osrm-customize`` to a full copy of the release's matrix dataset. Four blocking checks follow:
 
 - every graph segment's real-segment entry in the customized ``.geometry`` has data source 1 (the speed file);
-- at least 99.9% of the segments agree with OSRM's customized duration within max(1 ds, 1%);
+- at least 99.9% of the segments agree with OSRM's customized duration within max(1 ds, 1%), ours rounded the way
+  osrm-customize rounds (``max(1, round_half_away(36 * len / kmh))``);
 - a private ``osrm-routed`` on the copy answers ``/table`` between sampled segment midpoints, and the reference router
-  (``staticroute``) on OSRM's own customized segment durations agrees within max(2 s, 0.2%) on every pair; a pair
-  reachable on one side only counts as over. OSRM measures segment length with the FCC approximation and the graph
-  with haversine (up to 0.5% apart by bearing), so feeding the router 36·len/kmh would fail long north-south trips
-  on length alone: the length formula is the segment check's job, the table check is about the graph's structure;
+  (``staticroute``) on our own durations ``36 * len / kmh + seg_fixed_ds`` agrees within max(2 s, 0.2%) on every
+  pair; a pair reachable on one side only counts as over. The graph measures ``len`` with OSRM's own formula
+  (``geo.osrm_length_m``), so both sides price a segment alike;
 - at least 90% of the planned pairs were compared.
+
+A directed node pair carried by several graph segments with different speeds gets the lowest speed in the speed
+file (OSRM keys it by node pair); both checks use that resolved speed for those segments, and the pairs are counted
+(``speed_file_conflicts``). The pid and identity of the private osrm-routed are kept in
+``<release>/../.verify_routed_<port>.json`` while it runs, so the next run stops one that a hard-killed run left.
 
 OSRM is queried first and stopped before the router workers start, so the two never hold memory together
 (Decision 30). ``verify.json`` holds one entry per check (``value``, ``ok``, ``blocking`` and details); the copy and
@@ -21,6 +26,7 @@ whatever the checks say (Decision 27).
 """
 import argparse
 import gc
+import http.client
 import json
 import os
 from pathlib import Path
@@ -48,14 +54,14 @@ finally:
 
 try:
     from .geo import haversine_m
-    from .graph import TurnGraph, load_graph
+    from .graph import TurnGraph, load_graph, segment_ds
     from .osrmfiles import DURATION_BITS, read_block, read_datasources, read_packed
     from .speeds import ReleaseMismatch, load_layer
     from .staticroute import PER_WORKER_GB, parallel_table
     from .sysres import StepResult, cpu_workers, default_workers, free_disk_gb, run_measured
 except ImportError:  # pragma: no cover - run as a script
     from speedmatrix.geo import haversine_m
-    from speedmatrix.graph import TurnGraph, load_graph
+    from speedmatrix.graph import TurnGraph, load_graph, segment_ds
     from speedmatrix.osrmfiles import DURATION_BITS, read_block, read_datasources, read_packed
     from speedmatrix.speeds import ReleaseMismatch, load_layer
     from speedmatrix.staticroute import PER_WORKER_GB, parallel_table
@@ -77,6 +83,8 @@ COPY_MARGIN_GB = 2.0
 ROUTED_THREADS = 4
 ROUTED_MAX_TABLE = 2500
 ROUTED_READY_S = 600
+STOP_WAIT_S = 60
+KILL_WAIT_S = 30
 SPEED_ROWS_CHUNK = 1_000_000
 _CHUNK = 1 << 22
 _EXAMPLES = 20
@@ -112,9 +120,10 @@ def seg_kmh_from_layer(g: TurnGraph, layer, speeds_report: dict) -> np.ndarray:
     return layer.at(*SAMPLE_SLOT)[np.asarray(g.seg_row)].astype(np.float32)
 
 
-def _write_speed_rows(g: TurnGraph, seg_kmh, path) -> tuple[int, int]:
-    """Write the speed file; (rows, conflicting pairs). A directed node pair carried by several graph segments with
-    different speeds gets the lowest one (OSRM keys the file by node pair); such pairs are counted."""
+def _write_speed_rows(g: TurnGraph, seg_kmh, path) -> tuple[int, int, np.ndarray]:
+    """Write the speed file; (rows, conflicting pairs, resolved float32 (S,) km/h). A directed node pair carried by
+    several graph segments with different speeds gets the lowest one (OSRM keys the file by node pair); such pairs
+    are counted, and the resolved km/h is what OSRM applies to every segment."""
     kmh = np.asarray(seg_kmh, dtype=np.float64)
     if kmh.shape != (g.n_segments,):
         raise ValueError(f"seg_kmh has shape {kmh.shape}, the graph has {g.n_segments} segments")
@@ -129,15 +138,17 @@ def _write_speed_rows(g: TurnGraph, seg_kmh, path) -> tuple[int, int]:
     tail = tail[order]
     head = head[order]
     kmh = kmh[order]
-    del order
     first = np.ones(len(tail), dtype=bool)
     first[1:] = (tail[1:] != tail[:-1]) | (head[1:] != head[:-1])
     differs = ~first
     differs[1:] &= kmh[1:] != kmh[:-1]          # sorted by km/h inside a pair: any change is a conflict
-    group = np.cumsum(first, dtype=np.int32)
+    group = np.cumsum(first, dtype=np.int32) - 1
     conflicts = len(np.unique(group[differs]))
-    del group, differs
+    del differs
     tail, head, kmh = tail[first], head[first], kmh[first]
+    resolved = np.empty(len(order), dtype=np.float32)
+    resolved[order] = kmh[group]                # the lowest km/h of the segment's node pair
+    del order, group
     path = Path(path)
     tmp = path.with_name(path.name + ".tmp")
     with tmp.open("w", encoding="ascii", newline="\n") as out:
@@ -146,7 +157,7 @@ def _write_speed_rows(g: TurnGraph, seg_kmh, path) -> tuple[int, int]:
             out.write("".join(f"{a},{b},{k}\n" for a, b, k in zip(tail[s:e].tolist(), head[s:e].tolist(),
                                                                   kmh[s:e].tolist())))
     tmp.replace(path)
-    return len(tail), conflicts
+    return len(tail), conflicts, resolved
 
 
 def write_speed_file(g: TurnGraph, seg_kmh, path) -> int:
@@ -243,11 +254,85 @@ def _answers(port: int) -> bool:
         return False
 
 
+def _handle_identity(kernel, handle):
+    """``manage.process_identity``'s {executable, created} read through an already open process handle."""
+    from ctypes import byref, create_unicode_buffer
+    from ctypes import wintypes
+    size = wintypes.DWORD(32768)
+    name = create_unicode_buffer(size.value)
+    times = [wintypes.FILETIME() for _ in range(4)]
+    if not kernel.QueryFullProcessImageNameW(handle, 0, name, byref(size)):
+        return None
+    if not kernel.GetProcessTimes(handle, *[byref(t) for t in times]):
+        return None
+    return {"executable": str(Path(name.value).resolve()),
+            "created": (times[0].dwHighDateTime << 32) | times[0].dwLowDateTime}
+
+
+def _terminate_if(pid: int, identity: dict, timeout_s: float = None) -> str:
+    """Terminate ``pid`` only when its identity equals ``identity``. The check and the termination go through one
+    process handle, so a reused pid can never be hit. Returns "not_ours" (gone, or another process now),
+    "stopped", or "still_running" (ours, but it did not exit within ``timeout_s``)."""
+    import ctypes
+    from ctypes import wintypes
+    timeout_s = STOP_WAIT_S if timeout_s is None else timeout_s
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+                                                  ctypes.POINTER(wintypes.DWORD)]
+    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+    kernel.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
+    kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel.WaitForSingleObject.restype = wintypes.DWORD
+    handle = kernel.OpenProcess(0x1000 | 0x0001 | 0x00100000, False, int(pid))  # QUERY_LIMITED | TERMINATE | SYNC
+    if not handle:
+        return "not_ours"
+    try:
+        if _handle_identity(kernel, handle) != identity:
+            return "not_ours"
+        if kernel.WaitForSingleObject(handle, 0) == 0:          # already exited
+            return "stopped"
+        kernel.TerminateProcess(handle, 1)
+        return "stopped" if kernel.WaitForSingleObject(handle, int(timeout_s * 1000)) == 0 else "still_running"
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def _reap_stale(run_file: Path):
+    """Stop the osrm-routed that a hard-killed earlier run left behind, as recorded in ``run_file``, when it is an
+    osrm-routed whose identity still matches; then drop the file. Returns None when there was no file."""
+    if not run_file.is_file():
+        return None
+    try:
+        doc = json.loads(run_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    pid, identity = doc.get("pid"), doc.get("identity")
+    result = "not_ours"
+    if isinstance(pid, int) and isinstance(identity, dict) \
+            and Path(str(identity.get("executable", ""))).name.lower() == "osrm-routed.exe":
+        result = _terminate_if(pid, identity)
+    if result != "still_running":
+        run_file.unlink(missing_ok=True)
+    print(f"stale osrm-routed from {run_file.name} (pid {pid}): {result}", file=sys.stderr)
+    return result
+
+
+def _warn(message: str) -> None:
+    print(f"warning: {message}", file=sys.stderr)
+
+
 class Routed:
-    """A private ``osrm-routed`` (MLD) on ``base`` at 127.0.0.1:``port`` for the duration of a ``with`` block."""
+    """A private ``osrm-routed`` (MLD) on ``base`` at 127.0.0.1:``port`` for the duration of a ``with`` block.
+
+    With ``run_file`` the pid and process identity are recorded there while it runs, so a later run stops an
+    osrm-routed that a hard-killed run left behind (``_reap_stale``, identity checked), with no manual step.
+    """
 
     def __init__(self, base, port, tools, *, threads=ROUTED_THREADS, max_table_size=ROUTED_MAX_TABLE, log_path=None,
-                 ready_s=ROUTED_READY_S):
+                 ready_s=ROUTED_READY_S, run_file=None):
         self.port = _check_port(port)
         self.base = Path(base)
         self.tools = Path(tools)
@@ -255,6 +340,8 @@ class Routed:
         self.max_table_size = max_table_size
         self.log_path = Path(log_path) if log_path else self.base.parent / "routed.log"
         self.ready_s = ready_s
+        self.run_file = Path(run_file) if run_file else None
+        self.stale = None
         self.proc = None
         self.identity = None
         self._log = None
@@ -265,6 +352,8 @@ class Routed:
                 "--max-table-size", str(self.max_table_size), str(self.base.resolve())]
 
     def __enter__(self):
+        if self.run_file is not None:
+            self.stale = _reap_stale(self.run_file)
         _free_port(self.port)
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self._log = self.log_path.open("ab")
@@ -275,6 +364,10 @@ class Routed:
             self.identity = manage.process_identity(self.proc.pid)
             if self.identity is None:
                 raise RuntimeError(f"osrm-routed exited before its identity was recorded, see {self.log_path}")
+            if self.run_file is not None:
+                self.run_file.parent.mkdir(parents=True, exist_ok=True)
+                _write_json(self.run_file, {"pid": self.proc.pid, "identity": self.identity, "port": self.port,
+                                            "base": str(self.base.resolve())})
             deadline = time.monotonic() + self.ready_s
             while True:
                 code = self.proc.poll()
@@ -286,20 +379,43 @@ class Routed:
                     raise RuntimeError(f"osrm-routed did not answer within {self.ready_s} s, see {self.log_path}")
                 time.sleep(0.5)
         except BaseException:
-            self._stop()
+            try:
+                self._stop()
+            except Exception as e:                    # never hide the error that brought us here
+                _warn(f"stopping osrm-routed failed ({type(e).__name__}: {e})")
             raise
 
-    def __exit__(self, *exc):
-        self._stop()
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            self._stop()
+        except Exception as e:
+            if exc_type is None:
+                raise
+            _warn(f"stopping osrm-routed failed ({type(e).__name__}: {e}); the original error follows")
         return False
 
     def _stop(self) -> None:
-        """Terminate the process this object started, and only when its identity is unchanged."""
+        """Terminate the process this object started, only while its identity is unchanged; escalate to kill()
+        when it does not exit in time. The run file goes once the process is gone."""
+        proc = self.proc
         try:
-            if self.proc is not None and self.proc.poll() is None and self.identity is not None \
-                    and manage.process_identity(self.proc.pid) == self.identity:
-                self.proc.terminate()
-                self.proc.wait(60)
+            if proc is None:
+                return
+            if proc.poll() is None:
+                if self.identity is None or manage.process_identity(proc.pid) != self.identity:
+                    _warn(f"osrm-routed pid {proc.pid} no longer has the identity it started with; left alone")
+                    return
+                proc.terminate()
+                try:
+                    proc.wait(STOP_WAIT_S)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    try:
+                        proc.wait(KILL_WAIT_S)
+                    except subprocess.TimeoutExpired:
+                        raise RuntimeError(f"osrm-routed pid {proc.pid} did not exit after kill()") from None
+            if self.run_file is not None:
+                self.run_file.unlink(missing_ok=True)
         finally:
             self.proc = None
             if self._log is not None:
@@ -318,7 +434,7 @@ class OsrmClient:
         try:
             with _OPENER.open(f"http://127.0.0.1:{self.port}{path}", timeout=self.timeout_s) as response:
                 data = json.load(response)
-        except (urllib.error.URLError, OSError, ValueError) as e:     # no exception text (spec §13)
+        except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as e:  # spec §13
             raise RuntimeError(f"{type(e).__name__}: osrm-routed request failed") from None
         if data.get("code") != "Ok":
             raise RuntimeError(f"osrm-routed answered {data.get('code')!r}")
@@ -509,6 +625,12 @@ def _customized_ds(g: TurnGraph, base_copy) -> np.ndarray:
     return out
 
 
+def osrm_segment_ds(len_m, kmh) -> np.ndarray:
+    """osrm-customize's duration of a speed-file row: ``max(1, round_half_away(36 * len / kmh))`` deciseconds."""
+    x = 36.0 * np.asarray(len_m, dtype=np.float64) / np.asarray(kmh, dtype=np.float64)
+    return np.maximum(1.0, np.floor(x + 0.5))
+
+
 def _agreement(g: TurnGraph, seg_kmh, theirs: np.ndarray) -> dict:
     S = g.n_segments
     diff = np.empty(S, dtype=np.int32)
@@ -516,8 +638,7 @@ def _agreement(g: TurnGraph, seg_kmh, theirs: np.ndarray) -> dict:
     within = 0
     for start in range(0, S, _CHUNK):
         stop = min(start + _CHUNK, S)
-        kmh = np.asarray(seg_kmh[start:stop], dtype=np.float64)
-        ours = np.rint(36.0 * np.asarray(g.seg_len_m[start:stop], dtype=np.float64) / kmh)
+        ours = osrm_segment_ds(g.seg_len_m[start:stop], seg_kmh[start:stop])
         t = theirs[start:stop].astype(np.float64)
         d = np.abs(ours - t)
         diff[start:stop] = d
@@ -530,7 +651,7 @@ def _agreement(g: TurnGraph, seg_kmh, theirs: np.ndarray) -> dict:
 
 
 def segment_agreement(g: TurnGraph, seg_kmh, base_copy) -> dict:
-    """Share of graph segments whose ``round(36 * len / kmh)`` is within max(1 ds, 1%) of the customized
+    """Share of graph segments whose ``osrm_segment_ds(len, kmh)`` is within max(1 ds, 1%) of the customized
     ``.geometry`` duration of the same entry; ``rel_p01``/``rel_p99`` are percentiles of (ours - OSRM) / OSRM."""
     return _agreement(g, seg_kmh, _customized_ds(g, base_copy))
 
@@ -548,6 +669,16 @@ def _remove(path: Path) -> None:
             gc.collect()                             # a mapped .npy cannot be deleted on Windows while mapped
             time.sleep(0.5 * (attempt + 1))
     shutil.rmtree(path)
+
+
+def _cleanup(work: Path, quiet: bool) -> None:
+    gc.collect()
+    try:
+        _remove(work)
+    except OSError as e:
+        if not quiet:
+            raise
+        _warn(f"could not remove {work} ({type(e).__name__})")
 
 
 def _write_json(path: Path, doc) -> None:
@@ -572,7 +703,7 @@ def verify_release(release_dir, speeds_dir, tools, port, workers, points: int = 
     work.mkdir(parents=True)
     try:
         speed_file = work / "speeds.csv"
-        rows, conflicts = _write_speed_rows(g, seg_kmh, speed_file)
+        rows, conflicts, seg_kmh = _write_speed_rows(g, seg_kmh, speed_file)
         copy_dataset(data_dir, work / "osrm")
         base_copy = dataset_base(work / "osrm")
         log = logs / "verify_customize.log"
@@ -582,28 +713,26 @@ def verify_release(release_dir, speeds_dir, tools, port, workers, points: int = 
         fwd_src, rev_src = read_datasources(base_copy)
         coverage = datasource_coverage(g, fwd_src, rev_src)
         del fwd_src, rev_src
-        osrm_ds = _customized_ds(g, base_copy)
-        agreement = _agreement(g, seg_kmh, osrm_ds)
+        agreement = _agreement(g, seg_kmh, _customized_ds(g, base_copy))
         candidates = sample_points(g, 2 * points, SAMPLE_SEED, mask)
-        with Routed(base_copy, port, tools, log_path=logs / "verify_routed.log"):
+        with Routed(base_copy, port, tools, log_path=logs / "verify_routed.log",
+                    run_file=release.parent / f".verify_routed_{port}.json"):
             chosen, theirs, drops = _osrm_answers(OsrmClient(port), g, candidates, points)
-        # osrm-routed is stopped: only now the router workers start (Decision 30)
-        # our side runs on OSRM's own customized segment durations (plus the folded node entries, which customize
-        # leaves alone): OSRM measures length with the FCC approximation, the graph with haversine, which differ
-        # by up to 0.5% by bearing; that difference is the segment agreement check's job, this one checks the
-        # graph's structure (directions, turns, duplicate edges, phantoms).
+        # osrm-routed is stopped: only now the router workers start (Decision 30). Our side is our own engine's
+        # durations, 36 * len / kmh + seg_fixed_ds, at the speeds OSRM got from the speed file.
         seg_ds_file = work / "seg_ds.npy"
-        np.save(seg_ds_file, osrm_ds.astype(np.float64) + np.asarray(g.seg_fixed_ds, dtype=np.float64))
-        del osrm_ds
+        np.save(seg_ds_file, segment_ds(g, seg_kmh))
         if len(chosen):
             ours = parallel_table(release / "graph", seg_ds_file, chosen, chosen,
                                   default_workers(PER_WORKER_GB, workers))
         else:
             ours = np.zeros((0, 0))
-    finally:
+    except BaseException:
         del g
-        gc.collect()
-        _remove(work)
+        _cleanup(work, quiet=True)               # a failed cleanup must not hide the error
+        raise
+    del g
+    _cleanup(work, quiet=False)
     table = compare_tables(ours, theirs)
     p = len(chosen)
     planned = p * (p - 1)
@@ -613,7 +742,7 @@ def verify_release(release_dir, speeds_dir, tools, port, workers, points: int = 
             "value": over, "ok": over == 0, "blocking": True, "over": table["over"],
             "unreachable_mismatch": table["unreachable_mismatch"], "max_abs_s": table["max_abs_s"],
             "max_rel": table["max_rel"], "tolerance": {"abs_s": TABLE_ABS_S, "rel": TABLE_REL},
-            "router_durations": "osrm_customized_segments_plus_folded_node_entries",
+            "router_durations": "36*seg_len_m/kmh+seg_fixed_ds (OSRM segment lengths, speed-file km/h)",
             "examples": [{**ex, "segment_i": int(chosen[ex["i"]]), "segment_j": int(chosen[ex["j"]])}
                          for ex in table["examples"]]},
         "osrm_table_pairs": {

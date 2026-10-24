@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sm_osrm_fixture import (TOWN_BANNED, TOWN_COORDS, TOWN_OBSTACLES, TOWN_WAYS, poke_block, write_dataset,
                              write_osm)
 from speedmatrix.graph import GRAPH_FORMAT, GraphError, build_graph, load_graph, main, save_graph, segment_ds
+from speedmatrix.geo import osrm_length_m
 from speedmatrix.osrmfiles import OsrmFormatError, read_block
 from speedmatrix.segments import ROAD_CLASSES, _sha256_file, build_segments, save_segments
 
@@ -74,15 +75,35 @@ class GraphTests(unittest.TestCase):
 
     def test_lengths_and_osrm_durations(self):
         g = build_graph(self.base, self.bj, self.table)
-        # 101-107 is 0.0005 deg of longitude at 21 N, about 52 m; the fixture's residential speed is 25 km/h.
+        # 101-107 is 0.0005 deg of longitude at 21 N: 51.99 m by OSRM's cheap ruler (51.90 m by haversine); the
+        # fixture's residential speed is 25 km/h.
         i = int(g.ebn_offsets[0])
-        self.assertAlmostEqual(float(g.seg_len_m[i]), 51.90, delta=0.01)
-        self.assertEqual(int(g.seg_osrm_ds[i]), round(36 * float(g.seg_len_m[i]) / 25))
+        self.assertAlmostEqual(float(g.seg_len_m[i]), 51.99385, delta=1e-4)
         # the table's length comes from float32 coordinates (about 1 m at lon 105), the graph's from e6 integers
         np.testing.assert_allclose(g.seg_len_m, self.table.length_m[g.seg_row], atol=1.0)
         self.assertEqual(g.node_lat.dtype, np.float64)
         self.assertAlmostEqual(float(g.node_lon[0]), 105.8)
         self.assertEqual(g.seg_ebn.tolist(), np.repeat(np.arange(11), np.diff(g.ebn_offsets)).tolist())
+
+    def test_lengths_are_osrm_lengths(self):
+        """Segment lengths equal OSRM v26's own (cheap ruler): /route annotations=distance of a real osrm-routed on
+        a tiny v26.10.0 dataset, 2026-10-24, at 8.6, 16, 21 and 23.3 N, one pair across a 0.05 degree band."""
+        known = [((104.950000, 8.600000), (104.961234, 8.613579), 1945.366583),
+                 ((104.961234, 8.613579), (104.975000, 8.620100), 1678.097271),
+                 ((105.000000, 23.300000), (105.000000, 23.312345), 1367.191172),
+                 ((105.000000, 23.312345), (105.000100, 23.330000), 1955.29286),
+                 ((107.000000, 16.000000), (107.023456, 16.000000), 2510.91048),
+                 ((107.023456, 16.000000), (107.040000, 16.000700), 1772.250166),
+                 ((105.850000, 21.024990), (105.851000, 21.025010), 103.9766605),
+                 ((105.851000, 21.025010), (105.860000, 21.020000), 1087.653903)]
+        e6 = lambda x: round(x * 1e6)
+        for (lon1, lat1), (lon2, lat2), metres in known:
+            got = float(osrm_length_m(e6(lon1), e6(lat1), e6(lon2), e6(lat2)))
+            self.assertAlmostEqual(got, metres, delta=1e-6, msg=(lon1, lat1, lon2, lat2))
+        g = build_graph(self.base, self.bj, self.table)
+        np.testing.assert_array_equal(g.seg_len_m, osrm_length_m(g.node_lon_e6[g.seg_tail], g.node_lat_e6[g.seg_tail],
+                                                                 g.node_lon_e6[g.seg_head], g.node_lat_e6[g.seg_head]
+                                                                 ).astype(np.float32))
 
     def test_turns_connect_and_banned_turn_absent(self):
         g = build_graph(self.base, self.bj, self.table)
@@ -211,7 +232,7 @@ class GraphTests(unittest.TestCase):
         g = build_graph(self.base, self.bj, self.table)
         out = self.root / "old"
         save_graph(g, out)
-        meta = (out / "meta.json").read_text(encoding="utf-8").replace('"format": 1', '"format": 0')
+        meta = (out / "meta.json").read_text(encoding="utf-8").replace(f'"format": {GRAPH_FORMAT}', '"format": 0')
         (out / "meta.json").write_text(meta, encoding="utf-8")
         with self.assertRaisesRegex(GraphError, "format"):
             load_graph(out)

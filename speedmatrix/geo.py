@@ -1,7 +1,13 @@
-"""Geometry helpers: haversine distance and point-in-polygon tests."""
+"""Geometry helpers: haversine distance, OSRM's segment length and point-in-polygon tests."""
 import numpy as np
 
 EARTH_RADIUS_M = 6371008.8
+# OSRM v26 util::coordinate_calculation::greatCircleDistance: mapbox cheap ruler (WGS84) with 1800 rulers, one per
+# 0.05 degree latitude band (src/util/coordinate_calculation.cpp, include/util/cheap_ruler.hpp).
+_WGS84_RE_KM = 6378.137
+_WGS84_FE = 1.0 / 298.257223563
+_WGS84_E2 = _WGS84_FE * (2 - _WGS84_FE)
+_RULER_STEP_E6 = 50_000                  # int(90.0 * 1e6 / 1800)
 
 
 def haversine_m(lat1, lon1, lat2, lon2) -> np.ndarray:
@@ -50,3 +56,27 @@ def points_in_geometry(lat: np.ndarray, lon: np.ndarray, geometry: dict) -> np.n
             poly ^= _in_ring(lat, lon, ring)
         result |= poly
     return result
+
+
+def osrm_length_m(lon1_e6, lat1_e6, lon2_e6, lat2_e6) -> np.ndarray:
+    """Metres between fixed-point (1e-6 degree, int) coordinates exactly as OSRM v26 measures a segment: the cheap
+    ruler of the 0.05 degree band holding the truncated mean latitude, then sqrt(dx^2 + dy^2)."""
+    lat1 = np.asarray(lat1_e6, dtype=np.int64)
+    lat2 = np.asarray(lat2_e6, dtype=np.int64)
+    total = lat1 + lat2
+    mean = np.sign(total) * (np.abs(total) // 2)                 # C++ integer division truncates toward zero
+    shifted = np.abs(mean) - 1
+    band = np.where(shifted < 0, 0, shifted // _RULER_STEP_E6)   # (|lat| - 1) / step, truncated
+    ruler_lat = _RULER_STEP_E6 * (band + 0.5) / 1e6
+    rad = np.pi / 180.0
+    mul = rad * _WGS84_RE_KM * 1000
+    coslat = np.cos(ruler_lat * rad)
+    w2 = 1 / (1 - _WGS84_E2 * (1 - coslat * coslat))
+    w = np.sqrt(w2)
+    kx = mul * w * coslat
+    ky = mul * w * w2 * (1 - _WGS84_E2)
+    dlon = np.asarray(lon1_e6, dtype=np.int64) / 1e6 - np.asarray(lon2_e6, dtype=np.int64) / 1e6
+    dlon = dlon - 360.0 * np.round(dlon / 360.0)                 # std::remainder(a - b, 360)
+    dx = dlon * kx
+    dy = (lat1 / 1e6 - lat2 / 1e6) * ky
+    return np.sqrt(dx * dx + dy * dy)

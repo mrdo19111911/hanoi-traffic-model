@@ -4,8 +4,10 @@ import dataclasses
 import io
 import json
 import math
+import os
 from pathlib import Path
 import socket
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -18,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sm_osrm_fixture import (FINGERPRINT, KMH, TOWN_BANNED, TOWN_COORDS, TOWN_OBSTACLES, TOWN_WAYS, _packed_blocks,
                              _plain, _tar, grid, write_dataset, write_osm)
 from speedmatrix import verify_osrm
+from speedmatrix.geo import osrm_length_m
 from speedmatrix.graph import build_graph, save_graph, segment_ds
 from speedmatrix.osrmfiles import read_block, read_datasources, read_packed
 from speedmatrix.segments import _sha256_file, build_segments, save_segments
@@ -46,15 +49,10 @@ def seg_of(g, a, b):
     return int(hit[0])
 
 
-def _haversine_m(lon1, lat1, lon2, lat2):
-    p1, p2 = math.radians(lat1), math.radians(lat2)
-    h = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2
-    return 2 * 6371008.8 * math.asin(math.sqrt(h))
-
-
 def fake_customize(tools, base, speed_file, threads, **kw):
     """What osrm-customize --segment-speed-file does to ``.geometry``: every real-segment entry whose directed node
-    pair is in the file gets max(1, round(36 * length / kmh)) ds and data source 1; nothing else changes."""
+    pair is in the file gets max(1, round_half_away(36 * length / kmh)) ds, the length measured by OSRM's cheap
+    ruler (test_sm_graph checks ``osrm_length_m`` against real OSRM), and data source 1; nothing else changes."""
     speeds = {}
     for line in Path(speed_file).read_text(encoding="utf-8").splitlines():
         a, b, k = line.split(",")
@@ -67,14 +65,14 @@ def fake_customize(tools, base, speed_file, threads, **kw):
     fs, rs = read_datasources(base)
     fs, rs = fs.copy(), rs.copy()
     osm = read_packed(nbg, "/common/nbn_data/osm_node_ids", 40).astype(np.int64)
-    xy = read_block(nbg, "/common/nbn_data/coordinates", (np.int32, 2)) / 1e6
+    xy = read_block(nbg, "/common/nbn_data/coordinates", (np.int32, 2))
     for start, end in zip(index[:-1], index[1:]):
         for e in range(int(start), int(end), 2):          # real segment between nodes[e] and nodes[e + 1]
             u, v = int(nodes[e]), int(nodes[e + 1])
-            length = _haversine_m(xy[u, 0], xy[u, 1], xy[v, 0], xy[v, 1])
+            length = float(osrm_length_m(xy[u, 0], xy[u, 1], xy[v, 0], xy[v, 1]))
             for pair, durations, sources, at in (((osm[u], osm[v]), fd, fs, e + 1), ((osm[v], osm[u]), rd, rs, e)):
                 if pair in speeds:
-                    durations[at] = max(1, round(36 * length / speeds[pair]))
+                    durations[at] = max(1, math.floor(36 * length / speeds[pair] + 0.5))
                     sources[at] = 1
     blocks = {**_plain(GEO + "index", index), **_plain(GEO + "nodes", nodes),
               **_packed_blocks(GEO + "forward_durations", fd.tolist(), 22),
@@ -143,8 +141,14 @@ class VerifyUnitTests(unittest.TestCase):
         kmh[t] = 7
         self.assertEqual(write_speed_file(g2, kmh, self.root / "d.csv"), 12)
         self.assertIn("102,103,7", (self.root / "d.csv").read_text().splitlines())
-        self.assertEqual(verify_osrm._write_speed_rows(g2, kmh, self.root / "d.csv"), (12, 1))
-        self.assertEqual(verify_osrm._write_speed_rows(self.g, self.kmh, self.root / "d.csv"), (13, 0))
+        rows, conflicts, resolved = verify_osrm._write_speed_rows(g2, kmh, self.root / "d.csv")
+        self.assertEqual((rows, conflicts), (12, 1))
+        self.assertEqual((resolved[s], resolved[t]), (7, 7))          # both copies get the speed OSRM gets
+        others = np.setdiff1d(np.arange(g2.n_segments), [s, t])
+        np.testing.assert_array_equal(resolved[others], kmh[others])
+        rows, conflicts, resolved = verify_osrm._write_speed_rows(self.g, self.kmh, self.root / "d.csv")
+        self.assertEqual((rows, conflicts), (13, 0))
+        np.testing.assert_array_equal(resolved, self.kmh)
 
     def test_speed_file_refuses_non_positive_speed(self):
         kmh = self.kmh.copy()
@@ -221,6 +225,10 @@ class VerifyUnitTests(unittest.TestCase):
         self.assertEqual(kmh.dtype, np.float32)
         np.testing.assert_array_equal(kmh, self.layer.at("weekday", 16)[self.g.seg_row])
 
+    def test_osrm_rounding(self):
+        np.testing.assert_array_equal(verify_osrm.osrm_segment_ds([12.5, 37.5, 0.1, 10.0], [36, 36, 36, 36]),
+                                      [13, 38, 1, 10])                          # half away from zero, at least 1
+
     def test_compare_tolerance(self):
         r = compare_tables(np.array([[501.9, 3607.1]]), np.array([[500.0, 3600.0]]))
         self.assertEqual(r["over"], 0)
@@ -269,7 +277,7 @@ class VerifyUnitTests(unittest.TestCase):
         write_speed_file(self.g, self.kmh, root / "s.csv")
         fake_customize(self.tools, base, root / "s.csv", 1)
         r = segment_agreement(self.g, self.kmh, base)
-        self.assertEqual((r["share_within"], r["max_abs_ds"]), (1.0, 0))
+        self.assertEqual((r["share_within"], r["max_abs_ds"]), (1.0, 0))       # exact: same length, same rounding
         kmh = self.kmh.copy()
         kmh[seg_of(self.g, 102, 103)] *= 2
         r = segment_agreement(self.g, kmh, base)
@@ -285,6 +293,145 @@ class VerifyUnitTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "free"):
                 copy_dataset(self.base.parent, self.root / "copy2")
         self.assertFalse((self.root / "copy2").exists())
+
+
+IDENTITY = {"executable": r"C:\osrm\tools\osrm-routed.exe", "created": 1}
+
+
+class FakeProc:
+    """A Popen stand-in: ``exit_code`` None while running; ``wait`` times out ``timeouts`` times first."""
+
+    def __init__(self, pid=4242, exit_code=None, timeouts=0):
+        self.pid, self.code, self.timeouts, self.calls = pid, exit_code, timeouts, []
+
+    def poll(self):
+        return self.code
+
+    def terminate(self):
+        self.calls.append("terminate")
+
+    def kill(self):
+        self.calls.append("kill")
+
+    def wait(self, timeout=None):
+        self.calls.append("wait")
+        if self.timeouts:
+            self.timeouts -= 1
+            raise subprocess.TimeoutExpired("osrm-routed", timeout)
+        self.code = 1
+        return 1
+
+
+class RoutedLifecycleTests(unittest.TestCase):
+    """Every way out of ``Routed`` stops the process it started, and only that one (Ruling T10-b)."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.root = Path(self.temp.name)
+        self.run_file = self.root / ".verify_routed_5058.json"
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def routed(self, proc, answers=True, **kw):
+        r = Routed(self.root / "map.osrm", 5058, self.root, log_path=self.root / "r.log", run_file=self.run_file, **kw)
+        stack = contextlib.ExitStack()                   # the patches start here and end with the ``with stack``
+        stack.enter_context(mock.patch("subprocess.Popen", return_value=proc))
+        stack.enter_context(mock.patch.object(verify_osrm, "_free_port", return_value=None))
+        stack.enter_context(mock.patch.object(verify_osrm.manage, "process_identity", return_value=IDENTITY))
+        stack.enter_context(mock.patch.object(verify_osrm, "_answers", return_value=answers))
+        stack.enter_context(contextlib.redirect_stderr(io.StringIO()))
+        return stack, r
+
+    def test_stops_on_success_and_on_error_in_the_body(self):
+        proc = FakeProc()
+        stack, r = self.routed(proc)
+        with stack, r:
+            doc = json.loads(self.run_file.read_text(encoding="utf-8"))
+            self.assertEqual((doc["pid"], doc["identity"]), (4242, IDENTITY))
+        self.assertEqual(proc.calls, ["terminate", "wait"])
+        self.assertFalse(self.run_file.exists())
+        proc = FakeProc()
+        stack, r = self.routed(proc)
+        with stack, self.assertRaisesRegex(ValueError, "boom"):
+            with r:
+                raise ValueError("boom")
+        self.assertEqual(proc.calls, ["terminate", "wait"])
+
+    def test_stops_on_ready_timeout_and_not_after_an_early_exit(self):
+        proc = FakeProc()
+        stack, r = self.routed(proc, answers=False, ready_s=0)
+        with stack, self.assertRaisesRegex(RuntimeError, "did not answer"):
+            r.__enter__()
+        self.assertEqual(proc.calls, ["terminate", "wait"])
+        proc = FakeProc(exit_code=3)
+        stack, r = self.routed(proc)
+        with stack, self.assertRaisesRegex(RuntimeError, "exited with code 3"):
+            r.__enter__()
+        self.assertEqual(proc.calls, [])
+        self.assertFalse(self.run_file.exists())
+
+    def test_wait_timeout_escalates_to_kill(self):
+        proc = FakeProc(timeouts=1)
+        stack, r = self.routed(proc)
+        with stack, r:
+            pass
+        self.assertEqual(proc.calls, ["terminate", "wait", "kill", "wait"])
+        self.assertFalse(self.run_file.exists())
+
+    def test_stop_failure_never_hides_the_original_error(self):
+        proc = FakeProc(timeouts=99)
+        stack, r = self.routed(proc)
+        with stack, self.assertRaisesRegex(ValueError, "boom"):
+            with r:
+                raise ValueError("boom")
+        self.assertTrue(self.run_file.exists())          # still running: the next run reaps it
+        proc = FakeProc(timeouts=99)
+        stack, r = self.routed(proc)
+        with stack, self.assertRaisesRegex(RuntimeError, "did not exit after kill"):
+            with r:
+                pass
+
+    def test_stale_routed_of_a_killed_run_is_stopped_first(self):
+        stale = {"pid": 999, "identity": {"executable": r"C:\x\osrm-routed.exe", "created": 5}, "port": 5058}
+        self.run_file.write_text(json.dumps(stale), encoding="utf-8")
+        calls = []
+
+        def terminate_if(pid, identity, timeout_s=None):
+            calls.append((pid, identity))
+            return "stopped"
+
+        proc = FakeProc()
+        stack, r = self.routed(proc)
+        with stack, mock.patch.object(verify_osrm, "_terminate_if", terminate_if), r:
+            self.assertEqual(json.loads(self.run_file.read_text(encoding="utf-8"))["pid"], 4242)
+        self.assertEqual(calls, [(999, stale["identity"])])
+        self.assertEqual(r.stale, "stopped")
+        self.assertFalse(self.run_file.exists())
+
+    def test_stale_file_naming_another_program_kills_nothing(self):
+        other = {"pid": 999, "identity": {"executable": r"C:\x\python.exe", "created": 5}}
+        self.run_file.write_text(json.dumps(other), encoding="utf-8")
+        stack, r = self.routed(FakeProc())
+        with stack, mock.patch.object(verify_osrm, "_terminate_if", side_effect=AssertionError("must not kill")), r:
+            pass
+        self.assertEqual(r.stale, "not_ours")
+
+    @unittest.skipUnless(os.name == "nt", "Windows process handles")
+    def test_terminate_if_checks_identity_through_the_handle(self):
+        child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+        try:
+            identity = verify_osrm.manage.process_identity(child.pid)
+            self.assertIsNotNone(identity)
+            other = {**identity, "created": identity["created"] + 1}
+            self.assertEqual(verify_osrm._terminate_if(child.pid, other, 5), "not_ours")
+            self.assertIsNone(child.poll())
+            self.assertEqual(verify_osrm._terminate_if(child.pid, identity, 10), "stopped")
+            self.assertIsNotNone(child.wait(5))
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(5)
 
 
 class VerifyFlowTests(unittest.TestCase):
@@ -384,10 +531,10 @@ class VerifyFlowTests(unittest.TestCase):
         p = pairs["points"]
         self.assertEqual(pairs["planned"], p * (p - 1))
         self.assertEqual(json.loads((self.release / "verify.json").read_text(encoding="utf-8")), checks)
-        # the router ran on OSRM's integer customized durations, not on 36 * len / kmh
-        np.testing.assert_array_equal(self.seg_ds, np.round(self.seg_ds))
-        np.testing.assert_allclose(self.seg_ds, segment_ds(self.g, self.kmh), atol=0.5 + 1e-6)
-        self.assertFalse(np.array_equal(self.seg_ds, segment_ds(self.g, self.kmh)))
+        # the router ran on our own durations, 36 * len / kmh + fixed, not on OSRM's integer ones
+        np.testing.assert_array_equal(self.seg_ds, segment_ds(self.g, self.kmh))
+        self.assertFalse(np.array_equal(self.seg_ds, np.round(self.seg_ds)))
+        self.assertIn("36*seg_len_m/kmh", checks["osrm_table_over_tolerance"]["router_durations"])
 
     def test_points_and_mask(self):
         mask = np.zeros(self.g.n_segments, bool)
