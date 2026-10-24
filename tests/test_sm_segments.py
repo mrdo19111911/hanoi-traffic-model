@@ -1,4 +1,5 @@
 """Offline tests for the speedmatrix segment table, admin areas and water lines."""
+import dataclasses
 import json
 from pathlib import Path
 import tempfile
@@ -131,6 +132,42 @@ class SegmentTests(unittest.TestCase):
         full = build_segments(self.osm, None)
         self.assertIn(6, full.way_id.tolist())
 
+    def test_old_format_refused(self):
+        save_segments(self.table, self.root / "seg_old")
+        meta_path = self.root / "seg_old" / "meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta["format"] = 1
+        meta_path.write_text(json.dumps(meta), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "format 1"):
+            load_segments(self.root / "seg_old")
+
+    def test_pair_lookup_both_orders_and_duplicates(self):
+        start, count = pair_lookup(self.table, np.array([11, 12, 11]), np.array([12, 11, 99]))
+        self.assertEqual(count.tolist(), [2, 2, 0])
+        rows = self.table.pair_order[start[0]:start[0] + count[0]]
+        self.assertEqual(sorted(int(self.table.way_id[self.table.way[r]]) for r in rows), [1, 10])
+
+    def test_pair_lookup_large_ids_and_empty(self):
+        big = 14_297_527_150
+        start, count = pair_lookup(self.table, np.array([big, 11]), np.array([big + 1, 13]))
+        self.assertEqual(count.tolist(), [0, 0])
+        shifted = dataclasses.replace(self.table, a=self.table.a + big, b=self.table.b + big,
+                                      _index=None, pair_order=None, _pair_index=None)
+        start, count = pair_lookup(shifted, np.array([big + 12, big + 11, 11]), np.array([big + 11, big + 12, 12]))
+        self.assertEqual(count.tolist(), [2, 2, 0])
+        rows = shifted.pair_order[start[0]:start[0] + count[0]]
+        self.assertEqual(sorted(int(shifted.way_id[shifted.way[r]]) for r in rows), [1, 10])
+        start, count = pair_lookup(self.table, np.array([], dtype=np.int64), np.array([], dtype=np.int64))
+        self.assertEqual(len(start), 0)
+        self.assertEqual(start.dtype, np.int64)
+        self.assertEqual(count.dtype, np.int32)
+
+    def test_pair_order_not_saved(self):
+        pair_lookup(self.table, np.array([11]), np.array([12]))
+        save_segments(self.table, self.root / "seg_np")
+        with np.load(self.root / "seg_np" / "segments.npz") as data:
+            self.assertNotIn("pair_order", data.files)
+
 
 class WaterTests(unittest.TestCase):
     def test_water_lines_named_rivers_and_coastline(self):
@@ -157,34 +194,3 @@ class WaterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-    def test_old_format_refused(self):
-        save_segments(self.table, self.root / "seg_old")
-        meta_path = self.root / "seg_old" / "meta.json"
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        meta["format"] = 1
-        meta_path.write_text(json.dumps(meta), encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "format 1"):
-            load_segments(self.root / "seg_old")
-
-    def test_pair_lookup_both_orders_and_duplicates(self):
-        start, count = pair_lookup(self.table, np.array([11, 12, 11]), np.array([12, 11, 99]))
-        self.assertEqual(count.tolist(), [2, 2, 0])
-        rows = self.table.pair_order[start[0]:start[0] + count[0]]
-        self.assertEqual(sorted(int(self.table.way_id[self.table.way[r]]) for r in rows), [1, 10])
-
-    def test_pair_lookup_large_ids_and_empty(self):
-        big = 14_297_527_150
-        start, count = pair_lookup(self.table, np.array([big, 11]), np.array([big + 1, 13]))
-        self.assertEqual(count.tolist(), [0, 0])
-        start, count = pair_lookup(self.table, np.array([], dtype=np.int64), np.array([], dtype=np.int64))
-        self.assertEqual(len(start), 0)
-        self.assertEqual(start.dtype, np.int64)
-        self.assertEqual(count.dtype, np.int32)
-
-    def test_pair_order_not_saved(self):
-        pair_lookup(self.table, np.array([11]), np.array([12]))
-        save_segments(self.table, self.root / "seg_np")
-        with np.load(self.root / "seg_np" / "segments.npz") as data:
-            self.assertNotIn("pair_order", data.files)
