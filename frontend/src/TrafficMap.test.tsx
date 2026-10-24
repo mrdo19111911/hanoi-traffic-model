@@ -1,4 +1,7 @@
-import {render} from '@testing-library/react';
+import {render,waitFor} from '@testing-library/react';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {BUILDINGS_BASE,VIEW_MARGIN,buildingsIn,padBBox,readBuildingParquet} from './buildings';
 import L from 'leaflet';
 import {describe,it,expect,vi} from 'vitest';
 import {act} from '@testing-library/react';
@@ -168,5 +171,37 @@ describe('TrafficMap big-road layers',()=>{
    act(()=>{vi.advanceTimersByTime(2100);});
    expect(container.querySelectorAll('.pulse-point')).toHaveLength(0);
   }finally{vi.useRealTimers();}
+ });
+});
+describe('building layer',()=>{
+ const published=(name:string)=>new Uint8Array(readFileSync(resolve(process.cwd(),'../buildings/by_area',name))).buffer as ArrayBuffer;
+ it('shows the zoom hint below zoom 16 and downloads nothing',async()=>{
+  const fetch=vi.fn();vi.stubGlobal('fetch',fetch);
+  const onStatus=vi.fn();render(<TrafficMap {...base} picking={null} buildings onBuildingStatus={onStatus}/>);
+  expect(onStatus).toHaveBeenCalledWith({kind:'zoom'});
+  await new Promise(r=>setTimeout(r,20));
+  expect(fetch).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
+ });
+ it('draws the buildings of the files covering the view from zoom 16, straight from GitHub',async()=>{
+  const ctx=new Proxy({},{get:(target:any,key)=>key in target?target[key]:()=>{}});
+  vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue(ctx);
+  const name='khanh_hoa_13.parquet',bytes=published(name),f=await readBuildingParquet(name,bytes.slice(0));
+  const box:[number,number,number,number]=[f.box[0]/1e6,f.box[1]/1e6,f.box[2]/1e6,f.box[3]/1e6];
+  const index={files:[{file:name,buildings:f.n,bytes:bytes.byteLength,bbox:[box[0]-.1,box[1]-.1,box[2]+.1,box[3]+.1]},{file:'far.parquet',buildings:1,bytes:1,bbox:[105,21,105.1,21.1]}]};
+  const fetch=vi.fn(async(url:string)=>url===BUILDINGS_BASE+'index.json'?new Response(JSON.stringify(index)):url===BUILDINGS_BASE+name?new Response(bytes.slice(0)):new Response('',{status:404}));
+  vi.stubGlobal('fetch',fetch);
+  vi.spyOn(L.Map.prototype,'getZoom').mockReturnValue(16);
+  vi.spyOn(L.Map.prototype,'getBounds').mockReturnValue(L.latLngBounds([box[1],box[0]],[box[3],box[2]]));
+  const polygons=vi.spyOn(L.Polygon.prototype,'bringToBack');
+  const onStatus=vi.fn();render(<TrafficMap {...base} picking={null} buildings onBuildingStatus={onStatus}/>);
+  await waitFor(()=>expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({kind:'ready'})),{timeout:5000});
+  const want=buildingsIn(f,padBBox(box,VIEW_MARGIN)).length;
+  expect(want).toBeGreaterThan(0);
+  expect(onStatus).toHaveBeenLastCalledWith({kind:'ready',shown:want,total:want,offline:undefined});
+  expect(onStatus).toHaveBeenCalledWith({kind:'loading',file:name,bytes:bytes.byteLength,network:true,shown:0});
+  expect(polygons).toHaveBeenCalledTimes(want);
+  expect(fetch.mock.calls.map(c=>c[0])).toEqual([BUILDINGS_BASE+'index.json',BUILDINGS_BASE+name]);   // the far file is not loaded
+  vi.unstubAllGlobals();
  });
 });

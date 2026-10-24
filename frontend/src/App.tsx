@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ArrowDownUp,ArrowRight,ArrowUpRight,Check,ChevronRight,Clock3,Database,FlaskConical,Layers3,LoaderCircle,LocateFixed,MapPin,Navigation,PanelLeftClose,PanelLeftOpen,Route as RouteIcon,TriangleAlert,Waypoints,X} from 'lucide-react';
-import TrafficMap from './TrafficMap';
+import {ArrowDownUp,ArrowRight,ArrowUpRight,Building2,Check,ChevronRight,Clock3,Database,FlaskConical,Layers3,LoaderCircle,LocateFixed,MapPin,Navigation,PanelLeftClose,PanelLeftOpen,Route as RouteIcon,TriangleAlert,Waypoints,X} from 'lucide-react';
+import TrafficMap,{type BuildingStatus} from './TrafficMap';
+import {BUILDING_BINS,MIN_BUILDING_ZOOM,UNKNOWN_BUILDING_COLOR,buildingStore,mb} from './buildings';
 import {api,type Point,type Health,type Options,type DataStatus,type Route,type Experiment,type Job,type BigRoads,type BigRoadMeta,type BigRoadView,type BigRoadReview,type BigRoadClusters,type ReviewEntry,type ReviewStatus,type MapFocus,type TrialRoute} from './api';
 import type {Feature,FeatureCollection} from 'geojson';
 import {GROUPS,type Group,searchRoutes,routeStats,normalizeRef,visibleGroups,reviewItems,filterReview,pickPartition,provincePartition,naturalPartition,type PartitionChoice,partitionAdjacency,colorClusters,cutInfo,clustersOutdated,type ReviewItem,type ReviewFilter,type RouteHit} from './bigRoads';
@@ -28,6 +29,15 @@ const DRAWER_KEY='hn-traffic-lab.drawer';
 interface DrawerState{open:boolean;tab:BigTab}
 function readDrawer():DrawerState{try{const v=JSON.parse(window.localStorage.getItem(DRAWER_KEY)||'null');if(v&&typeof v==='object')return{open:v.open!==false,tab:BIG_TABS.some(([id])=>id===v.tab)?v.tab:'layers'};}catch{/* storage unavailable */}return{open:true,tab:'layers'};}
 function writeDrawer(state:DrawerState){try{window.localStorage.setItem(DRAWER_KEY,JSON.stringify(state));}catch{/* storage unavailable */}}
+const vnCount=(n:number)=>n.toLocaleString('vi-VN');
+export function buildingStatusText(s:BuildingStatus|null):string{
+ if(!s)return '';
+ if(s.kind==='zoom')return `Phóng to tới mức ${MIN_BUILDING_ZOOM} để xem nhà`;
+ if(s.kind==='loading')return s.network?`Đang tải nhà: ${s.file} (${mb(s.bytes)} MB)…`:`Đang đọc nhà đã lưu: ${s.file}…`;
+ if(s.kind==='error')return s.message;
+ return `${s.total>s.shown?`${vnCount(s.shown)} / ${vnCount(s.total)} nhà (gần tâm nhất)`:`${vnCount(s.shown)} nhà`}${s.offline?' · ngoại tuyến, dùng bản đã lưu':''}`;
+}
+const buildingLegend=<div className="map-legend building-legend"><span className="legend-title">NHÀ · SỐ TẦNG</span>{BUILDING_BINS.map(b=><span key={b.label}><i style={{background:b.color}}/>{b.label}</span>)}<span><i style={{background:UNKNOWN_BUILDING_COLOR}}/>Chưa rõ</span></div>;
 const typing=(target:EventTarget|null)=>{const el=target as HTMLElement|null;return !!el&&(/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName||'')||el.isContentEditable||!!el.closest?.('[contenteditable]:not([contenteditable="false"])'));};
 
 export default function App(){
@@ -45,12 +55,18 @@ export default function App(){
  const [focus,setFocus]=useState<MapFocus|null>(null),focusSeq=useRef(0),[partChoice,setPartChoice]=useState<PartitionChoice>(null);
  const [query,setQuery]=useState(''),[routeHit,setRouteHit]=useState<RouteHit|null>(null),[detail,setDetail]=useState<Feature|null>(null);
  const [trialPoints,setTrialPoints]=useState<{origin:LatLon|null;destination:LatLon|null}>({origin:null,destination:null}),[trialPicking,setTrialPicking]=useState<'origin'|'destination'|null>(null),[trial,setTrial]=useState<TrialRoute|null>(null),[trialBusy,setTrialBusy]=useState(false),[trialError,setTrialError]=useState('');
+ // Building layer (files from GitHub, kept in the browser's Cache Storage); stored is null when storage is unavailable.
+ const [showBuildings,setShowBuildings]=useState(true),[buildingStatus,setBuildingStatus]=useState<BuildingStatus|null>(null),[stored,setStored]=useState<number|null>(null);
  const mounted=useRef(true),estimateAbort=useRef<AbortController|null>(null);
  const refreshData=async(signal?:AbortSignal)=>{const results=await Promise.allSettled([api<DataStatus>('/api/data/status',{signal}),api<Health>('/api/health',{signal}),api<Experiment>('/api/experiments',{signal})]);if(!mounted.current||signal?.aborted)return;for(let i=0;i<results.length;i++){const result=results[i];if(result.status==='fulfilled'){if(i===0)setData(result.value as DataStatus);if(i===1)setHealth(result.value as Health);if(i===2)setExperiments(result.value as Experiment);}}};
  useEffect(()=>{mounted.current=true;const controller=new AbortController();api<Options>('/api/options',{signal:controller.signal}).then(value=>{setOptions(value);setMethod(value.default_method);}).catch(e=>{if(!controller.signal.aborted)setError(stringError(e));});void refreshData(controller.signal);return()=>{mounted.current=false;controller.abort();estimateAbort.current?.abort();};},[]);
  useEffect(()=>{if(!job||!['queued','running'].includes(job.status))return;let stopped=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;const poll=async()=>{try{const next=await api<Job>(`/api/jobs/${encodeURIComponent(job.id)}`,{signal:controller.signal});if(stopped)return;setJob(next);if(next.status==='completed')void refreshData();if(['queued','running'].includes(next.status))timer=setTimeout(poll,1500);}catch(e){if(!stopped){setJobError(`Theo dõi tác vụ bị gián đoạn: ${stringError(e)}`);}}};void poll();return()=>{stopped=true;controller.abort();clearTimeout(timer);};},[job?.id]);
  async function estimate(event:React.FormEvent){event.preventDefault();setError('');const from=pointFrom(origin),to=pointFrom(destination);if(!from||!to){setError('Tọa độ không hợp lệ. Vĩ độ từ −90 đến 90, kinh độ từ −180 đến 180.');return;}if(from.lat===to.lat&&from.lon===to.lon){setError('Hãy chọn hai điểm khác nhau.');return;}setLoading(true);setRoute(null);const controller=new AbortController();estimateAbort.current=controller;try{const [hours,minutes]=hour.split(':').map(Number);const result=await api<Route>('/api/estimate',{method:'POST',body:JSON.stringify({origin:from,destination:to,day,hour:hours+minutes/60,method}),signal:controller.signal});if(mounted.current)setRoute(result);}catch(e){if(mounted.current&&!controller.signal.aborted)setError(stringError(e));}finally{if(mounted.current)setLoading(false);}}
  useEffect(()=>writeDrawer(drawer),[drawer]);
+ const refreshStored=()=>{void buildingStore.storedBytes().then(v=>{if(mounted.current)setStored(v);});};
+ useEffect(()=>{if(showBuildings&&(!buildingStatus||buildingStatus.kind==='ready'))refreshStored();},[showBuildings,buildingStatus?.kind]);// eslint-disable-line react-hooks/exhaustive-deps
+ async function clearBuildings(){await buildingStore.clear();refreshStored();}
+ function toggleBuildings(){setShowBuildings(v=>!v);setBuildingStatus(null);}
  const toggleDrawer=()=>setDrawer(d=>({...d,open:!d.open})),openDrawer=(tab?:BigTab)=>setDrawer(d=>({open:true,tab:tab??d.tab}));
  // Spec 20: "[" opens or closes the drawer, but not while the user types in a field.
  useEffect(()=>{if(pane!=='route')return;const onKey=(e:KeyboardEvent)=>{if(e.key!=='['||e.ctrlKey||e.metaKey||e.altKey||typing(e.target))return;toggleDrawer();};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[pane]);
@@ -165,14 +181,17 @@ export default function App(){
  const legend=big?<BigLegend colorBy={clusterOn?'cluster':colorBy} partition={partition} basemap={basemap}/>:<div className="map-legend"><span className="legend-title">LOẠI ĐƯỜNG</span>{roads.map(road=><span key={road.id}><i style={{background:road.color}}/>{road.label}</span>)}{basemap&&<span className="map-caption">Bản đồ nền cần kết nối mạng</span>}</div>;
  // Over the map only: Leaflet zoom, the top-right toggles, the legend (collapsible to a chip) and the trip summary.
  const mapPanel=<div className="map-panel">
-  <TrafficMap origin={validOrigin} destination={validDestination} route={route} classes={roads} picking={bigMode?trialPicking:picking} onPick={bigMode?(p:Point)=>pickTrial([p.lat,p.lon]):selectPoint} bigRoads={bigView} basemap={basemap} onZoomChange={setZoom} onRoadClick={onRoadClick} onJunctionClick={onJunctionClick} onMapClick={onMapClick} layoutKey={`${drawer.open}`}/>
+  <TrafficMap origin={validOrigin} destination={validDestination} route={route} classes={roads} picking={bigMode?trialPicking:picking} onPick={bigMode?(p:Point)=>pickTrial([p.lat,p.lon]):selectPoint} bigRoads={bigView} basemap={basemap} onZoomChange={setZoom} onRoadClick={onRoadClick} onJunctionClick={onJunctionClick} onMapClick={onMapClick} layoutKey={`${drawer.open}`} buildings={showBuildings} onBuildingStatus={setBuildingStatus}/>
   <div className="map-top-right"><div className="map-toggles">
    <button type="button" className={`big-road-toggle ${bigMode?'active':''}`} aria-pressed={bigMode} disabled={bigLoading} onClick={()=>void toggleBigRoads()}>{bigLoading?<LoaderCircle className="spin" size={14}/>:<Layers3 size={14}/>}Chỉ đường lớn</button>
+   <button type="button" className={`big-road-toggle ${showBuildings?'active':''}`} aria-pressed={showBuildings} onClick={toggleBuildings}><Building2 size={14}/>Nhà</button>
    <button type="button" className="basemap-toggle side-toggle" aria-label={drawer.open?'Thu gọn cột phụ':'Mở cột phụ'} title="[" aria-expanded={drawer.open} aria-controls="drawer" onClick={toggleDrawer}>{drawer.open?<PanelLeftClose size={14}/>:<PanelLeftOpen size={14}/>}</button>
-  </div></div>
+  </div>
+  {showBuildings&&buildingStatus&&<div className={`big-road-status building-status ${buildingStatus.kind==='error'?'warning':''}`} role="status">{buildingStatus.kind==='loading'&&<LoaderCircle className="spin" size={13}/>}{buildingStatus.kind==='error'&&<TriangleAlert size={13}/>}<span>{buildingStatusText(buildingStatus)}</span>{!!stored&&<><small>{`Đã lưu ${mb(stored)} MB`}</small><button type="button" className="link-button" onClick={()=>void clearBuildings()}>Xóa bộ nhớ nhà</button></>}</div>}
+  </div>
   {picking&&!bigMode&&<div className="pick-banner"><LocateFixed size={17}/>Nhấp bản đồ để chọn {picking==='origin'?'điểm đi A':'điểm đến B'}<button aria-label="Hủy chọn điểm" onClick={()=>setPicking(null)}><X size={16}/></button></div>}
   {trialPicking&&bigMode&&<div className="pick-banner"><LocateFixed size={17}/>Nhấp bản đồ để chọn {trialPicking==='origin'?'điểm đi thử A':'điểm đến thử B'}<button aria-label="Hủy chọn điểm" onClick={()=>setTrialPicking(null)}><X size={16}/></button></div>}
-  <div className="map-legend-dock">{legendOpen?<div className="legend-box">{legend}<button type="button" className="icon-button legend-close" aria-label="Thu gọn chú giải" onClick={()=>setLegendOpen(false)}><X size={13}/></button></div>:<button type="button" className="legend-chip" aria-expanded={false} onClick={()=>setLegendOpen(true)}><Layers3 size={13}/>Chú giải</button>}</div>
+  <div className="map-legend-dock">{legendOpen?<div className="legend-box">{legend}{showBuildings&&buildingLegend}<button type="button" className="icon-button legend-close" aria-label="Thu gọn chú giải" onClick={()=>setLegendOpen(false)}><X size={13}/></button></div>:<button type="button" className="legend-chip" aria-expanded={false} onClick={()=>setLegendOpen(true)}><Layers3 size={13}/>Chú giải</button>}</div>
   {!bigMode&&route&&<div className="map-summary" role="group" aria-label="Tóm tắt hành trình"><Clock3 size={16}/><div><b>{`${number(route.minutes)} phút`}</b><span>{`${number(route.km)} km`}</span></div></div>}
  </div>;
 

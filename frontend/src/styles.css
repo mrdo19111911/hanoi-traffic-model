@@ -154,3 +154,6 @@
  .drawer{position:absolute;z-index:1100;left:0;right:0;bottom:0;max-height:60vh;border-right:0;border-top:1px solid #e3e9e9;border-radius:12px 12px 0 0;box-shadow:0 -6px 24px #1e344426;overflow:hidden}
  .map-summary{bottom:auto;top:56px}
 }
+.building-status{flex-wrap:wrap;justify-content:flex-end}.building-status small{color:#8195a0;font-size:8px}.building-status .link-button{background:transparent;padding:0;color:#15897e;font-size:8px;font-weight:550;text-decoration:underline}
+.legend-box .building-legend{margin-top:6px}
+.leaflet-popup-content{font-family:inherit;font-size:11px;line-height:1.6;color:#203746}

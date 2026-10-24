@@ -2,6 +2,7 @@ import {render,screen,waitFor,fireEvent,act,within} from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import {vi,describe,it,expect,beforeEach} from 'vitest';
 import App from './App';
+import {buildingStore} from './buildings';
 const map=vi.hoisted(()=>({props:null as any}));
 vi.mock('./TrafficMap',()=>({default:(props:any)=>{map.props=props;return <div data-testid="traffic-map">Bản đồ</div>;}}));
 const bigRoads={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'LineString',coordinates:[[105.8,21],[105.9,21]]},properties:{way_id:1,group:'quoclo',highway:'trunk',ref:'QL.1',name:'Ngọc Hồi',oneway:false,ref_only:false,component:0,isolated:false,island:false,km:10.4,speed_kmh:68,speed_source:'profile_default'}},{type:'Feature',geometry:{type:'LineString',coordinates:[[104,10.2],[104.01,10.2]]},properties:{way_id:9,group:'quoclo',highway:'trunk',ref:'QL.80',name:'Phú Quốc',oneway:false,ref_only:false,component:3,isolated:true,island:true,km:12.5}},{type:'Feature',geometry:{type:'LineString',coordinates:[[105.9,21],[106,21.1]]},properties:{way_id:5,group:'tinhlo',highway:'secondary',ref:'ĐT.70',name:'',oneway:false,ref_only:true,bridge:false,component:0,isolated:false,island:false,fragment:false,km:8.2}},{type:'Feature',geometry:{type:'LineString',coordinates:[[105.7,21],[105.8,21]]},properties:{way_id:6,group:'quoclo',highway:'primary',ref:'',name:'Phố Huyện',oneway:false,ref_only:false,bridge:true,bridge_kind:'road',component:0,isolated:false,island:false,fragment:false,km:0.3}},{type:'Feature',geometry:{type:'LineString',coordinates:[[106.2,21.3],[106.2001,21.3]]},properties:{way_id:7,group:'quoclo',highway:'trunk_link',ref:'',name:'',oneway:false,ref_only:false,bridge:false,component:9,isolated:true,island:false,fragment:true,km:0.01}}]};
@@ -661,5 +662,43 @@ describe('map-first layout (spec 20)',()=>{
   expect(drawer()).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button',{name:'Thu gọn cột phụ'}));
   expect(drawer()).not.toBeInTheDocument();
+ });
+});
+describe('building layer controls',()=>{
+ it('turns the layer on by default and off with the Nhà toggle, with a floors legend',async()=>{
+  render(<App/>);await screen.findByText('4.286');
+  const toggle=screen.getByRole('button',{name:'Nhà'});
+  expect(toggle).toHaveAttribute('aria-pressed','true');expect(map.props.buildings).toBe(true);
+  expect(document.querySelector('.building-legend')).toHaveTextContent('NHÀ · SỐ TẦNG');
+  for(const label of ['1–2','≥ 15','Chưa rõ'])expect(within(document.querySelector('.building-legend') as HTMLElement).getByText(label)).toBeInTheDocument();
+  await userEvent.click(toggle);
+  expect(toggle).toHaveAttribute('aria-pressed','false');expect(map.props.buildings).toBe(false);
+  expect(document.querySelector('.building-legend')).toBeNull();
+ });
+ it('shows the zoom hint, download progress, the count in view and errors',async()=>{
+  render(<App/>);await screen.findByText('4.286');
+  act(()=>map.props.onBuildingStatus({kind:'zoom'}));
+  expect(screen.getByText('Phóng to tới mức 16 để xem nhà')).toBeInTheDocument();
+  act(()=>map.props.onBuildingStatus({kind:'loading',file:'ha_noi_13.parquet',bytes:760347,network:true,shown:0}));
+  expect(screen.getByText('Đang tải nhà: ha_noi_13.parquet (0,8 MB)…')).toBeInTheDocument();
+  act(()=>map.props.onBuildingStatus({kind:'loading',file:'ha_noi_13.parquet',bytes:760347,network:false,shown:0}));
+  expect(screen.getByText('Đang đọc nhà đã lưu: ha_noi_13.parquet…')).toBeInTheDocument();
+  act(()=>map.props.onBuildingStatus({kind:'ready',shown:12345,total:12345}));
+  expect(screen.getByText('12.345 nhà')).toBeInTheDocument();
+  act(()=>map.props.onBuildingStatus({kind:'ready',shown:15000,total:23456,offline:true}));
+  expect(screen.getByText('15.000 / 23.456 nhà (gần tâm nhất) · ngoại tuyến, dùng bản đã lưu')).toBeInTheDocument();
+  act(()=>map.props.onBuildingStatus({kind:'error',message:'Không tải được nhà: ha_noi_13.parquet. Kiểm tra kết nối mạng.',shown:0}));
+  expect(screen.getByText('Không tải được nhà: ha_noi_13.parquet. Kiểm tra kết nối mạng.').closest('.building-status')).toHaveClass('warning');
+ });
+ it('shows the stored size and clears the stored files',async()=>{
+  const stored=vi.spyOn(buildingStore,'storedBytes').mockResolvedValue(23.4e6);
+  const clear=vi.spyOn(buildingStore,'clear').mockResolvedValue();
+  render(<App/>);await screen.findByText('4.286');
+  act(()=>map.props.onBuildingStatus({kind:'ready',shown:10,total:10}));
+  expect(await screen.findByText('Đã lưu 23,4 MB')).toBeInTheDocument();
+  stored.mockResolvedValue(0);
+  await userEvent.click(screen.getByRole('button',{name:'Xóa bộ nhớ nhà'}));
+  expect(clear).toHaveBeenCalledTimes(1);
+  await waitFor(()=>expect(screen.queryByText(/Đã lưu/)).not.toBeInTheDocument());
  });
 });

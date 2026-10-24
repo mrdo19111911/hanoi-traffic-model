@@ -4,6 +4,7 @@ import type {Feature,Geometry,Polygon} from 'geojson';
 import {CircleMarker,GeoJSON,MapContainer,TileLayer,Marker,Polyline,Tooltip,ZoomControl,useMap,useMapEvents} from 'react-leaflet';
 import type {Point,Route,RoadClass,BigRoadView,ColorBy,MapFocus,TrialRoute,TrialPoints} from './api';
 import {UNKNOWN_COLOR,cutTipText,ferryTipLines,speedColor,type CutInfo} from './bigRoads';
+import {BuildingError,VIEW_MARGIN,buildingLines,buildingStore,buildingsShown,floorColor,floorsOf,footprintOf,padBBox,selectBuildings,type BBox,type BuildingFile,type IndexEntry} from './buildings';
 export {ferryTipLines};
 
 export type LatLon=[number,number];
@@ -14,7 +15,10 @@ interface Props{
  onRoadClick?:(feature:Feature,at:LatLon)=>void;onJunctionClick?:(feature:Feature,at:LatLon)=>void;onMapClick?:(at:LatLon)=>void;
  // Spec 20: changes whenever the drawer beside the map opens or closes, so the map refreshes its size.
  layoutKey?:string;
+ // Building layer: drawn from zoom 16 with files read straight from GitHub; its state goes to onBuildingStatus.
+ buildings?:boolean;onBuildingStatus?:(status:BuildingStatus)=>void;
 }
+export type BuildingStatus={kind:'zoom'}|{kind:'loading';file:string;bytes:number;network:boolean;shown:number}|{kind:'ready';shown:number;total:number;offline?:boolean}|{kind:'error';message:string;shown:number};
 const endpointIcon=(letter:string,color:string)=>L.divIcon({className:'endpoint-icon',html:`<span style="background:${color}">${letter}</span>`,iconSize:[34,42],iconAnchor:[17,39]});
 const aIcon=endpointIcon('A','#123b4a'),bIcon=endpointIcon('B','#e16d40');
 const pulseIcon=L.divIcon({className:'pulse-point',iconSize:[26,26]});
@@ -125,6 +129,56 @@ function TrialLayer({trial,points}:{trial?:TrialRoute|null;points?:TrialPoints|n
   {points?.destination&&<Marker position={points.destination} icon={bIcon}><Tooltip>Điểm đến thử</Tooltip></Marker>}
  </>;
 }
+// Buildings share the map's canvas renderer (a second canvas on top would swallow the clicks meant for the roads) and
+// are moved to the back of its draw list, under the roads. Polygons are kept between redraws and only the difference
+// is added or removed. Downloads still wanted after a move go on; the others are aborted.
+export const buildingStyle=(fill:string)=>({color:'#173e4c',weight:.5,opacity:.55,fillColor:fill,fillOpacity:.85});
+function BuildingLayer({onStatus}:{onStatus?:(status:BuildingStatus)=>void}){
+ const map=useMap();const status=useLatest(onStatus);
+ useEffect(()=>{
+  const group=L.layerGroup().addTo(map),drawn=new Map<string,L.Polygon>(),inflight=new Map<string,{ctrl:AbortController;promise:Promise<BuildingFile>}>();
+  let seq=0,disposed=false;
+  const report=(s:BuildingStatus)=>{if(!disposed)status.current?.(s);};
+  const draw=(entries:IndexEntry[],view:BBox,area:BBox)=>{
+   const files=entries.map(e=>buildingStore.cached(e.file)).filter((f):f is BuildingFile=>!!f),{items,total}=selectBuildings(files,area,view),keep=new Set<string>();
+   for(const {file,i} of items){
+    const key=`${file.name}:${i}`;keep.add(key);if(drawn.has(key))continue;
+    const fp=footprintOf(file,i),poly=L.polygon([fp.outer,...fp.holes].map(r=>r.map(([lon,lat])=>[lat,lon] as LatLon)),buildingStyle(floorColor(floorsOf(file,i))));
+    poly.on('click',(e:L.LeafletMouseEvent)=>{if(map.getContainer().classList.contains('picking'))return;L.DomEvent.stopPropagation(e);L.popup().setLatLng(e.latlng).setContent(tip(buildingLines(file,i))).openOn(map);});
+    group.addLayer(poly);poly.bringToBack();drawn.set(key,poly);
+   }
+   for(const [key,poly] of drawn)if(!keep.has(key)){group.removeLayer(poly);drawn.delete(key);}
+   return{shown:items.length,total};
+  };
+  const stopAll=()=>{for(const x of inflight.values())x.ctrl.abort();inflight.clear();};
+  async function update(){
+   const my=++seq,current=()=>my===seq&&!disposed;
+   if(!buildingsShown(map.getZoom())){stopAll();group.clearLayers();drawn.clear();report({kind:'zoom'});return;}
+   const b=map.getBounds(),view:BBox=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()],area=padBBox(view,VIEW_MARGIN);
+   let shown=0;
+   try{
+    const index=await buildingStore.index();if(!current())return;
+    const entries=buildingStore.needed(index,area),wanted=new Set(entries.map(e=>e.file));
+    for(const [name,x] of inflight)if(!wanted.has(name)){x.ctrl.abort();inflight.delete(name);}
+    shown=draw(entries,view,area).shown;
+    for(const e of entries){
+     if(buildingStore.cached(e.file))continue;
+     const loading=(network:boolean)=>{if(current())report({kind:'loading',file:e.file,bytes:e.bytes,network,shown});};
+     let x=inflight.get(e.file);
+     if(!x){const ctrl=new AbortController(),job={ctrl,promise:buildingStore.file(e,ctrl.signal,()=>loading(true))};x=job;inflight.set(e.file,job);const done=()=>{if(inflight.get(e.file)===job)inflight.delete(e.file);};job.promise.then(done,done);}
+     loading(false);
+     await x.promise;if(!current())return;
+     shown=draw(buildingStore.needed(index,area),view,area).shown;
+    }
+    const r=draw(buildingStore.needed(index,area),view,area);report({kind:'ready',shown:r.shown,total:r.total,offline:index.offline});
+   }catch(e){if(!current()||(e as Error)?.name==='AbortError')return;report({kind:'error',message:e instanceof BuildingError?e.message:'Không vẽ được lớp nhà.',shown});}
+  }
+  const onMove=()=>{void update();};
+  map.on('moveend',onMove);onMove();
+  return()=>{disposed=true;map.off('moveend',onMove);stopAll();group.remove();};
+ },[map]);// eslint-disable-line react-hooks/exhaustive-deps
+ return null;
+}
 // Rendered after the big-road layers so its effect reports the zoom after they fit the map (spec 18.2, L1).
 function ZoomReporter({onZoomChange,mode}:{onZoomChange:(zoom:number)=>void;mode:string}){const map=useMapEvents({zoomend(){onZoomChange(map.getZoom());}});useEffect(()=>{onZoomChange(map.getZoom());},[map,onZoomChange,mode]);return null;}
 // MapContainer applies className only once, so state-driven classes are toggled on the live container.
@@ -139,7 +193,7 @@ function MapEvents({picking,onPick,route,bigActive,onMapClick}:Pick<Props,'picki
  return null;
 }
 export default function TrafficMap(props:Props){
- const {origin,destination,route,classes,picking,onPick,bigRoads,basemap=true,onZoomChange,onRoadClick,onJunctionClick,onMapClick,layoutKey}=props;
+ const {origin,destination,route,classes,picking,onPick,bigRoads,basemap=true,onZoomChange,onRoadClick,onJunctionClick,onMapClick,layoutKey,buildings=false,onBuildingStatus}=props;
  // A few pixels of click tolerance so thin canvas roads can be clicked for their details (spec 18.7).
  const renderer=useMemo(()=>L.canvas({tolerance:5}),[]);
  return <MapContainer center={[21.05,105.83]} zoom={11} zoomControl={false} preferCanvas renderer={renderer} className="map">
@@ -151,6 +205,7 @@ export default function TrafficMap(props:Props){
    <Marker position={[destination.lat,destination.lon]} icon={bIcon}><Tooltip>Điểm đến</Tooltip></Marker>
    {route?.segments?.length?route.segments.map((segment,index)=><Polyline key={index} positions={segment.geometry.coordinates.map(([lon,lat])=>[lat,lon] as LatLon)} pathOptions={{color:classes.find(c=>c.id===segment.road_class)?.color||'#0f8e8e',weight:5,opacity:.92}}><Tooltip>{classes.find(c=>c.id===segment.road_class)?.label||segment.road_class} · {segment.speed_kmh.toFixed(1)} km/h</Tooltip></Polyline>):route&&<Polyline positions={route.geometry.coordinates.map(([lon,lat])=>[lat,lon] as LatLon)} pathOptions={{color:'#0e8e89',weight:5}}/>}
   </>}
+  {buildings&&<BuildingLayer onStatus={onBuildingStatus}/>}
   {onZoomChange&&<ZoomReporter onZoomChange={onZoomChange} mode={bigRoads?'big':'route'}/>}
  </MapContainer>;
 }
