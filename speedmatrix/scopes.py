@@ -24,11 +24,11 @@ from scipy.spatial import cKDTree
 try:
     from .geo import haversine_m, points_in_geometry
     from .rules import RuleError
-    from .segments import ROAD_CLASSES, find_segments
+    from .segments import ROAD_CLASSES, find_segments, pair_lookup
 except ImportError:  # pragma: no cover - flat import
     from geo import haversine_m, points_in_geometry
     from rules import RuleError
-    from segments import ROAD_CLASSES, find_segments
+    from segments import ROAD_CLASSES, find_segments, pair_lookup
 
 M_PER_DEG = 111320.0
 PIECE_SLACK = 1.1           # a piece keeps nodes with d_from + d_to <= PIECE_SLACK * D + PIECE_EXTRA_M
@@ -57,6 +57,9 @@ class ZoneError(ValueError):
 class ScopeResult:
     indices: np.ndarray            # sorted, unique int64 segment indices
     orphans: list = field(default_factory=list)
+    # anchors found through their node pair on other ways (the way was split or re-numbered):
+    # {"anchor": [way, a, b], "way_ids": [...]}
+    moved: list = field(default_factory=list)
 
 
 @dataclass
@@ -877,12 +880,27 @@ class ScopeResolver:
     # -- kinds --
 
     def _resolve(self, scope, exempt) -> ScopeResult:
-        table, bbox, orphans, area_box = self.table, scope.get("bbox"), [], None
+        table, bbox, orphans, area_box, moved = self.table, scope.get("bbox"), [], None, []
         if "segments" in scope:
             anchors = [list(a) for a in scope["segments"]]
             rows = find_segments(table, anchors) if anchors else _EMPTY
-            orphans += [{"anchor": [int(v) for v in a]} for a, r in zip(anchors, rows.tolist()) if r < 0]
             idx = rows[rows >= 0]
+            gone = [a for a, r in zip(anchors, rows.tolist()) if r < 0]
+            if gone:
+                # a way that was split or re-numbered keeps its node pair: follow the pair to its new ways
+                pairs = np.asarray(gone, dtype=np.int64).reshape(-1, 3)
+                start, count = pair_lookup(table, pairs[:, 1], pairs[:, 2])
+                extra = [idx]
+                for anchor, s0, n in zip(gone, start.tolist(), count.tolist()):
+                    anchor = [int(v) for v in anchor]
+                    if n == 0:
+                        orphans.append({"anchor": anchor})
+                        continue
+                    found = table.pair_order[s0:s0 + n]
+                    extra.append(found)
+                    moved.append({"anchor": anchor,
+                                  "way_ids": [int(w) for w in table.way_id[table.way[found]]]})
+                idx = np.concatenate(extra)
         elif "names" in scope:
             parts = []
             for name in scope["names"]:
@@ -917,7 +935,7 @@ class ScopeResolver:
             removed, found = self._routes(exempt["routes"], box)
             orphans += found
             idx = np.setdiff1d(idx, removed, assume_unique=True)
-        return ScopeResult(indices=idx.astype(np.int64), orphans=orphans)
+        return ScopeResult(indices=idx.astype(np.int64), orphans=orphans, moved=moved)
 
     def _routes(self, pieces, bbox):
         parts, orphans = [], []

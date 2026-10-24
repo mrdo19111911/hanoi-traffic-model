@@ -3,6 +3,9 @@
 The fixture is a synthetic SegmentTable built from metre coordinates, without a PBF.
 """
 import math
+from pathlib import Path
+import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -327,9 +330,9 @@ class ScopeResolverTests(ScopeFixture):
         self.assertEqual(set(r.indices.tolist()), self.in_ward_p)
 
     def test_missing_anchor_is_an_orphan(self):
-        r = ScopeResolver(self.t).resolve({"segments": [[self.w, self.a, self.b], [999, 1, 2]]})
+        r = ScopeResolver(self.t).resolve({"segments": [[self.w, self.a, self.b], [999, 9001, 9002]]})
         self.assertEqual(len(r.indices), 1)
-        self.assertEqual(r.orphans, [{"anchor": [999, 1, 2]}])
+        self.assertEqual(r.orphans, [{"anchor": [999, 9001, 9002]}])
 
     def test_names_match_after_normalisation(self):
         self.assertEqual(normalize_name("  Đường  Vành đai A "), normalize_name("vành đai a"))
@@ -733,6 +736,36 @@ class CarriagewayTests(unittest.TestCase):
         for piece in ({"name": "Biên Đông", "from": "Biên Bắc"},
                       {"name": "Biên Bắc", "from": "Biên Tây", "to": "Biên Đông"}):
             self.assertIsNone(route_piece(self.t, piece, CW_BBOX)[1], piece)
+
+
+class RemapTests(unittest.TestCase):
+    """Anchors on a map where way ids changed: the node pair is followed."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from sm_remap_fixture import build_maps
+        cls.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        cls.old, cls.new = build_maps(cls.temp.name)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temp.cleanup()
+
+    def test_way_split_anchor_found_by_node_pair(self):
+        r = ScopeResolver(self.new).resolve({"segments": [[1, 11, 12]]})
+        self.assertEqual(len(r.indices), 1)
+        self.assertEqual(r.orphans, [])
+        self.assertEqual(r.moved, [{"anchor": [1, 11, 12], "way_ids": [91]}])
+
+    def test_gone_pair_is_an_orphan(self):
+        r = ScopeResolver(self.new).resolve({"segments": [[5, 51, 52]]})
+        self.assertEqual(r.orphans, [{"anchor": [5, 51, 52]}])
+        self.assertEqual((len(r.indices), r.moved), (0, []))
+
+    def test_exact_anchor_is_not_moved(self):
+        r = ScopeResolver(self.old).resolve({"segments": [[1, 11, 12]]})
+        self.assertEqual((len(r.indices), r.orphans, r.moved), (1, [], []))
 
 
 if __name__ == "__main__":

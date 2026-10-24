@@ -38,6 +38,7 @@ from model.spatial import MissingRoadData  # noqa: E402
 
 try:
     from .groups import build_group_view, group_rules_sha, save_group_view
+    from .rulecheck import blocks, resolve_rule
     from .rules import GROUP_NAME, LAYERS, RuleError, load_seed_file, validate_rule
     from .scopes import ScopeResolver, ZoneError
     from .segments import (SegmentTable, _sha256_file, build_admin, build_segments, build_water_lines, load_admin,
@@ -47,6 +48,7 @@ try:
     from .state import open_state
 except ImportError:  # pragma: no cover - flat import
     from groups import build_group_view, group_rules_sha, save_group_view
+    from rulecheck import blocks, resolve_rule
     from rules import GROUP_NAME, LAYERS, RuleError, load_seed_file, validate_rule
     from scopes import ScopeResolver, ZoneError
     from segments import (SegmentTable, _sha256_file, build_admin, build_segments, build_water_lines, load_admin,
@@ -56,7 +58,6 @@ except ImportError:  # pragma: no cover - flat import
     from state import open_state
 
 DEFAULT_ROOT = _REPO / "runtime" / "matrix"
-TRUSTED = ("cao", "tb")
 SEED_AUTHOR = "seed"
 _TZ = timezone(timedelta(hours=7))
 
@@ -360,15 +361,14 @@ def cmd_groups(args) -> int:
 
 def _check_rule(resolver, rule) -> tuple:
     """(text, error, orphans) of one rule's scope resolution; text is None for a rule without scope."""
-    if "scope" not in rule.body:
+    result, error = resolve_rule(resolver, rule)
+    if error:
+        return error, True, []
+    if result is None:
         return None, False, []
-    try:
-        result = resolver.resolve(rule.body["scope"], rule.body.get("exempt"))
-    except (ZoneError, RuleError) as exc:
-        return f"{type(exc).__name__}: {exc}", True, []
-    text = f"segments={result.indices.size}\torphans={len(result.orphans)}"
+    text = f"segments={result.indices.size}	orphans={len(result.orphans)}"
     if result.orphans:
-        text += "\t" + json.dumps(result.orphans, ensure_ascii=False)
+        text += "	" + json.dumps(result.orphans, ensure_ascii=False)
     return text, False, result.orphans
 
 
@@ -385,9 +385,7 @@ def cmd_rules_check(args) -> int:
         if text is None:
             print(f"{head}\tno scope")
             continue
-        # groups and speeds abort on any active rule's error; they apply a rule with orphans without the
-        # missing parts, which fails the check for trusted rules only
-        fail = error or (bool(orphans) and rule.confidence in TRUSTED)
+        fail = blocks(rule, error, orphans)
         failing += fail
         if orphans:
             partial.append(rule.id)
