@@ -574,13 +574,24 @@ def _run_job(job):
     return code, warm_split(g, old, band_km)[0]
 
 
+def _resolve(task):
+    """A task with its lazy graph and old labels built (called in the main process, just before dispatch)."""
+    code, mode, g, old, k, band_km, _ = task
+    g = g() if callable(g) else g
+    old = old() if callable(old) else old
+    return code, mode, g, None if old is None else np.asarray(old, dtype=np.int64), k, band_km
+
+
 def split_jobs(jobs: "list[dict]", workers: "int | None" = None,
                per_worker_gb: float = PER_WORKER_GB_L3) -> "dict[int, np.ndarray]":
     """Run split jobs, largest graph first, in a process pool; returns {code: labels}.
 
-    A job is ``{"code", "graph", "old" (or None), "k", "band_km", "mode": "warm" | "fresh"}``. Each worker gets only
-    the job's arrays and runs it end to end. ``workers`` defaults to ``sysres.default_workers(per_worker_gb)``:
-    ``PER_WORKER_GB_L3`` (0.5) for L3 cells, ``PER_WORKER_GB_L2`` (3.0) for L2 cells. One worker runs in-process.
+    A job is ``{"code", "graph", "old" (or None), "k", "band_km", "mode": "warm" | "fresh"}``. ``graph`` and ``old``
+    may be zero-argument callables, built in the main process only when the job is dispatched (the pool's task
+    feeder blocks while the workers are busy, so only a few built jobs are held at once); such a job must give its
+    node count as ``"n"`` for the ordering. Each worker gets only the job's arrays and runs it end to end.
+    ``workers`` defaults to ``sysres.default_workers(per_worker_gb)``: ``PER_WORKER_GB_L3`` (0.5) for L3 cells,
+    ``PER_WORKER_GB_L2`` (3.0) for L2 cells. One worker runs in-process.
     """
     tasks, codes = [], set()
     for job in jobs:
@@ -592,21 +603,24 @@ def split_jobs(jobs: "list[dict]", workers: "int | None" = None,
             raise ValueError(f"job {code}: unknown mode {mode!r}")
         if mode == "warm" and job.get("old") is None:
             raise ValueError(f"job {code}: a warm split needs old labels")
+        g = job["graph"]
+        if callable(g) and job.get("n") is None:
+            raise ValueError(f"job {code}: a lazy graph needs its node count n")
+        n = int(job["n"]) if job.get("n") is not None else g.n
         old = job.get("old") if mode == "warm" else None
-        tasks.append((code, mode, job["graph"], None if old is None else np.asarray(old, dtype=np.int64),
-                      int(job["k"]), float(job["band_km"])))
-    tasks.sort(key=lambda t: (-t[2].n, t[0]))
+        tasks.append((code, mode, g, old, int(job["k"]), float(job["band_km"]), n))
+    tasks.sort(key=lambda t: (-t[6], t[0]))
     if workers is None:
         workers = default_workers(per_worker_gb)
     workers = max(1, min(int(workers), len(tasks)))
     out = {}
     if workers <= 1:
         for task in tasks:
-            code, labels = _run_job(task)
+            code, labels = _run_job(_resolve(task))
             out[code] = labels
     else:
         ctx = multiprocessing.get_context("spawn")
         with ctx.Pool(workers) as pool:
-            for code, labels in pool.imap_unordered(_run_job, tasks, chunksize=1):
+            for code, labels in pool.imap_unordered(_run_job, (_resolve(t) for t in tasks), chunksize=1):
                 out[code] = labels
     return {code: out[code] for code in sorted(out)}

@@ -136,6 +136,16 @@ class PartitionTests(unittest.TestCase):
             setattr(cls, f"prev_{name}", Previous(ng.osm.copy(), codes, None, "test"))
         cls.run_nodes = [int(i) for i in np.flatnonzero(cls.ng_motorway.osm >= 5001)]
 
+        # the motorway map again with one new node 5004 inserted between 5002 and 5003 (a geometry edit)
+        run2 = [node(11, 3) + 1, 5001, 5002, 5004, 5003, node(11, 5) + 1]
+        mc2 = {**coords, **mc, 5004: (105.8046, 21.0123)}
+        _, cls.g_mw_insert, cls.ng_mw_insert = make_graphs(root / "mw_insert", mc2,
+                                                           ways + [(600, run2, {"highway": "motorway"})])
+        # a wholly new motorway spur 6001-6002 off east node (5, 11)
+        sc = {6001: (105.8115, 21.005), 6002: (105.812, 21.005)}
+        spur = (700, [node(5, 11) + 1, 6001, 6002], {"highway": "motorway"})
+        _, cls.g_mw_new, cls.ng_mw_new = make_graphs(root / "mw_new", {**coords, **sc}, ways + [spur])
+
     @classmethod
     def tearDownClass(cls):
         cls.temp.cleanup()
@@ -304,6 +314,47 @@ class PartitionTests(unittest.TestCase):
         self.assertEqual(p.info["cells_vanished"], {"l1": 0, "l2": 0, "l3": 1})
         self.assertGreaterEqual(p.info["nodes_moved"]["l3"], 1)
         self.assertEqual(p.info["nodes_moved"]["l1"], 0)
+
+    def test_piece_moved_to_another_l2_cell_drops_its_old_l3_code(self):     # review I1
+        codes = np.c_[self.prev_x_spans_bridge.codes, np.zeros(N * N, dtype=np.int64)]
+        l3 = {10: lambda r, col: 100 if col == 0 else 101, 11: lambda r, col: 110 if r < 6 else 111,
+              12: lambda r, col: 120, 20: lambda r, col: 200}
+        for r in range(N):
+            for col in range(N):
+                codes[node(r, col), 2] = l3[int(codes[node(r, col), 1])](r, col)
+        for hashes in (None, {10: "x", 11: "y", 12: "z", 20: "w"}):
+            prev = Previous(self.ng_nobridge.osm.copy(), codes, hashes, "test")
+            p = build_partition(self.g_nobridge, self.ng_nobridge, prev, POLY, CFG3, 1)
+            self.assertTrue((p.codes[self.half2, 1] == self.code_y).all())
+            self.assertTrue(set(p.codes[self.half2, 2].tolist()) <= {110, 111}, p.codes[self.half2, 2])
+            self.assertNotIn(101, p.cells[2].tolist())
+            self.assertEqual(p.info["cells_vanished"]["l3"], 1)
+
+    def test_new_node_inside_a_carried_run_takes_the_run_label(self):          # review I2
+        p = build_partition(self.g_mw_insert, self.ng_mw_insert, self.prev_motorway, POLY, CFG, 1)
+        sel = np.flatnonzero(self.ng_mw_insert.osm >= 5001)
+        self.assertEqual(p.codes[sel].tolist(), [[0, 10]] * 4)
+        self.assertEqual(p.info["expressway_detached"]["l2"], {"pieces": 1, "nodes": 4})
+        r = p.info["rules"]["expressway_l2"]
+        self.assertEqual((r["joined_carried_run"], r["new_run_nodes"]), (1, 0))
+        self.assertEqual(r["expressway_cut_edges_after"], 2)     # the run's two ends, as before the edit
+        self.assertEqual(r["expressway_cut_edges_before"], r["expressway_cut_edges_after"])
+
+    def test_wholly_new_run_gets_the_expressway_rule(self):
+        p = build_partition(self.g_mw_new, self.ng_mw_new, self.prev, POLY, CFG, 1)
+        spur = np.flatnonzero(self.ng_mw_new.osm >= 6001)
+        self.assertTrue((p.codes[spur] == p.codes[node(5, 11)]).all())
+        r = p.info["rules"]["expressway_l1"]
+        self.assertEqual((r["joined_carried_run"], r["new_run_nodes"]), (0, 2))
+        self.assertEqual(r["expressway_cut_edges_after"], 0)
+
+    def test_new_codes_follow_the_smallest_osm_id(self):
+        p = build_partition(self.g, self.ng, self.prev_l2_across_l1, POLY, CFG, 1)
+        moved = [node(r, 6) for r in range(N)]
+        old = int(self.prev_l2_across_l1.codes[node(0, 5), 1])
+        nxt = int(self.prev_l2_across_l1.codes[:, 1].max()) + 1
+        self.assertEqual(set(p.codes[moved, 1].tolist()), {nxt})
+        self.assertEqual(int(p.codes[node(0, 5), 1]), old)
 
     # ---- node graph, persistence and CLI -----------------------------------------------------------------------------
 

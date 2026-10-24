@@ -185,27 +185,83 @@ def cell_graph(ng: NodeGraph, mask: "np.ndarray | None" = None) -> CellGraph:
                                 ng.highway[e], ng.highway_names, ng.river[e], ng.length_m[e], node=nodes)
 
 
-def _cell_graphs(ng: NodeGraph, labels: np.ndarray, wanted):
-    """Yield (code, CellGraph) for every code in ``wanted``: the nodes labelled ``code`` and their inner edges."""
-    labels = np.asarray(labels, dtype=np.int64)
-    wanted = np.asarray(wanted, dtype=np.int64)
-    order = np.argsort(labels, kind="stable")
-    sl = labels[order]
-    local = np.empty(ng.n, dtype=np.int64)
-    local[order] = np.arange(ng.n) - np.searchsorted(sl, sl, "left")
-    inner = (labels[ng.lo] == labels[ng.hi]) & (labels[ng.lo] >= 0)
-    e = np.flatnonzero(inner)
-    el = labels[ng.lo[e]]
-    eo = np.argsort(el, kind="stable")
-    e, el = e[eo], el[eo]
-    ns, ne = np.searchsorted(sl, wanted, "left"), np.searchsorted(sl, wanted, "right")
-    es, ee = np.searchsorted(el, wanted, "left"), np.searchsorted(el, wanted, "right")
-    for code, s, t, a, b in zip(wanted.tolist(), ns, ne, es, ee):
-        nodes = order[s:t]
-        ed = e[a:b]
-        yield code, CellGraph.from_edges(ng.osm[nodes], ng.lon[nodes], ng.lat[nodes], local[ng.lo[ed]],
-                                         local[ng.hi[ed]], ng.highway[ed], ng.highway_names, ng.river[ed],
-                                         ng.length_m[ed], node=nodes)
+class _Cells:
+    """The nodes and inner edges of every cell (label >= 0) of one labelling, grouped once in compact int32 index
+    arrays; a cell's CellGraph is built only on demand (``graph``), so callers never hold all cells' graphs."""
+
+    def __init__(self, ng: NodeGraph, labels: np.ndarray):
+        labels = np.asarray(labels, dtype=np.int64)
+        self.ng = ng
+        order = np.argsort(labels, kind="stable")
+        sl = labels[order]
+        first = np.searchsorted(sl, sl, "left")
+        self.local = np.empty(ng.n, dtype=np.int32)
+        self.local[order] = (np.arange(ng.n) - first).astype(np.int32)
+        del first
+        self.codes = np.unique(sl[sl >= 0])
+        self._ns = np.searchsorted(sl, self.codes, "left")
+        self._ne = np.searchsorted(sl, self.codes, "right")
+        self.order = order.astype(np.int32)
+        del order, sl
+        inner = (labels[ng.lo] == labels[ng.hi]) & (labels[ng.lo] >= 0)
+        e = np.flatnonzero(inner)
+        el = labels[ng.lo[e]]
+        eo = np.argsort(el, kind="stable")
+        e, el = e[eo], el[eo]
+        self._es = np.searchsorted(el, self.codes, "left")
+        self._ee = np.searchsorted(el, self.codes, "right")
+        self.edges_sorted = e.astype(np.int32)
+        deg = np.bincount(ng.lo[e], minlength=ng.n) + np.bincount(ng.hi[e], minlength=ng.n)
+        del e, el, eo, inner
+        junction = (deg >= 3).astype(np.int64)
+        valid = labels >= 0
+        self.junctions = np.bincount(np.searchsorted(self.codes, labels[valid]), weights=junction[valid],
+                                     minlength=len(self.codes)).astype(np.int64)
+
+    def _at(self, code) -> int:
+        i = int(np.searchsorted(self.codes, code))
+        if i >= len(self.codes) or self.codes[i] != code:
+            raise KeyError(code)
+        return i
+
+    def nodes(self, code) -> np.ndarray:
+        i = self._at(code)
+        return self.order[self._ns[i]:self._ne[i]].astype(np.int64)
+
+    def size(self, code) -> int:
+        i = self._at(code)
+        return int(self._ne[i] - self._ns[i])
+
+    def junction_count(self, code) -> int:
+        return int(self.junctions[self._at(code)])
+
+    def graph(self, code) -> CellGraph:
+        i = self._at(code)
+        ng = self.ng
+        nodes = self.order[self._ns[i]:self._ne[i]].astype(np.int64)
+        ed = self.edges_sorted[self._es[i]:self._ee[i]]
+        return CellGraph.from_edges(ng.osm[nodes], ng.lon[nodes], ng.lat[nodes], self.local[ng.lo[ed]],
+                                    self.local[ng.hi[ed]], ng.highway[ed], ng.highway_names, ng.river[ed],
+                                    ng.length_m[ed], node=nodes)
+
+
+def _unique_rows(*cols) -> "tuple[np.ndarray, np.ndarray, np.ndarray]":
+    """``np.unique(np.stack(cols, axis=1), axis=0, return_inverse=True, return_counts=True)`` by lexsort, without
+    the stacked copy and the structured-dtype sort: (table (u, len(cols)), inverse (n,), counts (u,))."""
+    n = len(cols[0])
+    if not n:
+        return np.zeros((0, len(cols)), dtype=np.int64), np.zeros(0, dtype=np.int64), np.zeros(0, dtype=np.int64)
+    o = np.lexsort(cols[::-1])
+    flag = np.zeros(n, dtype=bool)
+    flag[0] = True
+    for c in cols:
+        s = c[o]
+        flag[1:] |= s[1:] != s[:-1]
+    starts = np.flatnonzero(flag)
+    inv = np.empty(n, dtype=np.int64)
+    inv[o] = np.cumsum(flag) - 1
+    table = np.stack([np.asarray(c)[o[starts]] for c in cols], axis=1).astype(np.int64)
+    return table, inv, np.diff(np.r_[starts, n])
 
 
 # ---- seed and previous release ---------------------------------------------------------------------------------------
@@ -301,11 +357,10 @@ def _keys(labels, parent, component) -> "tuple[np.ndarray, np.ndarray]":
     """Composite key per node of (component, parent, label) (-1 when unlabelled) and the key table."""
     valid = labels >= 0
     key = np.full(len(labels), -1, dtype=np.int64)
-    rows = np.stack([component[valid].astype(np.int64), parent[valid], labels[valid]], axis=1)
-    if not len(rows):
+    if not valid.any():
         return key, np.zeros((0, 3), dtype=np.int64)
-    table, inv = np.unique(rows, axis=0, return_inverse=True)
-    key[valid] = np.asarray(inv).reshape(-1)
+    table, inv, _ = _unique_rows(component[valid].astype(np.int64), parent[valid], labels[valid])
+    key[valid] = inv
     return key, table
 
 
@@ -380,9 +435,7 @@ def _nest(labels, parent, next_code) -> "tuple[np.ndarray, int, dict]":
     info = {"cells_split": 0, "parts_relabelled": 0, "nodes_relabelled": 0}
     if not len(valid):
         return labels, next_code, info
-    rows = np.stack([labels[valid], parent[valid]], axis=1)
-    table, inv, cnt = np.unique(rows, axis=0, return_inverse=True, return_counts=True)
-    inv = np.asarray(inv).reshape(-1)
+    table, inv, cnt = _unique_rows(labels[valid], parent[valid])
     o = np.lexsort((table[:, 1], -cnt, table[:, 0]))
     best = np.zeros(len(table), dtype=bool)
     best[o[np.r_[True, table[o][1:, 0] != table[o][:-1, 0]]]] = True
@@ -517,11 +570,6 @@ def _max_code(*arrays) -> int:
     return best
 
 
-def _junctions(sub: CellGraph) -> int:
-    deg = np.bincount(sub.lo, minlength=sub.n) + np.bincount(sub.hi, minlength=sub.n)
-    return int((deg >= 3).sum())
-
-
 # ---- build -----------------------------------------------------------------------------------------------------------
 
 def _config_json(config: PartitionConfig) -> dict:
@@ -536,7 +584,7 @@ def build_partition(g: TurnGraph, ng: NodeGraph, previous: "Previous | None", po
     2. new L1 labels by polygon, then network propagation, then the Euclidean nearest labelled node;
     3. new L2 labels by network propagation inside the L1 cell, then the Euclidean nearest within it, then one new
        code per L1 cell left without any; with no previous at all, a fresh ``split_cell`` per L1 cell instead;
-    4. the expressway rule (Decision 13) for new expressway-only nodes, levels 1-2 (only new nodes take its changes);
+    4. the expressway rule (Decision 13) for new expressway-only nodes, levels 1-2 (``_expressway_new``);
     5. the ferry rule (Decision 11), levels 1-2;
     6. L1 contiguity; 7. L2 nesting (split-then-merge); 8. L2 contiguity among siblings;
     9. ``cell_hash`` per L2 cell;
@@ -565,20 +613,21 @@ def build_partition(g: TurnGraph, ng: NodeGraph, previous: "Previous | None", po
 
     # 1. carry-over
     codes = np.full((n, k), -1, dtype=np.int64)
-    prev_codes = np.zeros((0, k), dtype=np.int64)
+    kk = 0
+    hit = np.zeros(n, dtype=bool)
     if previous is not None:
         previous = _check_previous(previous)
         kk = min(k, previous.codes.shape[1])
-        prev_codes = np.full((len(previous.ids), k), -1, dtype=np.int64)
-        prev_codes[:, :kk] = previous.codes[:, :kk]
-        pos = np.searchsorted(previous.ids, ng.osm)
-        pos = np.minimum(pos, max(len(previous.ids) - 1, 0))
-        hit = (previous.ids[pos] == ng.osm) if len(previous.ids) else np.zeros(n, dtype=bool)
-        codes[hit] = prev_codes[pos[hit]]
+        if len(previous.ids):
+            pos = np.minimum(np.searchsorted(previous.ids, ng.osm), len(previous.ids) - 1)
+            hit = previous.ids[pos] == ng.osm
+            codes[hit, :kk] = previous.codes[pos[hit], :kk]
+            del pos
     carried = codes.copy()
-    new = carried[:, 0] < 0
-    info["carry_over"] = {"carried": int((~new).sum()), "new": int(new.sum())}
-    nxt = [_max_code(carried[:, lv], prev_codes[:, lv]) + 1 for lv in range(k)]
+    new = carried[:, 0] < 0       # nodes to label: not in previous, or in it without a label (seed)
+    info["carry_over"] = {"carried": int((~new).sum()), "carried_unlabelled": int((hit & new).sum()),
+                          "new": int((~hit).sum())}
+    nxt = [_max_code(carried[:, lv], previous.codes[:, lv] if lv < kk else ()) + 1 for lv in range(k)]
 
     # 2. L1
     l1 = codes[:, 0]
@@ -609,14 +658,7 @@ def build_partition(g: TurnGraph, ng: NodeGraph, previous: "Previous | None", po
                       "nearest": near2, "new_cells": int(len(np.unique(codes[left, 0])))}
 
     # 4. expressway rule for new expressway-only nodes
-    if (xonly & new).any():
-        for lv, parent in ((0, None), (1, codes[:, 0])):
-            lab, rinfo = expressway_rule(cg, codes[:, lv], parent)
-            before = codes[new, lv].copy()
-            codes[new, lv] = lab[new]
-            rules[f"expressway_l{lv + 1}"] = dict(rinfo, new_nodes_relabelled=int((codes[new, lv] != before).sum()))
-    else:
-        rules["expressway_l1"] = rules["expressway_l2"] = {"skipped": "no new expressway-only node"}
+    rules["expressway_l1"], rules["expressway_l2"] = _expressway_new(ng, cg, codes, new, xonly)
 
     # 5. ferry rule, levels 1-2
     members, homes, finfo = _ferry_units(ng)
@@ -630,23 +672,19 @@ def build_partition(g: TurnGraph, ng: NodeGraph, previous: "Previous | None", po
     codes[:, 1], rules["contiguity_l2"] = _contiguity(cg, codes[:, 1], codes[:, 0], ng.component, xonly)
 
     # 9. L2 hashes; resplit mode per L2 cell
-    l2_cells = np.unique(codes[:, 1])
-    l2_hash, subs = {}, {}
-    for code, sub in _cell_graphs(ng, codes[:, 1], l2_cells):
-        l2_hash[code] = cell_hash(sub)
-        subs[code] = sub
-    modes = _resplit_modes(codes, carried, previous, prev_codes, l2_hash, subs, config)
+    cells2 = _Cells(ng, codes[:, 1])
+    l2_hash = {int(c): cell_hash(cells2.graph(c)) for c in cells2.codes.tolist()}
+    modes = _resplit_modes(cells2, carried, previous, l2_hash, config)
     info["resplit"] = {m: sum(1 for v in modes.values() if v == m) for m in ("unchanged", "warm", "fresh")}
-    subs = {c: s for c, s in subs.items() if k > 2 and modes[c] != "unchanged"}
 
     # 10-11. levels 3 and deeper
     for lv in range(2, k):
         codes[:, lv], nxt[lv], rules[f"nesting_l{lv + 1}"], rules[f"split_l{lv + 1}"] = _split_level(
-            ng, codes, carried, lv, modes, subs if lv == 2 else None, config, workers, nxt[lv])
+            ng, codes, carried, lv, modes, cells2 if lv == 2 else None, config, workers, nxt[lv])
         rules[f"ferry_l{lv + 1}"] = {"nodes_relabelled": _apply_ferry(codes, members, homes, lv, lv + 1)}
         codes[:, lv], rules[f"contiguity_l{lv + 1}"] = _contiguity(cg, codes[:, lv], codes[:, lv - 1], ng.component,
                                                                    xonly)
-    del subs
+    del cells2
     for lv in range(k):
         r = rules[f"contiguity_l{lv + 1}"]
         detached[f"l{lv + 1}"] = {"pieces": r["expressway_detached"], "nodes": r["expressway_detached_nodes"]}
@@ -677,84 +715,101 @@ def build_partition(g: TurnGraph, ng: NodeGraph, previous: "Previous | None", po
 
 
 def _spanning(labels, parent) -> int:
-    pairs = np.unique(np.stack([labels, parent], axis=1), axis=0)
+    pairs = _unique_rows(np.asarray(labels), np.asarray(parent))[0]
     return int(len(pairs) - len(np.unique(pairs[:, 0])))
 
 
 def _fresh_l2(ng: NodeGraph, l1, config: PartitionConfig, workers, next_code):
     """A fresh ``split_cell`` per L1 cell; codes from ``next_code`` in order of each cell's smallest OSM id."""
-    jobs, nodes = [], {}
-    for code, sub in _cell_graphs(ng, l1, np.unique(l1)):
-        k = max(config.l2_min_k, int(round(sub.n / config.l2_nodes)))
-        jobs.append({"code": code, "graph": sub, "old": None, "k": k, "band_km": config.l2_band_km, "mode": "fresh"})
-        nodes[code] = sub.node
+    cells = _Cells(ng, l1)
+    jobs = []
+    for code in cells.codes.tolist():
+        size = cells.size(code)
+        k = max(config.l2_min_k, int(round(size / config.l2_nodes)))
+        jobs.append({"code": code, "graph": (lambda c=code: cells.graph(c)), "n": size, "old": None, "k": k,
+                     "band_km": config.l2_band_km, "mode": "fresh"})
     res = split_jobs(jobs, workers, per_worker_gb=PER_WORKER_GB_L2)
     part = np.full(ng.n, -1, dtype=np.int64)
     offset = 0
     for code in sorted(res):
-        part[nodes[code]] = offset + res[code]
+        part[cells.nodes(code)] = offset + res[code]
         offset += int(res[code].max()) + 1 if len(res[code]) else 0
     l2, next_code = _codes_by_min_node(part, next_code)
     return l2, next_code, {"mode": "fresh_split", "cells": int(len(np.unique(l2)))}
 
 
-def _resplit_modes(codes, carried, previous, prev_codes, l2_hash, subs, config) -> dict:
+def _resplit_modes(cells2: _Cells, carried, previous, l2_hash, config) -> dict:
     """Per L2 code: "unchanged" (same hash, complete deeper codes), "warm" or "fresh" (Decision 10)."""
-    k = codes.shape[1]
-    modes = {}
+    k = carried.shape[1]
     if previous is None:
         return {c: "fresh" for c in l2_hash}
+    if previous.l2_hash is None:
+        return {c: "warm" for c in l2_hash}
     old_count = {}
-    if previous.l2_hash is not None:
-        c, cnt = np.unique(prev_codes[:, 1][prev_codes[:, 1] >= 0], return_counts=True)
+    if previous.codes.shape[1] > 1:
+        prev2 = previous.codes[:, 1]
+        c, cnt = np.unique(prev2[prev2 >= 0], return_counts=True)
         old_count = dict(zip(c.tolist(), cnt.tolist()))
-    for code, sub in subs.items():
-        deep = carried[sub.node, 2:]
-        if previous.l2_hash is None:
-            modes[code] = "warm"
-            continue
-        if previous.l2_hash.get(code) == l2_hash[code] and (k == 2 or (deep >= 0).all()):
+    modes = {}
+    for code in l2_hash:
+        nodes = cells2.nodes(code)
+        if previous.l2_hash.get(code) == l2_hash[code] and (k == 2 or (carried[nodes, 2:] >= 0).all()):
             modes[code] = "unchanged"
             continue
-        nn = sub.n
-        n_new = int((carried[sub.node, 1] < 0).sum())
+        nn = len(nodes)
+        n_new = int((carried[nodes, 1] < 0).sum())
         n_old = old_count.get(code, 0)
         grown = abs(nn - n_old) > config.fresh_frac * n_old
         modes[code] = "fresh" if n_new > config.fresh_frac * nn or grown else "warm"
     return modes
 
 
-def _split_level(ng, codes, carried, lv, modes, subs, config, workers, next_code):
-    """Codes at level ``lv`` (>= 2): kept in unchanged L2 cells, re-split in the others, one job per parent cell."""
+def _dense(local_old, uniq) -> np.ndarray:
+    return np.where(local_old >= 0, np.searchsorted(uniq, local_old), -1)
+
+
+def _split_level(ng, codes, carried, lv, modes, cells, config, workers, next_code):
+    """Codes at level ``lv`` (>= 2): kept in unchanged L2 cells, re-split in the others, one job per parent cell.
+
+    A node whose parent code (level ``lv - 1``) changed since the previous release loses its old code here, so a
+    piece moved into another cell by contiguity or nesting is relabelled by the warm split instead of keeping a
+    stray cell of its own. Each job's CellGraph is built only when the job is dispatched (``_Cells.graph``).
+    """
     i = lv - 2
     band = float(config.split_band_km[min(i, len(config.split_band_km) - 1)])
     per_cell = int(config.split_nodes[i])
-    old, next_code, nest_info = _nest(carried[:, lv], codes[:, lv - 1], next_code)
+    keep = codes[:, lv - 1] == carried[:, lv - 1]
+    old = np.where(keep, carried[:, lv], -1)
+    old, next_code, nest_info = _nest(old, codes[:, lv - 1], next_code)
+    nest_info["parent_changed"] = int(((carried[:, lv] >= 0) & ~keep).sum())
+    del keep
     changed = np.array(sorted(c for c, m in modes.items() if m != "unchanged"), dtype=np.int64)
     in_changed = np.isin(codes[:, 1], changed)
     level = np.where(in_changed, -1, old)
-    if subs is not None:
-        units = [(c, subs[c]) for c in changed.tolist()]
+    if cells is None:
+        cells = _Cells(ng, np.where(in_changed, codes[:, lv - 1], -1))
+        units = cells.codes
     else:
-        units = list(_cell_graphs(ng, codes[:, lv - 1], np.unique(codes[in_changed, lv - 1])))
+        units = changed
     jobs, meta = [], {}
     split = {"warm": 0, "fresh": 0}
-    for code, sub in units:
-        l2 = int(codes[sub.node[0], 1])
-        local_old = old[sub.node]
-        mode = modes[l2] if (local_old >= 0).any() else "fresh"
+    for code in units.tolist():
+        nodes = cells.nodes(code)
+        local_old = old[nodes]
+        mode = modes[int(codes[nodes[0], 1])] if (local_old >= 0).any() else "fresh"
         uniq = np.unique(local_old[local_old >= 0])
-        dense = np.where(local_old >= 0, np.searchsorted(uniq, local_old), -1)
-        k = split_k(sub.n, _junctions(sub), per_cell, 2)
-        jobs.append({"code": code, "graph": sub, "old": dense if mode == "warm" else None, "k": k, "band_km": band,
-                     "mode": mode})
-        meta[code] = (sub.node, mode, uniq)
+        k = split_k(len(nodes), cells.junction_count(code), per_cell, 2)
+        old_fn = (lambda c=code, u=uniq: _dense(old[cells.nodes(c)], u)) if mode == "warm" else None
+        jobs.append({"code": code, "graph": (lambda c=code: cells.graph(c)), "n": len(nodes), "old": old_fn,
+                     "k": k, "band_km": band, "mode": mode})
+        meta[code] = (mode, uniq)
         split[mode] += 1
     res = split_jobs(jobs, workers, per_worker_gb=PER_WORKER_GB_L3) if jobs else {}
     part = np.full(ng.n, -1, dtype=np.int64)
     offset = 0
     for code in sorted(res):
-        nodes, mode, uniq = meta[code]
+        mode, uniq = meta[code]
+        nodes = cells.nodes(code)
         if mode == "warm":
             level[nodes] = uniq[res[code]]
         else:
@@ -763,6 +818,54 @@ def _split_level(ng, codes, carried, lv, modes, subs, config, workers, next_code
     fresh, next_code = _codes_by_min_node(part, next_code)
     level[part >= 0] = fresh[part >= 0]
     return level, next_code, nest_info, split
+
+
+def _cut_counts(ng: NodeGraph, labels) -> "tuple[int, int]":
+    la, lb = labels[ng.lo], labels[ng.hi]
+    cut = (la >= 0) & (lb >= 0) & (la != lb)
+    return int(cut.sum()), int((cut & ng.expressway).sum())
+
+
+def _expressway_new(ng: NodeGraph, cg: CellGraph, codes, new, xonly) -> "tuple[dict, dict]":
+    """Decision 13 for the new expressway-only nodes, levels 1-2; returns the info of each level.
+
+    A run is a set of expressway-only nodes joined by expressway edges. A new node in a run that also holds carried
+    nodes takes the L1 and L2 codes of the nearest carried node of its run (by length along the run), so an edit
+    inside an old run never splits it. Only runs made wholly of new nodes get ``expressway_rule``; its labels for
+    every other node are discarded. The cut counts describe the labels actually applied.
+    """
+    n = ng.n
+    newx = new & xonly
+    run_edge = np.flatnonzero(ng.expressway & xonly[ng.lo] & xonly[ng.hi])
+    lo, hi = ng.lo[run_edge], ng.hi[run_edge]
+    run = connected_components(coo_matrix((np.ones(len(lo), dtype=np.int8), (lo, hi)), shape=(n, n)),
+                               directed=False)[1]
+    old_run = np.zeros(n, dtype=bool)
+    old_run[run[xonly & ~new]] = True
+    join = newx & old_run[run]
+    whole = newx & ~old_run[run]
+    before = [codes[new, lv].copy() for lv in (0, 1)]
+    cuts_before = [_cut_counts(ng, codes[:, lv]) for lv in (0, 1)]
+    if join.any():
+        w = np.maximum(ng.length_m[run_edge].astype(np.float64), MIN_LENGTH_M)
+        graph = csr_matrix((w, (lo, hi)), shape=(n, n))
+        _, _, src = dijkstra(graph, directed=False, indices=np.flatnonzero(xonly & ~new), min_only=True,
+                             return_predecessors=True)
+        j = np.flatnonzero(join)
+        codes[j, :2] = codes[src[j], :2]
+    if whole.any():
+        for lv, parent in ((0, None), (1, codes[:, 0])):
+            lab, _ = expressway_rule(cg, codes[:, lv], parent)
+            codes[whole, lv] = lab[whole]
+    out = []
+    for lv in (0, 1):
+        after = _cut_counts(ng, codes[:, lv])
+        out.append({"new_expressway_only_nodes": int(newx.sum()), "joined_carried_run": int(join.sum()),
+                    "new_run_nodes": int(whole.sum()),
+                    "new_nodes_relabelled": int((codes[new, lv] != before[lv]).sum()),
+                    "cut_edges_before": cuts_before[lv][0], "cut_edges_after": after[0],
+                    "expressway_cut_edges_before": cuts_before[lv][1], "expressway_cut_edges_after": after[1]})
+    return out[0], out[1]
 
 
 # ---- checks ----------------------------------------------------------------------------------------------------------

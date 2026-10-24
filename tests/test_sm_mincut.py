@@ -407,6 +407,26 @@ class SplitTests(unittest.TestCase):
         np.testing.assert_array_equal(a[5], self.two_grid_labels)
         self.assertTrue((a[9][-3:] == self.two_grid_labels[0] + 90).all())
 
+    def test_split_jobs_builds_lazy_jobs_on_demand(self):
+        eager = [{"code": 5, "graph": self.two_grids, "old": None, "k": 2, "band_km": 1.0, "mode": "fresh"},
+                 {"code": 9, "graph": self.two_grids_plus, "old": np.r_[self.two_grid_labels + 90, [-1, -1, -1]],
+                  "k": 2, "band_km": 1.0, "mode": "warm"}]
+        built = []
+
+        def lazy(job):
+            g, old = job["graph"], job["old"]
+            return dict(job, n=g.n, graph=lambda: built.append(job["code"]) or g,
+                        old=None if old is None else (lambda: old))
+
+        want = split_jobs(eager, 1)
+        for workers in (1, 2):
+            built.clear()
+            got = split_jobs([lazy(j) for j in eager], workers)
+            self.assertTrue(all(np.array_equal(got[k], want[k]) for k in want))
+            self.assertEqual(sorted(built), [5, 9])
+        with self.assertRaisesRegex(ValueError, "n"):
+            split_jobs([dict(eager[0], graph=lambda: self.two_grids)], 1)
+
     def test_split_jobs_refuses_bad_jobs(self):
         job = {"code": 1, "graph": self.two_grids, "old": None, "k": 2, "band_km": 1.0, "mode": "warm"}
         with self.assertRaisesRegex(ValueError, "old"):
