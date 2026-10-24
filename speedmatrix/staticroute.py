@@ -23,7 +23,11 @@ try:
 except ImportError:  # pragma: no cover - run as a script
     from speedmatrix.graph import TurnGraph, load_graph
 
-PER_WORKER_GB = 0.8
+# Private memory of one parallel_table worker on a nationwide-size graph: measured 2.26 GB peak (2026-10-24, a
+# synthetic turn graph with the E = 10.1M EBNs and T = 19.3M turns of the 2026-10-21 build, one table() call):
+# each worker builds its own CSR (float64 data, int32 indices) and scipy's dijkstra allocates a heap node per
+# vertex. The mapped graph arrays are file-backed and shared, so they do not count. Task 12 re-measures it.
+PER_WORKER_GB = 2.5
 
 
 def ebn_weights(g: TurnGraph, seg_ds: np.ndarray) -> np.ndarray:
