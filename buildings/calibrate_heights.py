@@ -4,7 +4,7 @@ and estimate a height for buildings that have none.
     .venv/Scripts/python.exe buildings/calibrate_heights.py truth   # -> data/buildings/_calib/{truth.parquet,density.npz}
     .venv/Scripts/python.exe buildings/calibrate_heights.py fit     # -> buildings/height_calibration.json
     .venv/Scripts/python.exe buildings/calibrate_heights.py tall    # adds the tall-building stage ('tall') to it
-    .venv/Scripts/python.exe buildings/calibrate_heights.py apply [--workers 5] [--files f1.parquet ...] [--out-dir D] [--no-est]
+    .venv/Scripts/python.exe buildings/calibrate_heights.py apply [--workers 5] [--files f1.parquet ...] [--out-dir D] [--no-est] [--no-sources]
     # from raw: git archive 703e019 buildings/by_area | tar -x -C <tmp>; move <tmp>/buildings/by_area to
     # data/buildings/_calib/raw_by_area, then apply --src-dir data/buildings/_calib/raw_by_area --out-dir buildings/by_area
 
@@ -46,6 +46,10 @@ apply: rewrites height_dm, height_src and floors of published files in place: 'g
   split_by_area.py / build_areas.py), then the `bytes` of the changed files in by_area/index.json. A file that already
   holds 'g25cal' or 'est' is skipped: its raw 2.5D values are gone. build_areas.py does not call this, so a rebuilt
   area comes out uncalibrated until apply runs again.
+  Then the rows listed in buildings/height_sources.json (extra_heights.py build) for the file get 'wikidata' (a matched
+  Wikidata height / floors), else 'sibling' (the height of a tower of the same complex), with the listed height and
+  floors; never on 'osm' / 'osm_part' rows (precedence osm / osm_part > wikidata > sibling > g25cal > est). A file
+  holding any of these is skipped as well; --no-sources applies the calibration only.
 """
 import argparse, datetime, glob, json, math, os, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -301,7 +305,8 @@ LOCAL_GRID = [(0.0, 0.0)] + [(R, k) for R in (300.0, 500.0) for k in (1.0, 3.0, 
 RES_CLIP = 0.7                           # anchor residuals clipped to +-this (log units; a 2x disagreement) before averaging
 LOCAL_SIGMA = 0.5                        # anchors count by similarity of raw 2.5D: exp(-(dlog h25)^2 / (2 sigma^2))
 BANDS = ((0, 10), (10, 30), (30, 60), (60, 1e9))
-NEW_SRC = ('g25cal', 'est')
+NEW_SRC = ('g25cal', 'est', 'wikidata', 'sibling')
+SOURCES = os.path.join(REPO, 'buildings', 'height_sources.json')   # Wikidata / sibling rows (extra_heights.py build)
 
 # Candidate groupings: lists of [name, rule], first match wins; the last rule must match everything. Rule keys:
 # width_max (short side of the oriented rectangle, m), elong_min (long / short side), area_min / area_max (m2),
@@ -1121,10 +1126,14 @@ def tall_from_params(P):
 
 # ---------------------------------------------------------------------------------------------------- apply
 
-def load_params(path):
-    """Parameters written by fit; the clamps of the file replace the module's, so apply follows the file."""
+def load_params(path, sources=None):
+    """Parameters written by fit; the clamps of the file replace the module's, so apply follows the file. `sources`:
+    height_sources.json (Wikidata and sibling rows, extra_heights.py build), or None for none."""
     global RATIO_CLAMP, H_CLAMP, EST_CLAMP
     P = json.load(open(path, encoding='utf-8'))
+    if sources:
+        from extra_heights import load_sources
+        P['_sources'] = load_sources(sources)
     st = P['settings']
     RATIO_CLAMP, H_CLAMP, EST_CLAMP = tuple(st['ratio_clamp']), tuple(st['height_clamp']), tuple(st['est_clamp'])
     A = P['anchors']
@@ -1135,12 +1144,13 @@ def load_params(path):
     return P
 
 
-def apply_table(tbl, P, dk, dc, province=None):
+def apply_table(tbl, P, dk, dc, province=None, name=None):
     """Compact table -> (new table, details). Rows with height_src 'g25' in a calibrated group get 'g25cal' (main
     stage, then the tall stage for raw h25 >= T when the parameters hold one; `province`: ISO code of the file, for
-    the province tier), rows without a height get 'est' (when the estimate is on); 'osm' / 'osm_part' and every
-    other column are untouched. A table that already holds 'g25cal' or 'est' is returned as is (the raw 2.5D value
-    is gone)."""
+    the province tier), rows without a height get 'est' (when the estimate is on); then the rows of file `name` listed
+    in the height sources (P['_sources']) get 'wikidata', else 'sibling', with the listed height and floors; 'osm' /
+    'osm_part' and every other column are untouched. A table that already holds a calibrated source (NEW_SRC) is
+    returned as is (the raw 2.5D value is gone)."""
     from scipy.spatial import cKDTree
     src = src_strings(tbl)
     if np.isin(src, NEW_SRC).any():
@@ -1192,7 +1202,26 @@ def apply_table(tbl, P, dk, dc, province=None):
         E['egroup'] = assign(E, [(q['name'], q['rule']) for q in egs])
         new_h[ei] = est_pred(E, np.arange(len(ei)), egs, nbr)
         new_src[ei] = 'est'
-    chg = np.r_[gi, ei].astype(int)
+    # Wikidata, then sibling rows (precedence osm / osm_part > wikidata > sibling > g25cal > est).
+    xi, xfl = [], []
+    ex = P.get('_sources', {}).get(name) if name else None
+    if ex:
+        ids = tbl['id'].to_numpy()
+        pos = {int(v): k for k, v in enumerate(ids.tolist())}
+        done = set()
+        for kind in ('wikidata', 'sibling'):
+            for bid, (h_dm, fl) in sorted(ex[kind].items()):
+                if bid not in pos:
+                    raise RuntimeError(f'{name}: {kind} row {bid} is not in the file')
+                k = pos[bid]
+                if src[k] in TRUTH_SRC or k in done:
+                    continue                         # OSM heights are never replaced; a Wikidata row is not a sibling
+                if kind == 'sibling' and src[k] is not None and src[k] not in ('g25',):
+                    raise RuntimeError(f'{name}: sibling row {bid} has raw height_src {src[k]}')
+                new_h[k] = h_dm / 10; new_src[k] = kind
+                xi.append(k); xfl.append(fl); done.add(k)
+    xi = np.array(xi, int)
+    chg = np.unique(np.r_[gi, ei, xi].astype(int))
     if not len(chg):
         return tbl, {'changed': {}}
     tbl = tbl.combine_chunks()
@@ -1203,6 +1232,8 @@ def apply_table(tbl, P, dk, dc, province=None):
     flv = fl.fill_null(0).to_numpy().astype(np.uint8)
     fl_old = np.where(fnull, -1, flv.astype(int))
     flv[chg] = floors_of(new_h[chg])
+    if len(xi):
+        flv[xi] = np.array(xfl, np.uint8)            # listed floors (Wikidata P1101 / the siblings' floors)
     keep_null = hnull.copy(); keep_null[chg] = False
     fkeep_null = fnull.copy(); fkeep_null[chg] = False
     sch = tbl.schema
@@ -1222,13 +1253,13 @@ def apply_table(tbl, P, dk, dc, province=None):
 
 
 def _apply_file(args):
-    path, out_path, params, density, no_est, province = args
-    P = load_params(params)
+    path, out_path, params, density, no_est, province, sources = args
+    P = load_params(params, sources)
     if no_est:
         P['est']['on'] = False
     dk, dc = density
     t = pq.read_table(path)
-    t2, det = apply_table(t, P, dk, dc, province)
+    t2, det = apply_table(t, P, dk, dc, province, os.path.basename(path))
     if 'skipped' in det or not det.get('changed') or not sum(det['changed'].values()):
         return os.path.basename(path), det.get('skipped', 'unchanged'), None, {}
     for c in t.column_names:                         # every other column must be identical
@@ -1236,7 +1267,14 @@ def _apply_file(args):
             raise RuntimeError(f'{path}: column {c} changed')
     tmp = out_path + '.tmp'
     pq.write_table(t2, tmp, compression='zstd', compression_level=19, row_group_size=500_000)
-    os.replace(tmp, out_path)
+    for attempt in range(10):                        # another process (indexer, antivirus) may hold the file briefly
+        try:
+            os.replace(tmp, out_path)
+            break
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(1 + attempt)
     extra = {k: det[k] for k in ('value_changed', 'floors_changed')}
     extra['tall_targets'] = int(len(det.get('tall_rows', ())))
     return os.path.basename(path), det['changed'], os.path.getsize(out_path), extra
@@ -1255,7 +1293,8 @@ def cmd_apply(a):
     files = [os.path.join(src_dir, f) for f in a.files] if a.files else all_files
     prov = {e['file']: e['province_iso'] for e in idx['files']}
     os.makedirs(out_dir, exist_ok=True)
-    jobs = [(f, os.path.join(out_dir, os.path.basename(f)), a.params, density, a.no_est, prov.get(os.path.basename(f)))
+    sources = None if a.no_sources else a.sources
+    jobs = [(f, os.path.join(out_dir, os.path.basename(f)), a.params, density, a.no_est, prov.get(os.path.basename(f)), sources)
             for f in files]
     changed, total = {}, {s: 0 for s in NEW_SRC}
     with ProcessPoolExecutor(min(a.workers, 6)) as ex:
@@ -1302,6 +1341,8 @@ def main():
     p.add_argument('--files', nargs='*', help='only these files (names in --src-dir)')
     p.add_argument('--workers', type=int, default=5, help='processes (at most 6)')
     p.add_argument('--no-est', action='store_true', help='leave buildings without a height as they are')
+    p.add_argument('--sources', default=SOURCES, help='Wikidata / sibling rows (extra_heights.py build)')
+    p.add_argument('--no-sources', action='store_true', help='calibration only, no Wikidata / sibling rows')
     p.add_argument('--log', help='write the changed files (name -> bytes) and counts to this JSON')
     a = ap.parse_args()
     {'truth': cmd_truth, 'fit': cmd_fit, 'tall': cmd_tall, 'apply': cmd_apply}[a.cmd](a)
