@@ -2,7 +2,10 @@
 by buildings/compact_layer.py, so the TypeScript decoder (src/buildings.ts) can be checked against Python.
 Adds two synthetic v2 keyhole rows (one hole, two holes) encoded and decoded by compact_layer as well.
 
-    .venv/Scripts/python.exe frontend/src/test/buildings_fixture.py [--file buildings/by_area/ha_noi_13.parquet]
+    .venv/Scripts/python.exe frontend/src/test/buildings_fixture.py [--file buildings/by_area/ha_noi_13.parquet] [--keep-ids]
+
+--keep-ids reuses the building ids of the existing fixture, so a refresh of the published attributes (heights, floors)
+updates their values without changing which rows are tested.
 """
 import argparse, json, os, sys
 import numpy as np, pyarrow.parquet as pq, shapely
@@ -28,13 +31,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--file', default='buildings/by_area/ha_noi_13.parquet')
     ap.add_argument('--out', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'buildings_fixture.json'))
+    ap.add_argument('--keep-ids', action='store_true', help='reuse the building ids of the existing --out fixture')
     a = ap.parse_args()
     rows = pq.read_table(os.path.join(ROOT, a.file), columns=list(COLS)).to_pylist()
-    # Every combination of source, rect/ring and known/unknown height, up to 5 rows each, spread through the file.
-    groups = {}
-    for i, r in enumerate(rows):
-        groups.setdefault((r['src'], r['ring'] is None, r['height_dm'] is None), []).append(i)
-    pick = sorted({g[int(j)] for g in groups.values() for j in np.linspace(0, len(g) - 1, min(5, len(g)))})
+    if a.keep_ids:
+        with open(a.out, encoding='utf-8') as f:
+            old = json.load(f)
+        if old['file'] != os.path.basename(a.file):
+            sys.exit(f"--keep-ids: the fixture was made from {old['file']}, not {a.file}")
+        want = {r['row']['id'] for r in old['rows']} - {4_000_000_001, 4_000_000_002}
+        pick = [i for i, r in enumerate(rows) if r['id'] in want]
+        if len(pick) != len(want):
+            sys.exit(f'--keep-ids: {len(want) - len(pick)} fixture ids are missing from {a.file}')
+    else:
+        # Every combination of source, rect/ring and height source (None = unknown), up to 5 rows each, spread through the file.
+        groups = {}
+        for i, r in enumerate(rows):
+            groups.setdefault((r['src'], r['ring'] is None, r['height_src']), []).append(i)
+        pick = sorted({g[int(j)] for g in groups.values() for j in np.linspace(0, len(g) - 1, min(5, len(g)))})
     out = [dict(rows[i]) for i in pick]
     sq = lambda x, y, s: [(x, y), (x + s, y), (x + s, y + s), (x, y + s)]
     x0, y0 = 105.85, 21.03

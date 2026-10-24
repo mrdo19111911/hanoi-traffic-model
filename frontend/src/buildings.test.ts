@@ -74,11 +74,11 @@ describe('file selection and zoom gating',()=>{
 });
 
 // Square rectangles of 10 m on a line of longitudes, plus one large ring.
-function synthetic(lons:number[],big=false){
+function synthetic(lons:number[],big=false,hsrc?:string[]){
  const n=lons.length+(big?1:0),ring:(Uint8Array|null)[]=lons.map(()=>null);
  if(big){const r=new Uint8Array(12),v=new DataView(r.buffer);v.setInt16(0,30000,true);v.setInt16(4,0,true);v.setInt16(6,30000,true);v.setInt16(8,-30000,true);ring.push(r);}
  const lon=[...lons.map(x=>Math.round(x*1e6)),105_800_000];
- return buildFile('t.parquet',{id:Array.from({length:n},(_,i)=>i+1),src:Array(n).fill('osm'),lon_e6:lon.slice(0,n),lat_e6:Array(n).fill(21_000_000),length_dm:Array(n).fill(100),width_dm:Array(n).fill(100),angle_cdeg:Array(n).fill(0),ring,height_dm:[...Array(n-1).fill(95),null],height_src:[...Array(n-1).fill('g25'),null],floors:[...Array(n-1).fill(3),null]});
+ return buildFile('t.parquet',{id:Array.from({length:n},(_,i)=>i+1),src:Array(n).fill('osm'),lon_e6:lon.slice(0,n),lat_e6:Array(n).fill(21_000_000),length_dm:Array(n).fill(100),width_dm:Array(n).fill(100),angle_cdeg:Array(n).fill(0),ring,height_dm:[...Array(n-1).fill(95),null],height_src:[...(hsrc??Array(n-1).fill('g25')),null],floors:[...Array(n-1).fill(3),null]});
 }
 describe('spatial index and draw cap',()=>{
  it('returns exactly the buildings whose box meets the query',()=>{
@@ -102,6 +102,8 @@ describe('spatial index and draw cap',()=>{
   const f=synthetic([105.8],true);
   expect(buildingLines(f,0)).toEqual(['Nhà #1','Số tầng: 3','Chiều cao: 9,5 m (Google 2.5D)','Nguồn hình: OSM']);
   expect(buildingLines(f,1)).toEqual(['Nhà #2','Số tầng: chưa rõ','Chiều cao: chưa rõ','Nguồn hình: OSM']);
+  const g=synthetic([105.8,105.801,105.802],true,['osm_part','g25cal','est']);
+  expect([0,1,2].map(i=>buildingLines(g,i)[2])).toEqual(['Chiều cao: 9,5 m (OSM (khối nhà))','Chiều cao: 9,5 m (Google, đã hiệu chỉnh)','Chiều cao: 9,5 m (ước tính từ nhà lân cận)']);
  });
 });
 
