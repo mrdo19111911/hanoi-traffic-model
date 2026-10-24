@@ -201,6 +201,16 @@ def write_dataset(root, coords, ways, obstacles={}, banned=set(), turn_ds=20, ut
     return base
 
 
+def poke_block(path, name, index, value, dtype):
+    """Overwrite element ``index`` of block ``name`` in the tar ``path`` in place (a flat view of ``dtype``)."""
+    with tarfile.open(path) as tar:
+        offset = tar.getmember(name).offset_data
+    dtype = np.dtype(dtype)
+    with open(path, "r+b") as f:
+        f.seek(offset + index * dtype.itemsize)
+        f.write(np.array([value], dtype=dtype).tobytes())
+
+
 def grid(n, step_deg=0.001, primary_every=4):
     """An n x n street grid: ({node id: (lon, lat)}, ways), every row and column one way, every
     ``primary_every``-th one primary, the rest residential."""

@@ -107,6 +107,15 @@ def _fingerprint(path, members):
     return bytes(np.fromfile(path, dtype=np.uint8, count=size, offset=offset))
 
 
+def _check_ids(file, label, ids, limit, what):
+    """OsrmFormatError unless every id is in ``0 .. limit - 1`` (unsigned blocks are checked before any cast)."""
+    bad = (ids < 0) | (ids >= limit)
+    if bad.any():
+        k = int(np.argmax(bad))
+        raise OsrmFormatError(f"{file}: {int(bad.sum())} {label}s out of range for {limit} {what} "
+                              f"(first at {k}: {int(ids[k])})")
+
+
 def read_dataset(base):
     """All blocks of the turn graph from ``<base>.<suffix>`` (base = path without extension, ``....osrm``)."""
     paths = {s: str(base) + s for s in _FINGERPRINT_FILES}
@@ -127,7 +136,18 @@ def read_dataset(base):
     if len(nbg_osm) != len(coords):
         raise OsrmFormatError(f".nbg_nodes: {len(coords)} coordinates but {len(nbg_osm)} osm node ids")
     geo_index = block(".geometry", "/common/segment_data/index", "<u4").astype(np.int64)
-    geo_nodes = block(".geometry", "/common/segment_data/nodes", "<u4").astype(np.int32)
+    if len(geo_index) == 0 or geo_index[0] != 0:
+        raise OsrmFormatError(".geometry: the index must start at 0")
+    steps = np.diff(geo_index)
+    if (steps < 0).any():
+        raise OsrmFormatError(f".geometry: the index is not monotonic (first drop after geometry "
+                              f"{int(np.argmax(steps < 0))})")
+    if (steps % 2).any():
+        raise OsrmFormatError(f".geometry: geometry {int(np.argmax(steps % 2 != 0))} has an odd entry count")
+    del steps
+    geo_nodes = block(".geometry", "/common/segment_data/nodes", "<u4")
+    _check_ids(".geometry", "node id", geo_nodes, len(nbg_osm), "nodes")
+    geo_nodes = geo_nodes.astype(np.int32)
     geo_fwd = packed(".geometry", "/common/segment_data/forward_durations", DURATION_BITS).astype(np.uint32)
     geo_rev = packed(".geometry", "/common/segment_data/reverse_durations", DURATION_BITS).astype(np.uint32)
     for label, arr in (("nodes", geo_nodes), ("forward_durations", geo_fwd), ("reverse_durations", geo_rev)):
@@ -135,6 +155,7 @@ def read_dataset(base):
             raise OsrmFormatError(f".geometry: {label} has {len(arr)} entries, the index ends at {int(geo_index[-1])}")
     ebn = block(".ebg_nodes", "/common/ebg_node_data/nodes", (np.uint32, 3))
     ebn_geometry = (ebn[:, 0] & np.uint32(0x7FFFFFFF)).astype(np.int32)
+    _check_ids(".ebg_nodes", "geometry id", ebn_geometry, len(geo_index) - 1, "geometries")
     ebn_forward = (ebn[:, 0] >> np.uint32(31)).astype(bool)
     ebn_tiny = (ebn[:, 1] >> np.uint32(31)).astype(bool)
     del ebn
@@ -152,6 +173,8 @@ def read_dataset(base):
                               f"(first at {int(np.argmax(bad))})")
     if not np.array_equal(edges[:, 2], np.arange(len(edges), dtype=np.uint32)):
         raise OsrmFormatError(".ebg: turn_id is not 0..T-1 in order")
+    _check_ids(".ebg", "turn source", edges[:, 0], len(ebn_geometry), "edge-based nodes")
+    _check_ids(".ebg", "turn target", edges[:, 1], len(ebn_geometry), "edge-based nodes")
     turn_raw = block(".turn_duration_penalties", "/common/turn_penalty/duration", "<i2")
     if len(turn_raw) != len(edges):
         raise OsrmFormatError(f".turn_duration_penalties: {len(turn_raw)} turns for {len(edges)} edges")

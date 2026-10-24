@@ -10,8 +10,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from sm_osrm_fixture import (INVALID, TOWN_BANNED, TOWN_COORDS, TOWN_OBSTACLES, TOWN_WAYS, grid, write_dataset,
-                             write_nbg_nodes)
+from sm_osrm_fixture import (INVALID, TOWN_BANNED, TOWN_COORDS, TOWN_OBSTACLES, TOWN_WAYS, grid, poke_block,
+                             write_dataset, write_nbg_nodes)
 from speedmatrix.osrmfiles import (INVALID_DURATION, OsrmFormatError, check_build_json, read_block, read_dataset,
                                    read_datasources, read_packed)
 
@@ -113,6 +113,28 @@ class OsrmFilesTests(unittest.TestCase):
     def test_enw_delta_breaks_the_turn_identity(self):
         d = read_dataset(town(self.root / "enw", enw_delta={0: 7}))
         self.assertFalse(np.array_equal(d.turn_total_ds, d.ebn_duration_ds[d.turn_src] + d.turn_ds))
+
+    def test_out_of_range_ids_raise_format_errors(self):
+        cases = [(".ebg_nodes", "/common/ebg_node_data/nodes", 0, 6, "geometry id"),           # 6 geometries
+                 (".geometry", "/common/segment_data/nodes", 0, 7, "node id"),                  # 7 nodes
+                 (".geometry", "/common/segment_data/nodes", 0, 1 << 31, "node id"),
+                 (".ebg", "/common/edge_based_edge_list", 1, 11, "target"),                     # 11 EBNs
+                 (".ebg", "/common/edge_based_edge_list", 0, 11, "source")]
+        for k, (suffix, block, index, value, message) in enumerate(cases):
+            with self.subTest(message=message, value=value):
+                base = town(self.root / f"range{k}")
+                poke_block(str(base) + suffix, block, index, value, "<u4")
+                with self.assertRaisesRegex(OsrmFormatError, message):
+                    read_dataset(base)
+
+    def test_bad_geometry_index_raises(self):
+        # TOWN index: 0 4 6 8 10 12 14
+        for k, (index, value, message) in enumerate([(2, 3, "monotonic"), (1, 3, "odd"), (0, 2, "start at 0")]):
+            with self.subTest(message=message):
+                base = town(self.root / f"index{k}")
+                poke_block(str(base) + ".geometry", "/common/segment_data/index", index, value, "<u4")
+                with self.assertRaisesRegex(OsrmFormatError, message):
+                    read_dataset(base)
 
     def test_version_pinned(self):
         bad = self.root / "bad.json"
