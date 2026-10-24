@@ -6,6 +6,7 @@ from pathlib import Path
 
 from speedmatrix.rules import Rule, RuleError
 from speedmatrix.state import open_state
+from speedmatrix.vehicles import VehicleGroup
 
 SCHEMA_1_DDL = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -32,7 +33,6 @@ def meta_schema(path):
         return db.execute("SELECT value FROM meta WHERE key='schema'").fetchone()[0]
     finally:
         db.close()
-from speedmatrix.vehicles import VehicleGroup
 
 
 def R(kmh=20, **kw):

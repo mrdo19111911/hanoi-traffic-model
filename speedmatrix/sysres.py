@@ -118,8 +118,9 @@ def _tree_private_bytes(root_pid):
     return total
 
 
-def run_measured(cmd, log_path, cwd, env=None):
-    """Run ``cmd`` with stdout and stderr appended to ``log_path``; keep the last stdout line and the peak memory."""
+def run_measured(cmd, log_path, cwd, env=None, on_start=None):
+    """Run ``cmd`` with stdout and stderr appended to ``log_path``; keep the last stdout line and the peak memory.
+    ``on_start(pid)`` is called once the process exists (the release pipeline records it in its lock)."""
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
@@ -129,6 +130,13 @@ def run_measured(cmd, log_path, cwd, env=None):
     with log_path.open("ab") as log:
         proc = subprocess.Popen([str(c) for c in cmd], cwd=str(cwd), env=env, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
+        if on_start is not None:
+            try:
+                on_start(proc.pid)
+            except BaseException:
+                proc.kill()
+                proc.wait()
+                raise
 
         def sample():
             while True:

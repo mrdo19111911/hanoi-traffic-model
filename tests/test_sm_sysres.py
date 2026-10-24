@@ -36,6 +36,18 @@ class SysresTests(unittest.TestCase):
         if os.name == "nt":
             self.assertGreaterEqual(r.peak_bytes, 150_000_000)
 
+    def test_run_measured_reports_the_child_pid(self):
+        pids = []
+        r = run_measured([sys.executable, "-c", "import os; print(os.getpid())"], self.log, ROOT, on_start=pids.append)
+        self.assertEqual(r.code, 0)
+        self.assertEqual(len(pids), 1)
+        self.assertIsInstance(pids[0], int)
+
+        def refuse(pid):
+            raise RuntimeError("no")
+        with self.assertRaisesRegex(RuntimeError, "no"):
+            run_measured([sys.executable, "-c", "import time; time.sleep(30)"], self.log, ROOT, on_start=refuse)
+
     def test_run_measured_reports_failure_and_appends(self):
         run_measured([sys.executable, "-c", "print('one')"], self.log, ROOT)
         r = run_measured([sys.executable, "-c", "import sys; print('two'); sys.exit(3)"], self.log, ROOT)

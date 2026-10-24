@@ -35,6 +35,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import time
@@ -52,12 +53,12 @@ finally:
     sys.path.remove(str(_REPO / "osrm"))
 
 try:
-    from .state import open_state
+    from .state import State, open_state
     from .sysres import available_memory_gb, free_disk_gb, run_measured
     from .verify_osrm import (ROUTED_MAX_TABLE, ROUTED_READY_S, ROUTED_THREADS, _answers, _check_port, _free_port,
                               _terminate_if, dataset_base)
 except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.state import open_state
+    from speedmatrix.state import State, open_state
     from speedmatrix.sysres import available_memory_gb, free_disk_gb, run_measured
     from speedmatrix.verify_osrm import (ROUTED_MAX_TABLE, ROUTED_READY_S, ROUTED_THREADS, _answers, _check_port,
                                          _free_port, _terminate_if, dataset_base)
@@ -78,6 +79,7 @@ DEFAULT_ROOT = _REPO / "runtime" / "matrix"
 DOWNLOAD_TIMEOUT_S = 120
 DOWNLOAD_CHUNK = 1 << 20
 WITHHELD = "error text withheld (spec 13)"
+LOCK_BYTE = 1 << 30
 DAYS = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 EXIT = {"promoted": 0, "unchanged": 0, "failed_checks": 1}
 _TZ = timezone(timedelta(hours=7))
@@ -196,39 +198,120 @@ def _read_lock(path: Path):
         return None                      # unreadable (a crash during the write): stale
 
 
-def _take_lock(root: Path) -> dict:
-    path = Path(root) / "update.lock"
-    me = {"pid": os.getpid(), "identity": process_identity(os.getpid())}
-    for _ in range(3):
+def _lock_live(doc) -> bool:
+    """The recorded update process, or the step child it was running, still exists with its recorded identity.
+    A live child of a hard-killed run keeps the lock: a rerun must neither start nor prune that child's release."""
+    return _is_live(doc) or (isinstance(doc, dict) and _is_live(doc.get("child")))
+
+
+def _busy(held) -> str:
+    pid = held.get("pid") if isinstance(held, dict) else None
+    text = f"another update is running (pid {pid if pid is not None else 'unknown'})"
+    child = held.get("child") if isinstance(held, dict) else None
+    if _is_live(child):
+        text += f"; its {child.get('step') or 'step'} subprocess pid {child['pid']} is still running"
+    return text
+
+
+def _os_lock(fd: int) -> bool:
+    """An exclusive, non-blocking OS lock on the open lock file (one byte far past the JSON, so readers of the JSON
+    are never blocked); the OS drops it when the holder dies. False when another handle holds it."""
+    if os.name == "nt":
+        import msvcrt
+        os.lseek(fd, LOCK_BYTE, os.SEEK_SET)
         try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            held = _read_lock(path)
-            if _is_live(held):
-                raise UpdateError(f"another update is running (pid {held['pid']})") from None
-            path.unlink(missing_ok=True)                # gone, or a reused pid with another identity
-            continue
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(me, f)
-        return json.loads(json.dumps(me))
-    raise UpdateError("could not take update.lock")
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        except OSError:
+            return False
+        return True
+    import fcntl
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return False
+    return True
 
 
-def _release_lock(root: Path, me: dict) -> None:
+def _os_unlock(fd: int) -> None:
+    if os.name == "nt":
+        import msvcrt
+        os.lseek(fd, LOCK_BYTE, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
+class UpdateLock:
+    """``update.lock`` held for a run: an exclusive OS lock on a handle kept open for the whole run, so two starts
+    can never both run, plus the JSON ``{pid, identity, child}`` that ``status`` and the spike's lock check read.
+    ``child`` is the running step subprocess (``set_child``); it keeps the lock live when this process is
+    hard-killed while the child runs on."""
+
+    def __init__(self, path: Path, fd: int):
+        self.path, self.fd = path, fd
+        self.doc = {"pid": os.getpid(), "identity": process_identity(os.getpid()), "child": None}
+
+    def _write(self) -> None:
+        data = json.dumps(self.doc).encode("utf-8")
+        os.lseek(self.fd, 0, os.SEEK_SET)
+        os.ftruncate(self.fd, 0)
+        os.write(self.fd, data)
+        self.doc = json.loads(data)                     # as read back, for the comparison in release()
+
+    def set_child(self, pid, step=None) -> None:
+        self.doc["child"] = None if pid is None else {"pid": int(pid), "identity": process_identity(int(pid)),
+                                                      "step": step}
+        self._write()
+
+    def release(self) -> None:
+        if self.fd is None:
+            return
+        try:
+            _os_unlock(self.fd)
+        finally:
+            os.close(self.fd)
+            self.fd = None
+        if _read_lock(self.path) == self.doc:
+            try:
+                self.path.unlink()
+            except OSError:
+                pass                                    # another start has it open now; this content is stale
+
+
+def _take_lock(root: Path) -> UpdateLock:
+    """Open ``update.lock`` and take the OS lock. Refused when another handle holds it, or when the file records a
+    live process (the spike's lock, or a hard-killed run whose step child still runs); otherwise the file is taken
+    over, whatever stale content it holds."""
     path = Path(root) / "update.lock"
-    if _read_lock(path) == me:
-        path.unlink(missing_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0))
+    locked = False
+    try:
+        locked = _os_lock(fd)
+        held = _read_lock(path)
+        if not locked or _lock_live(held):
+            raise UpdateError(_busy(held))
+        lk = UpdateLock(path, fd)
+        lk._write()
+        return lk
+    except BaseException:
+        try:
+            if locked:
+                _os_unlock(fd)
+        finally:
+            os.close(fd)
+        raise
 
 
 @contextmanager
 def lock(root):
-    """Hold ``<root>/update.lock`` ({pid, identity}) for the block. A live lock raises UpdateError; a lock whose
-    process is gone or has another identity is taken over. The spike used the same file (Decision 24)."""
-    me = _take_lock(root)
+    """Hold ``<root>/update.lock`` for the block (``UpdateLock``). A held or live lock raises UpdateError; a lock
+    whose process is gone or has another identity is taken over. The spike used the same file (Decision 24)."""
+    held = _take_lock(root)
     try:
-        yield me
+        yield held
     finally:
-        _release_lock(root, me)
+        held.release()
 
 
 # ---- download ----------------------------------------------------------------------------------------------------
@@ -448,6 +531,7 @@ class RealSteps:
         self.log_path = Path(log_path)
         self.opener = opener
         self.measured = {}
+        self.on_child = None                # set by run_update: records the running step subprocess in the lock
         self._log = _RunLog(self.log_path)
 
     # network: Geofabrik only
@@ -476,7 +560,13 @@ class RealSteps:
     def _run(self, name: str, module: str, args: list):
         cmd = [sys.executable, "-m", f"speedmatrix.{module}", *[str(a) for a in args]]
         self._log(f"step {name}: {' '.join(cmd)}")
-        result = run_measured(cmd, self.log_path, _REPO, env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+        hook = self.on_child
+        kw = {"on_start": lambda pid: hook(pid, name)} if hook is not None else {}
+        try:
+            result = run_measured(cmd, self.log_path, _REPO, env=dict(os.environ, PYTHONIOENCODING="utf-8"), **kw)
+        finally:
+            if hook is not None:
+                hook(None)
         self.measured[name] = {"seconds": round(result.seconds, 1), "peak_bytes": result.peak_bytes}
         peak = "unknown" if result.peak_bytes is None else f"{result.peak_bytes / 1e9:.1f} GB"
         self._log(f"step {name}: exit {result.code} after {result.seconds:.0f} s, peak {peak}")
@@ -769,10 +859,12 @@ def run_update(root, steps, *, pbf=None, force=False, keep=KEEP, min_free_gb=Non
         raise ValueError("keep must be at least 1")
     root.mkdir(parents=True, exist_ok=True)
     try:
-        me = _take_lock(root)
+        held = _take_lock(root)
     except (UpdateError, OSError) as exc:
         print(f"error: {describe(exc)}", file=sys.stderr)
         return 2
+    if hasattr(steps, "on_child"):
+        steps.on_child = held.set_child
     try:
         state = open_state(root / "state.sqlite")
         try:
@@ -784,7 +876,9 @@ def run_update(root, steps, *, pbf=None, force=False, keep=KEEP, min_free_gb=Non
         print(f"error: {describe(exc)}", file=sys.stderr)
         return 2
     finally:
-        _release_lock(root, me)
+        if hasattr(steps, "on_child"):
+            steps.on_child = None
+        held.release()
 
 
 def _run_job(root, steps, state, clock, memory, disk, **options) -> int:
@@ -890,18 +984,23 @@ def stop(root) -> dict | None:
 
 
 def status(root) -> dict:
-    """Current release, live server and lock, releases and the last jobs; creates nothing."""
+    """Current release, live server and lock, releases and the last jobs. Creates and writes nothing: the state is
+    opened read-only and never upgraded (a schema-1 state has no jobs yet)."""
     root = Path(root)
     jobs = []
-    if (root / "state.sqlite").is_file():
-        state = open_state(root / "state.sqlite")
+    path = root / "state.sqlite"
+    if path.is_file():
+        db = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
+        db.row_factory = sqlite3.Row
         try:
-            jobs = state.jobs(limit=10)
+            jobs = State(db).jobs(limit=10)
+        except sqlite3.OperationalError:
+            jobs = []
         finally:
-            state.close()
+            db.close()
     held = _read_lock(root / "update.lock") if (root / "update.lock").exists() else None
     return {"root": str(root), "current": _read_json(root / "current.json"), "server": _live_server(root),
-            "lock": held if _is_live(held) else None,
+            "lock": held if _lock_live(held) else None,
             "releases": [{"id": p.name, "status": _status(p)} for p in _releases(root)], "jobs": jobs}
 
 

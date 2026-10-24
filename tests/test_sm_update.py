@@ -9,6 +9,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sqlite3
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -398,6 +400,88 @@ class UpdateTests(unittest.TestCase):
         (R / "update.lock").write_text("not json", encoding="utf-8")                   # torn write of a crash
         self.assertEqual(run_update(R, FakeSteps(md5="z"), **self.ENV), 0)
 
+    def test_os_lock_refuses_a_second_holder_whatever_the_file_says(self):
+        R = self.R
+        with update.lock(R):
+            # a racing second start, or a torn file, must not let a second run in while the first holds the lock
+            write_lock(R, DEAD_PID, {"executable": "x", "created": 1})
+            with self.assertRaisesRegex(UpdateError, "another update is running"):
+                with update.lock(R):
+                    pass
+            (R / "update.lock").write_text("torn", encoding="utf-8")
+            self.assertEqual(run_update(R, FakeSteps(md5="x"), **self.ENV), 2)
+            self.assertFalse((R / "state.sqlite").exists())
+            self.assertFalse((R / "releases").exists())
+
+    def test_lock_held_by_another_process(self):
+        R = self.R
+        code = ("import sys; from pathlib import Path; from speedmatrix.update import lock\n"
+                "with lock(Path(sys.argv[1])):\n    print('held', flush=True)\n    sys.stdin.read()\n")
+        child = subprocess.Popen([sys.executable, "-c", code, str(R)], cwd=str(update._REPO), stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, text=True)
+        self.addCleanup(child.kill)
+        self.assertEqual(child.stdout.readline().strip(), "held")
+        write_lock(R, DEAD_PID, {"executable": "x", "created": 1})        # the file looks stale; the OS lock is not
+        self.assertEqual(run_update(R, FakeSteps(md5="x"), **self.ENV), 2)
+        self.assertFalse((R / "state.sqlite").exists())
+        child.stdin.close()
+        self.assertEqual(child.wait(60), 0)
+        self.assertEqual(run_update(R, FakeSteps(md5="x"), **self.ENV), 0)
+
+    def test_lock_records_the_running_step_child(self):
+        R = self.R
+        seen = []
+
+        def fake(cmd, log, cwd, env=None, on_start=None):
+            on_start(os.getpid())                                      # this process stands in for the child
+            seen.append(json.loads((R / "update.lock").read_text(encoding="utf-8")))
+            return StepResult(0, 1.0, 1, str(R))
+        steps = RealSteps(R, None, 5058, R / "l.log")
+        with update.lock(R) as held:
+            steps.on_child = held.set_child
+            with mock.patch("speedmatrix.update.run_measured", fake):
+                steps.speeds(R, date(2026, 10, 25))
+            after = json.loads((R / "update.lock").read_text(encoding="utf-8"))
+        self.assertEqual(seen[0]["child"], {"pid": os.getpid(), "identity": process_identity(os.getpid()),
+                                            "step": "speeds"})
+        self.assertEqual(seen[0]["pid"], os.getpid())
+        self.assertIsNone(after["child"])
+
+    def test_run_update_hooks_the_step_child_into_the_lock(self):
+        R = self.R
+
+        class Hooked(FakeSteps):
+            on_child = None
+
+            def graph(self, rel, segments_dir):
+                self.on_child(os.getpid(), "graph")
+                self.lock_doc = json.loads((rel.parents[1] / "update.lock").read_text(encoding="utf-8"))
+                self.on_child(None)
+                return super().graph(rel, segments_dir)
+        f = Hooked(md5="x")
+        self.assertEqual(run_update(R, f, **self.ENV), 0)
+        self.assertEqual(f.lock_doc["child"]["pid"], os.getpid())
+
+    def test_live_step_child_of_a_dead_run_keeps_the_lock(self):
+        R = self.R
+        mkcurrent(R, "a")
+        orphan = mkrelease(R, "20261024-030000", "running")                 # the hard-killed run's release
+        write_json(R / "update.lock", {"pid": DEAD_PID, "identity": {"executable": "x", "created": 1},
+                                       "child": {"pid": os.getpid(), "identity": process_identity(os.getpid()),
+                                                 "step": "verify"}})
+        before = (R / "update.lock").read_bytes()
+        f = FakeSteps(md5="b")
+        self.assertEqual(run_update(R, f, **self.ENV), 2)
+        self.assertEqual(f.called, [])
+        self.assertTrue((orphan / "release.json").is_file())
+        self.assertEqual((R / "update.lock").read_bytes(), before)
+        self.assertIn("verify", update.status(R)["lock"]["child"]["step"])
+        # once that child is gone (or its pid was reused), the lock is stale and taken over
+        write_json(R / "update.lock", {"pid": DEAD_PID, "identity": {"executable": "x", "created": 1},
+                                       "child": {"pid": os.getpid(), "identity": {"executable": "y", "created": 2},
+                                                 "step": "verify"}})
+        self.assertEqual(run_update(R, FakeSteps(md5="b"), **self.ENV), 0)
+
     def test_lock_context_manager(self):
         R = self.R
         with update.lock(R):
@@ -489,13 +573,22 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(run_update(R, FakeSteps(md5="x"), **self.ENV), 0)
         self.assertEqual(calls, [("stop",), ("serve", 5060, "x")])
 
-    def test_failed_run_never_touches_the_server(self):
+    def test_failed_run_never_touches_the_served_release(self):
         R = self.R
-        with mock.patch("speedmatrix.update.stop") as stop, mock.patch("speedmatrix.update.serve") as start:
-            run_update(R, FakeSteps(md5="x", checks={"verify": {"osrm_table_pairs": Check(1, False, True)}}),
-                       **self.ENV)
-        stop.assert_not_called()
-        start.assert_not_called()
+        mkcurrent(R, "old")
+        served = mkrelease(R, "20261011-030000", "promoted")          # served, not current: the prune would drop it
+        before = (R / "current.json").read_bytes()
+        live = {"pid": 1, "port": 5060, "release": served.name}
+        for checks in ({"verify": {"osrm_table_pairs": Check(1, False, True)}}, {}):
+            fail = {} if checks else {"speeds": RuntimeError("crash")}
+            with (mock.patch("speedmatrix.update._live_server", return_value=live),
+                  mock.patch("speedmatrix.update.stop") as stop, mock.patch("speedmatrix.update.serve") as start):
+                self.assertEqual(run_update(R, FakeSteps(md5="new", checks=checks, fail=fail), **self.ENV),
+                                 1 if checks else 2)
+            stop.assert_not_called()
+            start.assert_not_called()
+            self.assertTrue((served / "release.json").is_file())
+            self.assertEqual((R / "current.json").read_bytes(), before)
 
     # ---- prune -------------------------------------------------------------------------------------------------
 
@@ -835,6 +928,18 @@ class UpdateTests(unittest.TestCase):
         self.assertIsNone(update.stop(R))
         self.assertFalse((R / "server.json").exists())
         self.assertIsNone(update.stop(R))
+
+    def test_status_reads_the_state_read_only(self):
+        from test_sm_state import SCHEMA_1_DDL, meta_schema
+        R = self.R
+        db = sqlite3.connect(str(R / "state.sqlite"))
+        db.executescript(SCHEMA_1_DDL)
+        db.close()
+        before = (R / "state.sqlite").read_bytes()
+        self.assertEqual(update.status(R)["jobs"], [])                     # schema 1 has no jobs: none, no upgrade
+        self.assertEqual(meta_schema(R / "state.sqlite"), "1")
+        self.assertEqual((R / "state.sqlite").read_bytes(), before)
+        self.assertEqual(sorted(p.name for p in R.iterdir()), ["state.sqlite"])
 
     def test_status(self):
         R = self.R
