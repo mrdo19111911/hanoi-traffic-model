@@ -155,6 +155,7 @@ def main():
     ap.add_argument('--attrs', default='vn_buildings.parquet')
     ap.add_argument('--dst', default='vn_buildings_compact.parquet')
     a = ap.parse_args()
+    from part_heights import apply_in_build        # imported here: part_heights imports this module
     t0 = time.time()
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
     con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
@@ -173,6 +174,7 @@ def main():
             break
         ids, src, wkb, hdm, hsrc, fl, gap = zip(*rb)
         tbl, is_rect, geoms = encode_rows(ids, src, wkb, hdm, hsrc, fl, gap)
+        tbl, _ = apply_in_build(tbl, p('osm_parts.parquet'))     # heights of OSM building:part (part_heights.py)
         writer.write_table(tbl, row_group_size=500_000)
         # Round-trip check on a sample: decoded footprint vs original (IoU).
         for i in range(0, len(geoms), max(1, len(geoms) // 200)):

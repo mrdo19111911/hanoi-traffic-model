@@ -18,8 +18,9 @@ Per area (worker process):
      fit_footprints.overlay counts as failing). Pass B and the encoding leave none; as a safety net, buildings that
      still fail are deleted from both (on a road: the building; an overlapping pair: the lower-ranked one, pass B
      order) and the check runs again, up to CHECK_ROUNDS times; the count is 'dropped_check'. Write
-     buildings/by_area/<file>, under 95 MB. An area still failing is written to the state file and never committed;
-     the next run builds it again.
+     buildings/by_area/<file>, under 95 MB, after the heights of OSM building:part (part_heights.apply_in_build, on the
+     decoded footprints, as part_heights.py applies them in place). An area still failing is written to the state
+     file and never committed; the next run builds it again.
 Parent: prepares the work copies once (fit_footprints.prepare), runs the areas largest first on up to --workers
 processes (default 60 % of the logical CPUs; two starts at least START_GAP_S apart, so the memory peaks of pass B
 interleave; the next area starts only when free memory, less what the running areas are still expected to grow by,
@@ -47,6 +48,7 @@ import fit_footprints as fit
 from check_road_overlap import carriageways, on_road_m2, pair_overlaps, utm
 from compact_layer import SCHEMA, decode, encode, encode_rows
 from heights_25d import attrs_query, tile_heights, tiles_for
+from part_heights import apply_in_build as part_heights
 from split_by_area import assign_communes, load_admin
 
 MAX_MB = 95                        # GitHub refuses files over 100 MB
@@ -267,6 +269,8 @@ def build_area(args):
         keep_c = ~np.isin(q_id, gone)
     else:
         keep_c = np.ones(len(q_id), bool)
+    # Heights of OSM building:part over the published (decoded) footprints, as part_heights.py applies them in place.
+    tbl, n_part = part_heights(tbl, os.path.join(test['out'] if test else os.path.dirname(work), 'osm_parts.parquet'))
     lon, lat = tbl['lon_e6'].to_numpy() / 1e6, tbl['lat_e6'].to_numpy() / 1e6
     bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
     os.makedirs(dst_dir, exist_ok=True)
@@ -283,7 +287,7 @@ def build_area(args):
         rid = _W['comm'][x]['rel_id']; per_c[rid] = per_c.get(rid, 0) + 1
     return {**entry, 'buildings': int(tbl.num_rows), 'bytes': os.path.getsize(path), 'bbox': bbox,
             'communes': [{'name': c['name'], 'osm_relation': c['osm_relation'], 'buildings': per_c.get(c['osm_relation'], 0)} for c in g['communes']],
-            'check': chk, 'dropped_check': dropped, 'rect_to_ring': as_ring, 'rect_share': round(float(is_rect.mean()), 3), 'pass_a': sa, 'pass_b': sb,
+            'check': chk, 'dropped_check': dropped, 'rect_to_ring': as_ring, 'part_heights': n_part, 'rect_share': round(float(is_rect.mean()), 3), 'pass_a': sa, 'pass_b': sb,
             'status': 'ok' if not bad else 'failed: ' + ', '.join(bad),
             'seconds': round(time.time() - t0), 'seconds_fit': round(t_fit), 'seconds_heights': round(t_h)}
 

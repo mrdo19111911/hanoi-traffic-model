@@ -14,6 +14,7 @@ Dependencies: `requirements-buildings.txt` (duckdb with the spatial extension, r
 .venv/Scripts/python.exe -m pip install -r requirements-buildings.txt
 .venv/Scripts/python.exe buildings/fetch_open_buildings.py     # 37 GeoParquet files, 8.69 GB -> data/open_buildings/vnm
 .venv/Scripts/python.exe buildings/extract_osm.py              # PBF -> data/buildings/osm_{buildings,roads,water}.parquet
+.venv/Scripts/python.exe buildings/part_heights.py extract     # PBF -> data/buildings/osm_parts.parquet (building:part heights)
 .venv/Scripts/python.exe buildings/merge_buildings.py          # -> vn_buildings_merged.parquet (+ .meta.json)
 .venv/Scripts/python.exe buildings/fit_footprints.py          # -> vn_buildings_clean.parquet (+ .meta.json): off roads, no overlaps, shared walls
 .venv/Scripts/python.exe buildings/heights_25d.py              # -> vn_buildings.parquet (attributes and heights)
@@ -77,6 +78,7 @@ No house in Vietnam sticks out into a street or a ngõ, and no two buildings ove
 - Tiles of neighbouring S2 cells overlap, and one of the two is nodata there. A building keeps the first valid value.
 - `--workers` (threads reading tiles) defaults to 60 % of the logical CPUs. The nationwide run takes hours. Each finished tile is saved to `data/buildings/_25d_done/`. After an interruption (Windows Update restarted the machine during the first run), re-running resumes from those files. Delete `_25d_done/` when the footprints change.
 - Floors: the OSM `building:levels` tag when present. Otherwise `1 + round((height − 3.9) / 3.3)`, at least 1: ground floor 3.9 m, upper floors 3.3 m.
+- **building:part heights** (`part_heights.py`): towers are often mapped in OSM as `building:part` ways and relations that carry `height` / `building:levels`, while the outline has none (Keangnam Landmark 72: outline untagged, published at 62.4 m from 2.5D, tower part 336 m). A part belongs to a building when its representative point lies inside the published (decoded) footprint, or at least 50 % of its area does. Part height is `height`, else `building:levels` × 3.3 m plus a plain `roof:height`; values ≤ 0 or over 900 m are ignored. The tallest part replaces the building's height when the building has none or is lower, with `height_src` = `osm_part` and floors = the most of its parts' levels (else from the height, as above). `build_areas.py` and `compact_layer.py` apply the rule on every build (it needs `osm_parts.parquet`); `part_heights.py apply` applied it to the published files in place (October 2026 extract: 2,932 parts, 2,330 with a usable height; 622 buildings in 69 files changed).
 - The 2.5D height is a model estimate from Sentinel-2, effective resolution 4 m. Against the three OSM-tagged buildings in Bùi Xương Trạch, it matched one (7 floors, 25.5 m) and missed two. It tends to under-read narrow tube houses.
 
 ## Output `data/buildings/vn_buildings.parquet`
@@ -90,7 +92,7 @@ No house in Vietnam sticks out into a street or a ngõ, and no two buildings ove
 | conf_pct | uint8 | Google confidence × 100 |
 | h25_dm | uint16 | 2.5D median height, decimetres |
 | osm_h_dm | uint16 | OSM `height`, or `building:levels` × 3.3 m, decimetres |
-| height_dm, height_src | uint16, text | chosen height: OSM tag first, then 2.5D (`osm` / `g25`) |
+| height_dm, height_src | uint16, text | chosen height: OSM tag first, then 2.5D (`osm` / `g25`); in the compact layer, a taller OSM building:part height replaces it (`osm_part`) |
 | floors | uint8 | see above |
 | osm_id, name, addr | text | OSM only, mostly empty |
 
