@@ -11,19 +11,20 @@ from model.spatial import MissingRoadData
 from speedmatrix.rules import Rule
 from speedmatrix.scopes import ScopeResolver
 from speedmatrix.segments import ROAD_CLASSES, SegmentTable
-from speedmatrix.speeds import (FERRY_KMH, FreeFlowSource, build_speed_layer, load_layer, save_layer,
+from speedmatrix.speeds import (FERRY_KMH, OSRM_DEFAULT_KMH, FreeFlowSource, build_speed_layer, load_layer, save_layer,
                                 speed_version)
 from speedmatrix.timeslots import DAYTYPES
 
 # ways: (name, highway, class, maxspeed)
 WAYS = [("Đại lộ P", "primary", "chinh", np.nan), ("Đại lộ Q", "primary", "chinh", 60.0),
         ("Phà", "ferry", "pha", np.nan), ("Phố A", "residential", "noido", np.nan),
-        ("Ngõ B", "residential", "nho", np.nan)]
+        ("Ngõ B", "residential", "nho", np.nan),
+        ("Đường mòn", "track", "nho", np.nan)]
 
 
 def build_table():
-    strings = [w[0] for w in WAYS] + ["primary", "residential", "ferry"]
-    hw = {"primary": 5, "residential": 6, "ferry": 7}
+    strings = [w[0] for w in WAYS] + ["primary", "residential", "ferry", "track"]
+    hw = {name: len(WAYS) + k for k, name in enumerate(["primary", "residential", "ferry", "track"])}
     nw = len(WAYS)
     way = np.repeat(np.arange(nw, dtype=np.int32), 2)
     n = way.size
@@ -49,7 +50,7 @@ class SpeedLayerTests(unittest.TestCase):
     def setUpClass(cls):
         cls.t = build_table()
         first = lambda w: int(np.flatnonzero(cls.t.way == w)[0])
-        cls.primary, cls.max60, cls.ferry, cls.pho_a, cls.ngo_b = (first(i) for i in range(5))
+        cls.primary, cls.max60, cls.ferry, cls.pho_a, cls.ngo_b, cls.track = (first(i) for i in range(6))
         lon0 = float(cls.t.a_lon[cls.primary]) - 0.001
         lon1 = float(cls.t.b_lon[cls.primary + 1]) + 0.001
         cls.box = {"type": "Polygon", "coordinates": [[[lon0, 20.9], [lon1, 20.9], [lon1, 21.1],
@@ -64,6 +65,20 @@ class SpeedLayerTests(unittest.TestCase):
         self.assertEqual(L.dyn_idx["weekday"].size, 0)
         self.assertEqual(int(L.at("weekday", 17)[self.primary]), 65); self.assertEqual(int(L.at("sun", 0)[self.max60]), 48)
         self.assertEqual(int(L.at("sat", 3)[self.ferry]), FERRY_KMH)
+
+    def test_extra_highways_get_osrm_default_speed(self):
+        L = build_speed_layer(self.t, FreeFlowSource(), [], ScopeResolver(self.t))
+        self.assertEqual(int(L.at("weekday", 0)[self.track]), OSRM_DEFAULT_KMH)
+        self.assertEqual(FreeFlowSource.id, "profile_free_flow:v2")
+
+    def test_default_speed_matches_profile(self):
+        lua = Path(__file__).resolve().parent.parent / "osrm/tools/profiles/car.lua"
+        if not lua.exists():
+            self.skipTest("car.lua not installed")
+        found = re.search(r"default_speed\s*=\s*(\d+)", lua.read_text(encoding="utf-8"))
+        if not found:
+            self.skipTest("default_speed not in car.lua")
+        self.assertEqual(int(found.group(1)), OSRM_DEFAULT_KMH)
 
     def test_pct_then_set_only_in_their_slots_and_classes(self):
         rules = [Rule("p", "speed_pct", "edit", {"scope": {"polygon": self.box}, "classes": ["chinh"], "pct": -50, "when": {"daytypes": ["weekday"], "times": [["07:00", "08:00"]]}}),

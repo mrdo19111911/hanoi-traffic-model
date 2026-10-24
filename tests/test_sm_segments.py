@@ -1,4 +1,5 @@
 """Offline tests for the speedmatrix segment table, admin areas and water lines."""
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -7,7 +8,7 @@ import numpy as np
 
 from speedmatrix.geo import haversine_m, points_in_geometry
 from speedmatrix.segments import (HGV_VALUES, ROAD_CLASSES, build_admin, build_segments, build_water_lines,
-                                  find_segments, load_admin, load_segments, load_water_lines, parse_metres,
+                                  find_segments, load_admin, pair_lookup, load_segments, load_water_lines, parse_metres,
                                   parse_tonnes, save_admin, save_segments, save_water_lines)
 
 LAT_IN, LON_IN = 21.0015, 105.8015
@@ -17,6 +18,8 @@ NODES = {11: (21.001, 105.801), 12: (21.001, 105.802), 13: (21.001, 105.803),
          41: (21.004, 105.801), 42: (21.004, 105.802),
          51: (21.005, 105.801), 52: (21.005, 105.802),
          61: (22.5, 107.5), 62: (22.5, 107.501),
+         71: (21.006, 105.801), 72: (21.006, 105.802), 81: (21.007, 105.801), 82: (21.007, 105.802),
+         95: (21.008, 105.801), 96: (21.008, 105.802),
          91: (21.0, 105.8), 92: (21.0, 105.803), 93: (21.003, 105.803), 94: (21.003, 105.8)}
 WAYS = [(1, [11, 12, 13], {"highway": "primary", "oneway": "yes", "maxweight": "10 t", "name": "Phố Huế"}),
         (2, [21, 22], {"highway": "residential", "maxweight": "8000 kg", "maxheight": "4.2 m", "hgv": "no",
@@ -25,6 +28,10 @@ WAYS = [(1, [11, 12, 13], {"highway": "primary", "oneway": "yes", "maxweight": "
         (4, [41, 42], {"route": "ferry"}),
         (5, [51, 52], {"highway": "service", "maxweight": "default"}),
         (6, [61, 62], {"highway": "primary"}),
+        (7, [71, 72], {"highway": "track"}),
+        (8, [81, 82], {"highway": "path"}),
+        (9, [95, 96], {"highway": "proposed"}),
+        (10, [11, 12], {"highway": "residential"}),
         (90, [91, 92, 93, 94, 91], {"boundary": "administrative"})]
 RELATIONS = [(1, [90], {"type": "boundary", "boundary": "administrative", "admin_level": "6",
                         "name": "Phường Thử"})]
@@ -64,10 +71,11 @@ class SegmentTests(unittest.TestCase):
 
     def test_kept_ways_classes_and_ferry(self):
         t = self.table
-        self.assertEqual(sorted(t.way_id.tolist()), [1, 2, 4, 5])
+        self.assertEqual(sorted(t.way_id.tolist()), [1, 2, 3, 4, 5, 7, 8, 10])
         cls = {int(w): ROAD_CLASSES[c] for w, c in zip(t.way_id, t.road_class)}
-        self.assertEqual(cls, {1: "noido", 2: "noido", 4: "pha", 5: "nho"})
-        self.assertEqual(t.n, 5)  # way 1 has two segments, the others one each
+        self.assertEqual((cls[3], cls[7], cls[8]), ("nho", "nho", "nho"))
+        self.assertEqual((cls[1], cls[2], cls[4], cls[5]), ("noido", "noido", "pha", "nho"))
+        self.assertEqual(t.n, 9)  # way 1 has two segments, the others one each
 
     def test_one_row_per_adjacent_pair_with_length(self):
         i = find_segments(self.table, np.array([[1, 11, 12], [1, 12, 11], [1, 11, 13]]))
@@ -149,3 +157,34 @@ class WaterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_old_format_refused(self):
+        save_segments(self.table, self.root / "seg_old")
+        meta_path = self.root / "seg_old" / "meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta["format"] = 1
+        meta_path.write_text(json.dumps(meta), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "format 1"):
+            load_segments(self.root / "seg_old")
+
+    def test_pair_lookup_both_orders_and_duplicates(self):
+        start, count = pair_lookup(self.table, np.array([11, 12, 11]), np.array([12, 11, 99]))
+        self.assertEqual(count.tolist(), [2, 2, 0])
+        rows = self.table.pair_order[start[0]:start[0] + count[0]]
+        self.assertEqual(sorted(int(self.table.way_id[self.table.way[r]]) for r in rows), [1, 10])
+
+    def test_pair_lookup_large_ids_and_empty(self):
+        big = 14_297_527_150
+        start, count = pair_lookup(self.table, np.array([big, 11]), np.array([big + 1, 13]))
+        self.assertEqual(count.tolist(), [0, 0])
+        start, count = pair_lookup(self.table, np.array([], dtype=np.int64), np.array([], dtype=np.int64))
+        self.assertEqual(len(start), 0)
+        self.assertEqual(start.dtype, np.int64)
+        self.assertEqual(count.dtype, np.int32)
+
+    def test_pair_order_not_saved(self):
+        pair_lookup(self.table, np.array([11]), np.array([12]))
+        save_segments(self.table, self.root / "seg_np")
+        with np.load(self.root / "seg_np" / "segments.npz") as data:
+            self.assertNotIn("pair_order", data.files)

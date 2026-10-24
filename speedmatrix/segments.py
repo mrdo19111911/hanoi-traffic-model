@@ -21,7 +21,11 @@ from speedmatrix.geo import haversine_m
 
 ROAD_CLASSES = ("caotoc", "quoclo", "chinh", "noido", "nho", "pha")
 HGV_VALUES = ("", "no", "yes", "designated", "destination", "delivery", "other")
-SEGMENTS_FORMAT = 1
+SEGMENTS_FORMAT = 2
+# Ways OSRM's car profile still routes over (it falls back to its default speed); kept as "nho" whatever
+# classify_osm says, unless area=yes.
+EXTRA_HIGHWAYS = ("track", "path", "footway", "pedestrian", "cycleway", "bridleway", "steps", "busway",
+                  "bus_guideway", "corridor", "road")
 _TYPECODES = {"q": np.int64, "i": np.int32, "b": np.int8, "f": np.float32}
 _FERRY = ROAD_CLASSES.index("pha")
 _TONNES = re.compile(r"\s*(\d+(?:[.,]\d+)?)\s*(t|kg)?\s*", re.I)
@@ -73,6 +77,8 @@ class SegmentTable:
     strings: list
     meta: dict
     _index: object = field(default=None, repr=False, compare=False)
+    pair_order: object = field(default=None, repr=False, compare=False)
+    _pair_index: object = field(default=None, repr=False, compare=False)
 
     @property
     def n(self) -> int:
@@ -149,7 +155,9 @@ class _SegmentHandler(osmium.SimpleHandler):
     def way(self, w):
         tags = w.tags
         highway = tags.get("highway", "")
-        if highway in DEFAULT_SPEEDS_KMH and tags.get("area") != "yes":
+        if highway in EXTRA_HIGHWAYS and tags.get("area") != "yes":
+            road_class = ROAD_CLASSES.index("nho")
+        elif highway in DEFAULT_SPEEDS_KMH and tags.get("area") != "yes":
             road_class = ROAD_CLASSES.index(classify_osm(highway, tags.get("ref", ""), tags.get("name", ""),
                                                          tags.get("service", ""))) \
                 if classify_osm(highway, tags.get("ref", ""), tags.get("name", ""),
@@ -247,10 +255,13 @@ def save_segments(table: SegmentTable, out_dir) -> None:
 
 def load_segments(out_dir) -> SegmentTable:
     out_dir = Path(out_dir)
+    meta = json.loads((out_dir / "meta.json").read_text(encoding="utf-8"))
+    if meta.get("format") != SEGMENTS_FORMAT:
+        raise ValueError(f"segments format {meta.get('format')} in {out_dir}; "
+                         f"rebuild with this code (format {SEGMENTS_FORMAT})")
     with np.load(out_dir / "segments.npz") as data:
         arrays = {k: data[k] for k in _ARRAYS_SEGMENT + _ARRAYS_WAY}
     strings = json.loads((out_dir / "strings.json").read_text(encoding="utf-8"))
-    meta = json.loads((out_dir / "meta.json").read_text(encoding="utf-8"))
     return SegmentTable(strings=strings, meta=meta, **arrays)
 
 
@@ -276,6 +287,45 @@ def find_segments(table: SegmentTable, keys) -> np.ndarray:
         return np.full(len(keys), -1, dtype=np.int64)
     hit = (pos < len(sorted_rows)) & (sorted_rows[pos_c] == query)
     return np.where(hit, order[pos_c], -1).astype(np.int64)
+
+
+def _build_pair_index(table: SegmentTable):
+    """Rows sorted by (min node, max node, way_id), with dense node ranks so a pair packs into one int64.
+
+    OSM node ids need 34 bits, so (lo, hi) cannot be packed raw; ranks over the table's own nodes need at
+    most 25 bits each for the nationwide table.
+    """
+    ranks = np.unique(np.concatenate([table.a, table.b]))
+    shift = max(int(len(ranks)).bit_length(), 1)
+    if 2 * shift > 62:
+        raise ValueError("too many distinct nodes to pack a node pair into an int64")
+    ra, rb = np.searchsorted(ranks, table.a), np.searchsorted(ranks, table.b)
+    packed = (np.minimum(ra, rb).astype(np.int64) << shift) | np.maximum(ra, rb)
+    order = np.lexsort((table.way_id[table.way], packed))
+    table.pair_order = order.astype(np.int64)
+    table._pair_index = (ranks, shift, packed[order])
+
+
+def pair_lookup(table: SegmentTable, a: np.ndarray, b: np.ndarray):
+    """Rows of ``table.pair_order`` for each unordered node pair: ``(start int64, count int32)``.
+
+    ``table.pair_order[start:start + count]`` are the segment rows over the pair (one per way, sorted by
+    way id); ``count`` is 0 when the pair is absent.
+    """
+    a, b = np.asarray(a, dtype=np.int64), np.asarray(b, dtype=np.int64)
+    if table._pair_index is None:
+        _build_pair_index(table)
+    ranks, shift, keys = table._pair_index
+    if len(ranks) == 0:
+        return np.zeros(len(a), dtype=np.int64), np.zeros(len(a), dtype=np.int32)
+    pa, pb = np.searchsorted(ranks, a), np.searchsorted(ranks, b)
+    found = ((pa < len(ranks)) & (ranks[np.minimum(pa, len(ranks) - 1)] == a)
+             & (pb < len(ranks)) & (ranks[np.minimum(pb, len(ranks) - 1)] == b))
+    query = (np.minimum(pa, pb).astype(np.int64) << shift) | np.maximum(pa, pb)
+    start = np.searchsorted(keys, query, side="left")
+    end = np.searchsorted(keys, query, side="right")
+    count = np.where(found, end - start, 0).astype(np.int32)
+    return np.where(found, start, 0).astype(np.int64), count
 
 
 # ---- administrative areas -------------------------------------------------

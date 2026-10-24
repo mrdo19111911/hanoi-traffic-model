@@ -20,14 +20,15 @@ from model.spatial import MissingRoadData
 
 try:
     from .rules import Rule, rule_set_sha
-    from .segments import ROAD_CLASSES, SegmentTable
+    from .segments import EXTRA_HIGHWAYS, ROAD_CLASSES, SegmentTable
     from .timeslots import DAYTYPES, SLOTS, when_mask
 except ImportError:  # pragma: no cover - flat import
     from rules import Rule, rule_set_sha
-    from segments import ROAD_CLASSES, SegmentTable
+    from segments import EXTRA_HIGHWAYS, ROAD_CLASSES, SegmentTable
     from timeslots import DAYTYPES, SLOTS, when_mask
 
 SPEED_CODE_VERSION = 1
+OSRM_DEFAULT_KMH = 10  # osrm/tools/profiles/car.lua default_speed; a test keeps them equal
 FERRY_KMH = 5  # osrm/tools/profiles/car.lua speeds.route.ferry; a test keeps them equal
 CLASS_LIMITS_KMH = {"caotoc": (20, 120), "quoclo": (10, 100), "chinh": (5, 90), "noido": (5, 70),
                     "nho": (3, 50), "pha": (3, 30)}
@@ -47,26 +48,33 @@ class BaseSource(Protocol):
         """float32 (n, 48) km/h; NaN means no data."""
 
 
-class FreeFlowSource:
-    """The OSRM car profile's free-flow speed, the same in every slot and day type."""
-    id = "profile_free_flow:v1"
-
-    def speeds(self, table: SegmentTable, daytype: str) -> np.ndarray:
-        nw = len(table.way_id)
-        hw = np.asarray(table.highway, dtype=np.int64)
-        ms = np.asarray(table.maxspeed_kmh, dtype=np.float32)
-        key = np.stack([hw.astype(np.float64), np.where(np.isnan(ms), -1.0, ms.astype(np.float64))], axis=1)
-        uniq, inverse = np.unique(key, axis=0, return_inverse=True)
-        values = np.full(len(uniq), np.nan, dtype=np.float32)
-        for i, (h, m) in enumerate(uniq):
-            name = table.strings[int(h)] if h >= 0 else ""
-            if name == "ferry":
-                values[i] = FERRY_KMH
-                continue
+def way_free_flow_kmh(table: SegmentTable) -> np.ndarray:
+    """float32 (ways,): the OSRM car profile's free-flow speed per way, NaN when the profile has none."""
+    nw = len(table.way_id)
+    hw = np.asarray(table.highway, dtype=np.int64)
+    ms = np.asarray(table.maxspeed_kmh, dtype=np.float32)
+    key = np.stack([hw.astype(np.float64), np.where(np.isnan(ms), -1.0, ms.astype(np.float64))], axis=1)
+    uniq, inverse = np.unique(key, axis=0, return_inverse=True)
+    values = np.full(len(uniq), np.nan, dtype=np.float32)
+    for i, (h, m) in enumerate(uniq):
+        name = table.strings[int(h)] if h >= 0 else ""
+        if name == "ferry":
+            values[i] = FERRY_KMH
+        elif name in EXTRA_HIGHWAYS:
+            values[i] = OSRM_DEFAULT_KMH
+        else:
             speed, _ = free_flow_speed(name, "%g" % m if m >= 0 else "")
             if speed is not None:
                 values[i] = speed
-        per_way = values[np.asarray(inverse).reshape(-1)[:nw]]
+    return values[np.asarray(inverse).reshape(-1)[:nw]]
+
+
+class FreeFlowSource:
+    """The OSRM car profile's free-flow speed, the same in every slot and day type."""
+    id = "profile_free_flow:v2"
+
+    def speeds(self, table: SegmentTable, daytype: str) -> np.ndarray:
+        per_way = way_free_flow_kmh(table)
         v = np.empty((table.n, SLOTS), dtype=np.float32)
         v[:] = per_way[np.asarray(table.way)][:, None]
         return v
