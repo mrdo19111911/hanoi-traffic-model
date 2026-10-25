@@ -24,6 +24,7 @@ GROUPS = [
 ]
 OLD = "Bản cũ và bản thử"
 OTHER = "Khác"
+FOLDERS = "Thư mục ảnh và báo cáo"
 # Numbered versions and the scene's saved intermediate copies.
 OLD_RE = re.compile(r"(_v\d+$|^3d_)")
 TITLE_RE = re.compile(rb"<title>(.*?)</title>", re.I | re.S)
@@ -40,23 +41,31 @@ def page_title(path):
 
 
 def list_pages(root):
-    """Group every top-level *.html file in root, current pages before old ones."""
+    """Group every top-level *.html file in root, plus each subfolder's index.html.
+
+    Current pages come before old ones; hrefs are root-absolute so the menu
+    also works on pages inside subfolders.
+    """
+    root = Path(root)
     groups = {}
-    for p in sorted(Path(root).glob("*.html")):
+    for p in sorted(root.glob("*.html")):
         stem = p.stem
         if stem.endswith("_old") or OLD_RE.search(stem):
             label = OLD
         else:
             label = next((g for g, test in GROUPS if test(stem)), OTHER)
-        groups.setdefault(label, []).append({"href": p.name, "title": page_title(p)})
-    order = [g for g, _ in GROUPS] + [OTHER, OLD]
+        groups.setdefault(label, []).append({"href": "/" + p.name, "title": page_title(p)})
+    for p in sorted(root.glob("*/index.html")):
+        groups.setdefault(FOLDERS, []).append(
+            {"href": "/" + p.parent.name + "/index.html", "title": page_title(p)})
+    order = [g for g, _ in GROUPS] + [FOLDERS, OTHER, OLD]
     return [{"group": g, "pages": groups[g]} for g in order if g in groups]
 
 
 NAV_JS = r"""
 (function(){
  if (window.__navInjected) return; window.__navInjected = true;
- var data = %s, here = location.pathname.split('/').pop() || 'index.html';
+ var data = %s, here = location.pathname.replace(/\/$/, '/index.html');
  var css = '#pgnav-btn{position:fixed;top:8px;right:8px;z-index:2147483646;font:600 13px system-ui,sans-serif;'
   + 'background:#1c2220;color:#fff;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;opacity:.85}'
   + '#pgnav-btn:hover{opacity:1}'
