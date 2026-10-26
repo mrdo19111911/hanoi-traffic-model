@@ -22,6 +22,8 @@ GROUPS = [
     ("Nhà Việt Nam", lambda s: s.startswith("vnhouse")),
     ("Dựng phố từ ảnh", lambda s: s in ("app", "index", "training", "synth_gen") or s.endswith("_test")),
 ]
+# The home page: the hub with the shared tab bar. "/" serves it and the menu links to it first.
+HOME = "app.html"
 OLD = "Bản cũ và bản thử"
 OTHER = "Khác"
 FOLDERS = "Thư mục ảnh và báo cáo"
@@ -64,8 +66,8 @@ def list_pages(root):
 
 NAV_JS = r"""
 (function(){
- if (window.__navInjected) return; window.__navInjected = true;
- var data = %s, here = location.pathname.replace(/\/$/, '/index.html');
+ if (window.__navInjected || window.top !== window) return; window.__navInjected = true;
+ var data = %s, home = %s, here = location.pathname === '/' ? home : location.pathname.replace(/\/$/, '/index.html');
  var css = '#pgnav-btn{position:fixed;top:8px;right:8px;z-index:2147483646;font:600 13px system-ui,sans-serif;'
   + 'background:#1c2220;color:#fff;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;opacity:.85}'
   + '#pgnav-btn:hover{opacity:1}'
@@ -85,6 +87,7 @@ NAV_JS = r"""
   a.textContent = p.title || p.href;
   var s = document.createElement('small'); s.textContent = p.href; a.appendChild(s); return a;
  }
+ var h0 = link({href: home, title: '🏠 Trang chủ'}); h0.style.fontWeight = '600'; box.appendChild(h0);
  data.forEach(function(g){
   var wrap = box;
   if (g.group === %s) { var d = document.createElement('details'); var su = document.createElement('summary');
@@ -105,11 +108,13 @@ class NavHandler(SimpleHTTPRequestHandler):
     def send_head(self):
         path = Path(self.translate_path(self.path))
         if path.is_dir():
-            path = path / "index.html"
+            home = path / HOME
+            path = home if self.path.split("?")[0].split("#")[0] == "/" and home.is_file() else path / "index.html"
         if path.suffix.lower() != ".html" or not path.is_file():
             return super().send_head()
         body = path.read_bytes()
-        js = NAV_JS % (json.dumps(list_pages(self.directory), ensure_ascii=False), json.dumps(OLD, ensure_ascii=False))
+        js = NAV_JS % (json.dumps(list_pages(self.directory), ensure_ascii=False), json.dumps("/" + HOME),
+                       json.dumps(OLD, ensure_ascii=False))
         tag = ("<script>" + js + "</script>").encode("utf-8")
         i = body.lower().rfind(b"</body>")
         body = body[:i] + tag + body[i:] if i >= 0 else body + tag
