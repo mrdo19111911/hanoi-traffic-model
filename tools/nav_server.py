@@ -11,6 +11,8 @@ import functools
 import html
 import json
 import re
+import socket
+import threading
 from io import BytesIO
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -106,6 +108,10 @@ NAV_JS = r"""
 
 
 class NavHandler(SimpleHTTPRequestHandler):
+    # Keep-alive: a page with ~100 JS modules reuses a few connections instead of opening one per file. Every response
+    # here carries Content-Length (files, listings, errors, the injected HTML), which HTTP/1.1 needs.
+    protocol_version = "HTTP/1.1"
+
     def send_head(self):
         path = Path(self.translate_path(self.path))
         if path.is_dir():
@@ -130,11 +136,24 @@ class NavHandler(SimpleHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--port", type=int, default=8767)
-    ap.add_argument("--bind", default="127.0.0.1")
+    # Both loopbacks by default: browsers resolve "localhost" to ::1 first, and with only 127.0.0.1 listening every
+    # request waited ~0.2 s for the IPv6 attempt to fail (81 tree modules loaded one after another = seconds).
+    ap.add_argument("--bind", action="append", help="address to listen on, repeatable (default: 127.0.0.1 and ::1)")
     ap.add_argument("--directory", required=True)
     a = ap.parse_args()
     handler = functools.partial(NavHandler, directory=a.directory)
-    ThreadingHTTPServer((a.bind, a.port), handler).serve_forever()
+    servers = []
+    for addr in a.bind or ["127.0.0.1", "::1"]:
+        cls = type("Server6", (ThreadingHTTPServer,), {"address_family": socket.AF_INET6}) if ":" in addr else ThreadingHTTPServer
+        try:
+            servers.append(cls((addr, a.port), handler))
+        except OSError as e:   # e.g. no IPv6 on this machine: serve on the others
+            print(f"nav_server: cannot listen on [{addr}]:{a.port}: {e}")
+    if not servers:
+        raise SystemExit("nav_server: no address to listen on")
+    for srv in servers[1:]:
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+    servers[0].serve_forever()
 
 
 if __name__ == "__main__":
