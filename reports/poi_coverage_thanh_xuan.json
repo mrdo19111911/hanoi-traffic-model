@@ -1,0 +1,294 @@
+{
+ "commune": "Phường Thanh Xuân",
+ "osm_relation": 19335051,
+ "footprints": 10512,
+ "overture_release": "2026-10-21.0",
+ "near_m": 10.0,
+ "sources": {
+  "osm": {
+   "points": 862,
+   "with_number": 482,
+   "with_category": 485,
+   "matched": {
+    "none": 238,
+    "in": 309,
+    "near": 315
+   },
+   "fp_with_number": 348,
+   "fp_with_category": 174,
+   "fp_with_number_in": 170,
+   "top_categories": [
+    [
+     "shop=clothes",
+     71
+    ],
+    [
+     "shop=kiosk",
+     64
+    ],
+    [
+     "shop=convenience",
+     36
+    ],
+    [
+     "amenity=restaurant",
+     35
+    ],
+    [
+     "amenity=bank",
+     21
+    ],
+    [
+     "amenity=fast_food",
+     20
+    ],
+    [
+     "amenity=school",
+     19
+    ],
+    [
+     "shop=furniture",
+     17
+    ],
+    [
+     "amenity=cafe",
+     13
+    ],
+    [
+     "amenity=kindergarten",
+     11
+    ],
+    [
+     "office=government",
+     11
+    ],
+    [
+     "shop=supermarket",
+     9
+    ],
+    [
+     "amenity=fuel",
+     8
+    ],
+    [
+     "shop=jewelry",
+     8
+    ],
+    [
+     "shop=shoes",
+     7
+    ],
+    [
+     "shop=beauty",
+     6
+    ],
+    [
+     "shop=mobile_phone",
+     6
+    ],
+    [
+     "shop=watches",
+     6
+    ],
+    [
+     "shop=mall",
+     5
+    ],
+    [
+     "healthcare=pharmacy",
+     5
+    ],
+    [
+     "office=company",
+     5
+    ],
+    [
+     "amenity=university",
+     5
+    ],
+    [
+     "amenity=bicycle_rental",
+     5
+    ],
+    [
+     "healthcare=hospital",
+     4
+    ],
+    [
+     "shop=yes",
+     4
+    ]
+   ],
+   "pct_fp_number": 3.31,
+   "pct_fp_category": 1.66
+  },
+  "overture": {
+   "points": 13772,
+   "with_number": 10336,
+   "with_category": 12794,
+   "matched": {
+    "none": 4354,
+    "in": 4032,
+    "near": 5386
+   },
+   "fp_with_number": 2323,
+   "fp_with_category": 2652,
+   "fp_with_number_in": 1333,
+   "top_categories": [
+    [
+     "fashion_and_apparel_store",
+     986
+    ],
+    [
+     "real_estate_service",
+     834
+    ],
+    [
+     "restaurant",
+     793
+    ],
+    [
+     "professional_service",
+     702
+    ],
+    [
+     "shopping",
+     600
+    ],
+    [
+     "hardware_home_and_garden_store",
+     492
+    ],
+    [
+     "personal_or_beauty_service",
+     469
+    ],
+    [
+     "wellness_service",
+     425
+    ],
+    [
+     "home_service",
+     388
+    ],
+    [
+     "coffee_shop",
+     314
+    ],
+    [
+     "electronics_store",
+     300
+    ],
+    [
+     "food_and_beverage_store",
+     295
+    ],
+    [
+     "education",
+     237
+    ],
+    [
+     "casual_eatery",
+     231
+    ],
+    [
+     "event_or_party_service",
+     210
+    ],
+    [
+     "flowers_and_gifts_store",
+     185
+    ],
+    [
+     "financial_service",
+     180
+    ],
+    [
+     "travel_service",
+     175
+    ],
+    [
+     "corporate_or_business_office",
+     174
+    ],
+    [
+     "technical_service",
+     170
+    ],
+    [
+     "historic_site",
+     168
+    ],
+    [
+     "building_or_construction_service",
+     161
+    ],
+    [
+     "health_care",
+     161
+    ],
+    [
+     "cafe",
+     161
+    ],
+    [
+     "personal_care_and_beauty_store",
+     138
+    ]
+   ],
+   "datasets": [
+    [
+     "Overture",
+     13772
+    ],
+    [
+     "meta",
+     13665
+    ],
+    [
+     "Microsoft",
+     50
+    ],
+    [
+     "AllThePlaces",
+     39
+    ],
+    [
+     "Foursquare",
+     15
+    ],
+    [
+     "Uberall",
+     4
+    ],
+    [
+     "PinMeTo",
+     2
+    ]
+   ],
+   "confidence": {
+    "0.3": 10651,
+    "0.5": 7842,
+    "0.77": 2097,
+    "0.9": 620
+   },
+   "pct_fp_number": 22.1,
+   "pct_fp_category": 25.23
+  },
+  "ov_addr": {
+   "points": 0,
+   "with_number": 0,
+   "with_category": 0
+  }
+ },
+ "union": {
+  "fp_with_number": 2418,
+  "pct_number": 23.0,
+  "fp_with_category": 2699,
+  "pct_category": 25.68,
+  "fp_with_both": 2297,
+  "pct_both": 21.85,
+  "fp_number_from_2plus_sources": 253,
+  "of_those_same_number": 66
+ }
+}
