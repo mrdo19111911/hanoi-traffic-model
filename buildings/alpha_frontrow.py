@@ -1,21 +1,22 @@
-"""Front-row alpha of the Ha Noi wards: raise the front-row houses by a factor alpha over the raw Google 2.5D height.
+"""Front-row alpha: raise the front-row houses by a factor alpha over the raw Google 2.5D height.
 
-Decided by the user on 2026-10-27: alpha = 1.7 over raw Google, no limit on the Google value, cap 8 floors, front-row
-houses of the Ha Noi wards only (ALPHA, CAP_FLOORS). Measured against the user's own street photos
+Decided by the user on 2026-10-27: alpha = 1.7 over raw Google, no limit on the Google value, cap 8 floors (ALPHA,
+CAP_FLOORS); first the front-row houses of the Ha Noi wards, the same day every ward and commune of the country. Measured against the user's own street photos
 (alpha_vs_photos.py): on Nguyen Trai and Tay Son the segment medians end within +0.6 / -0.3 m of the photos (1.5:
 -1.1 / -2.2 m, 2.0: +3.0 / +2.5 m); on the two Long Bien streets every alpha overshoots by 3-5 m. calibrate_heights.py
 apply calls alpha_rows() before the front-row minimum (height_src 'frontrow_alpha'). This script keeps the grid report
 and the scratch-dir trial for other values; `apply` here refuses the published folder.
 
 Rule (one rule for every file in scope, all constants on the command line):
-  scope   = rows of the Ha Noi files whose commune group is wards only (every commune name starts with "Phường",
-            buildings/commune_groups.json), listed as front-row houses in buildings/frontrow_heights.json, whose
+  scope   = rows of every file of buildings/commune_groups.json (wards and communes), listed as front-row houses in
+            buildings/frontrow_heights.json, whose
             published height_src is g25cal / frontrow (Google based) and whose raw layer row has a Google 2.5D height.
             'est' rows (no Google reading of their own), OSM, building:part, Wikidata and sibling rows are never touched.
   height  = min(cap, max(published, alpha x raw Google)): never lowers a house, never lifts one past the cap
             (cap = cap_floors x 3.3 m; a house already above the cap keeps its height).
   floors  = max(published floors, calibrate_heights.floors_of(height)); height_src 'frontrow_alpha' where height or
-            floors change.
+            floors change. In Ha Noi the front-row minimum (3 floors, frontrow_heights.py) still applies after it, so
+            calibrate_heights apply labels 'frontrow_alpha' there only above 9.9 m; elsewhere there is no minimum.
 Re-runnable from the raw layer: the result depends on the raw height and the published height only, and applying it to
 its own output gives the same output (max with alpha x raw is idempotent).
 
@@ -40,21 +41,20 @@ ALPHA, CAP_FLOORS = 1.7, 8                  # the user's decision, 2026-10-27
 FLOOR_BINS = [(1, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 255)]
 
 
-def ward_files():
-    """(file, ward names) of the Ha Noi groups made of wards only."""
+def alpha_files():
+    """(file, commune names) of every commune group: the files in scope."""
     G = json.load(open(GROUPS, encoding='utf-8'))
-    return [(g['file'], [c['name'] for c in g['communes']]) for g in G['groups']
-            if g['file'].startswith('ha_noi_') and all(c['name'].startswith('Phường') for c in g['communes'])]
+    return [(g['file'], [c['name'] for c in g['communes']]) for g in G['groups']]
 
 
-def ward_file_names():
-    return {f for f, _ in ward_files()}
+def alpha_file_names():
+    return {f for f, _ in alpha_files()}
 
 
-def alpha_rows(name, ids, new_src, h25, new_h, fr_ids, wards):
-    """For calibrate_heights apply: (positions, new heights in m) of the rows of file `name` the rule raises: a ward
-    file, a listed front-row id, now 'g25cal', with a raw Google height; heights by rule() with ALPHA and CAP_FLOORS."""
-    if name not in wards or fr_ids is None or not len(fr_ids):
+def alpha_rows(name, ids, new_src, h25, new_h, fr_ids, files):
+    """For calibrate_heights apply: (positions, new heights in m) of the rows of file `name` the rule raises: a file in
+    scope, a listed front-row id, now 'g25cal', with a raw Google height; heights by rule() with ALPHA and CAP_FLOORS."""
+    if name not in files or fr_ids is None or not len(fr_ids):
         return np.zeros(0, int), np.zeros(0)
     k = np.flatnonzero(np.isin(ids, fr_ids) & (new_src == 'g25cal') & np.isfinite(h25) & (h25 > 0))
     nh, _ = rule(new_h[k], np.ones(len(k), int), h25[k], ALPHA, CAP_FLOORS)
@@ -134,13 +134,13 @@ def main():
     g.add_argument('--alphas', type=float, nargs='+', default=[1.3, 1.5, 2.0])
     g.add_argument('--caps', type=int, nargs='+', default=[6, 8, 0], help='cap in floors, 0 = no cap')
     g.add_argument('--report')
-    p = sub.add_parser('apply', help='write the ward files with the rule applied into --dst-dir (never by_area)')
+    p = sub.add_parser('apply', help='write the files with the rule applied into --dst-dir (never by_area)')
     p.add_argument('--alpha', type=float, default=ALPHA)
     p.add_argument('--cap-floors', type=int, default=CAP_FLOORS, help='0 = no cap')
     p.add_argument('--dst-dir', required=True)
     p.add_argument('--report')
     a = ap.parse_args()
-    names, fr_ids, t = ward_files(), load_frontrow(FRONTROW), time.time()
+    names, fr_ids, t = alpha_files(), load_frontrow(FRONTROW), time.time()
     if a.cmd == 'grid':
         res = [run(names, fr_ids, al, cap) for al in a.alphas for cap in a.caps]
         for r in res:
@@ -158,7 +158,7 @@ def main():
         print(json.dumps(res['total'], ensure_ascii=False))
     if a.report:
         json.dump(res, open(a.report, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-    print(f'{len(names)} ward files, {time.time() - t:.0f} s')
+    print(f'{len(names)} files, {time.time() - t:.0f} s')
 
 
 if __name__ == '__main__':

@@ -52,10 +52,11 @@ apply: rewrites height_dm, height_src and floors of published files in place: 'g
   holding any of these is skipped as well; --no-sources applies the calibration only.
   Last, the front-row houses of Ha Noi listed in buildings/frontrow_heights.json (frontrow_heights.py build) whose
   height_src is then 'g25cal' / 'est' get height >= 3 x 3.3 m and floors >= 3 ('frontrow' where that changes them):
-  a domain rule from the user, not a measurement; --no-frontrow leaves it out. Before that minimum, the front-row
-  houses of the Ha Noi ward files (alpha_frontrow.py) that are 'g25cal' with a raw 2.5D value get
-  height = min(8 x 3.3 m, max(height, 1.7 x raw h25)) ('frontrow_alpha' where that lifts them above the front-row
-  minimum; the others go on to the minimum): the factor the user chose against their street photos on 2026-10-27; --no-alpha leaves it out.
+  a domain rule from the user, not a measurement; --no-frontrow leaves it out. Before that minimum, the listed
+  front-row houses of every file (alpha_frontrow.py) that are 'g25cal' with a raw 2.5D value get
+  height = min(8 x 3.3 m, max(height, 1.7 x raw h25)) ('frontrow_alpha' where that lifts them; in Ha Noi only above
+  the front-row minimum, the others go on to the minimum): the factor the user chose against their street photos on
+  2026-10-27; --no-alpha leaves it out.
 """
 import argparse, datetime, glob, json, math, os, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -1146,8 +1147,8 @@ def load_params(path, sources=None, frontrow=None, alpha=False):
         from frontrow_heights import load_frontrow
         P['_frontrow'] = load_frontrow(frontrow)
         if alpha:
-            from alpha_frontrow import ward_file_names
-            P['_alpha_wards'] = ward_file_names()
+            from alpha_frontrow import alpha_file_names
+            P['_alpha_files'] = alpha_file_names()
     st = P['settings']
     RATIO_CLAMP, H_CLAMP, EST_CLAMP = tuple(st['ratio_clamp']), tuple(st['height_clamp']), tuple(st['est_clamp'])
     A = P['anchors']
@@ -1237,19 +1238,22 @@ def apply_table(tbl, P, dk, dc, province=None, name=None):
                 xi.append(k); xfl.append(fl); done.add(k)
     xi = np.array(xi, int)
     fr = P.get('_frontrow', {}).get(name) if name else None
-    # Front-row alpha (the user's factor, Ha Noi wards): listed g25cal houses get min(cap, max(h, alpha x raw h25)).
+    from frontrow_heights import min_floors_applies
+    minfl = fr is not None and len(fr) > 0 and min_floors_applies(name)
+    # Front-row alpha (the user's factor, every file): listed g25cal houses get min(cap, max(h, alpha x raw h25)).
     ai = np.zeros(0, int)
-    if fr is not None and len(fr) and P.get('_alpha_wards'):
+    if fr is not None and len(fr) and P.get('_alpha_files'):
         from alpha_frontrow import alpha_rows
         from frontrow_heights import MIN_H_DM
-        ai, ah = alpha_rows(name, tbl['id'].to_numpy(), new_src, F['h25'], new_h, fr, P['_alpha_wards'])
-        up = ah > MIN_H_DM / 10                      # at or under the minimum the front-row rule below decides
-        ai, ah = ai[up], ah[up]
+        ai, ah = alpha_rows(name, tbl['id'].to_numpy(), new_src, F['h25'], new_h, fr, P['_alpha_files'])
+        if minfl:
+            up = ah > MIN_H_DM / 10                  # at or under the minimum the front-row rule below decides
+            ai, ah = ai[up], ah[up]
         new_h[ai] = ah
         new_src[ai] = 'frontrow_alpha'
-    # Front-row prior (a domain rule): listed houses now g25cal / est get at least MIN_FLOORS floors and height.
+    # Front-row prior (a domain rule, Ha Noi only): listed houses now g25cal / est get at least MIN_FLOORS floors and height.
     fi = np.zeros(0, int); fr_prev = {}
-    if fr is not None and len(fr):
+    if minfl:
         from frontrow_heights import frontrow_rows, MIN_FLOORS, MIN_H_DM
         cur_fl = floors_of(new_h)
         if len(xi):
@@ -1271,7 +1275,7 @@ def apply_table(tbl, P, dk, dc, province=None, name=None):
     flv[chg] = floors_of(new_h[chg])
     if len(xi):
         flv[xi] = np.array(xfl, np.uint8)            # listed floors (Wikidata P1101 / the siblings' floors)
-    if len(fi) or len(ai):
+    if minfl and (len(fi) or len(ai)):
         from frontrow_heights import MIN_FLOORS
         fa = np.r_[fi, ai].astype(int)
         flv[fa] = np.maximum(flv[fa], MIN_FLOORS)    # front-row minimum floors
@@ -1389,7 +1393,7 @@ def main():
     p.add_argument('--no-sources', action='store_true', help='calibration only, no Wikidata / sibling rows')
     p.add_argument('--frontrow', default=FRONTROW, help='front-row house ids (frontrow_heights.py build)')
     p.add_argument('--no-frontrow', action='store_true', help='no front-row minimum (and no front-row alpha)')
-    p.add_argument('--no-alpha', action='store_true', help='no front-row alpha in the Ha Noi wards')
+    p.add_argument('--no-alpha', action='store_true', help='no front-row alpha')
     p.add_argument('--log', help='write the changed files (name -> bytes) and counts to this JSON')
     a = ap.parse_args()
     {'truth': cmd_truth, 'fit': cmd_fit, 'tall': cmd_tall, 'apply': cmd_apply}[a.cmd](a)

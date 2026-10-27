@@ -1,4 +1,4 @@
-"""Front-row prior for Ha Noi: a house facing a street has at least 3 floors.
+"""Front-row houses of every file, and the front-row prior for Ha Noi: a house facing a street there has at least 3 floors.
 
 This is a domain rule given by the user, not a measurement: almost every house on a Ha Noi street front today has
 3 floors or more, while the 2.5D model (Sentinel-2, 4 m) under-reads narrow tube houses and the OSM levels of
@@ -6,7 +6,7 @@ front-row houses look under-tagged. The rule lifts calibrated or estimated heigh
 and sibling heights are never touched.
 
 build (needs the gitignored data/buildings/osm_roads.parquet and the raw layer): finds the front-row houses of every
-  ha_noi_* file and writes their ids, the rule and its constants to the committed buildings/frontrow_heights.json.
+  file (files_prefix; the whole country since 2026-10-27, for the front-row alpha of alpha_frontrow.py) and writes their ids, the rule and its constants to the committed buildings/frontrow_heights.json.
   A footprint (decoded as calibrate_heights.ring_geoms does, keyhole rings made valid) is a front-row house when
   - its area is 20-300 m2 (houses, not blocks or kiosks);
   - a street centre line lies within D = half-width + setback of its outline (nearest distance outline -> line):
@@ -19,8 +19,8 @@ build (needs the gitignored data/buildings/osm_roads.parquet and the raw layer):
     crosses that segment by more than 0.1 m (shared walls and corners touch, they do not cross), so second-row houses
     behind a front house do not qualify.
   All constants are in the JSON (`params`).
-apply (calibrate_heights.py apply, after calibration, Wikidata and sibling rows): a listed row whose height_src is then
-  g25cal or est gets height = max(height, 3 x 3.3 m) and floors = max(floors, 3); height_src becomes 'frontrow' only
+apply (calibrate_heights.py apply, after calibration, Wikidata and sibling rows): in the files named
+  min_floors_files_prefix (ha_noi_*) only, a listed row whose height_src is then g25cal or est gets height = max(height, 3 x 3.3 m) and floors = max(floors, 3); height_src becomes 'frontrow' only
   where the height or the floors change. Needs nothing but the raw layer and the committed JSON.
 
     .venv/Scripts/python.exe buildings/frontrow_heights.py build [--raw-dir DIR] [--workers 6]
@@ -36,7 +36,8 @@ ROADS = os.path.join(REPO, 'data', 'buildings', 'osm_roads.parquet')
 OUT_JSON = os.path.join(REPO, 'buildings', 'frontrow_heights.json')
 
 PARAMS = {
-    'files_prefix': 'ha_noi_',
+    'files_prefix': '',
+    'min_floors_files_prefix': 'ha_noi_',
     'area_m2': [20.0, 300.0],
     'major_classes': ['trunk', 'primary', 'secondary', 'tertiary',
                       'trunk_link', 'primary_link', 'secondary_link', 'tertiary_link'],
@@ -204,7 +205,7 @@ def cmd_build(a):
     R = {
         'rule': ('Domain rule from the user, not a measurement: a house on a Ha Noi street front has at least '
                  f'{MIN_FLOORS} floors. calibrate_heights.py apply, after calibration, Wikidata and sibling rows: a row '
-                 'listed below whose height_src is then g25cal or est gets height = max(height, '
+                 'of a file named min_floors_files_prefix listed below whose height_src is then g25cal or est gets height = max(height, '
                  f'{MIN_FLOORS} x {PARAMS["level_m"]} m) and floors = max(floors, {MIN_FLOORS}); height_src frontrow '
                  'where the height or the floors change. osm / osm_part / wikidata / sibling rows are never touched.'),
         'frontrow_definition': ('footprint area within area_m2; a street centre line within half-width + setback_m of '
@@ -233,9 +234,14 @@ def cmd_build(a):
 def load_frontrow(path):
     """{file: sorted int64 array of front-row ids} from frontrow_heights.json."""
     R = json.load(open(path, encoding='utf-8'))
-    if R['params']['min_floors'] != MIN_FLOORS or R['params']['level_m'] != PARAMS['level_m']:
-        raise RuntimeError(f'{path}: min_floors / level_m differ from frontrow_heights.py')
+    if any(R['params'].get(k) != PARAMS[k] for k in ('min_floors', 'level_m', 'min_floors_files_prefix')):
+        raise RuntimeError(f'{path}: min_floors / level_m / min_floors_files_prefix differ from frontrow_heights.py')
     return {n: np.cumsum(np.array(d, np.int64)) for n, d in R['ids'].items()}
+
+
+def min_floors_applies(name):
+    """True for the files the front-row minimum covers (Ha Noi); the ids of the other files serve the front-row alpha."""
+    return bool(name) and name.startswith(PARAMS['min_floors_files_prefix'])
 
 
 def frontrow_rows(ids, new_src, new_dm, new_fl, fr_ids):
@@ -251,7 +257,7 @@ def frontrow_rows(ids, new_src, new_dm, new_fl, fr_ids):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='cmd', required=True)
-    p = sub.add_parser('build', help='front-row house ids of the ha_noi_* files -> buildings/frontrow_heights.json')
+    p = sub.add_parser('build', help='front-row house ids of every file -> buildings/frontrow_heights.json')
     p.add_argument('--raw-dir', default=RAW_DIR)
     p.add_argument('--out', default=OUT_JSON)
     p.add_argument('--files', nargs='*')
