@@ -1,0 +1,785 @@
+{
+ "commune": "Phường Thanh Xuân",
+ "osm_relation": 19335051,
+ "footprints": 10512,
+ "max_m": 30.0,
+ "roads": 3254,
+ "named_roads": 1644,
+ "footprint_street": {
+  "named": 6397,
+  "unnamed": 3987,
+  "no_road": 128,
+  "pct_named": 60.85,
+  "named_by_highway": {
+   "service": 4607,
+   "residential": 962,
+   "tertiary": 603,
+   "primary": 111,
+   "secondary": 77,
+   "trunk": 37
+  },
+  "unnamed_with_named_within_max_m": 2616
+ },
+ "sources": {
+  "fsq": {
+   "points_on_footprint": 978,
+   "with_street": 510,
+   "fp_unnamed": 289,
+   "fp_no_road": 2,
+   "exact": 76,
+   "loose": 56,
+   "differ": 87,
+   "near_any": 256,
+   "by_how": {
+    "in_differ": 45,
+    "in_exact": 22,
+    "in_loose": 17,
+    "near_differ": 42,
+    "near_exact": 54,
+    "near_loose": 39
+   },
+   "by_highway": {
+    "primary_differ": 5,
+    "primary_exact": 4,
+    "residential_differ": 16,
+    "residential_exact": 17,
+    "residential_loose": 9,
+    "secondary_differ": 3,
+    "secondary_exact": 6,
+    "service_differ": 51,
+    "service_exact": 7,
+    "service_loose": 47,
+    "tertiary_differ": 12,
+    "tertiary_exact": 41,
+    "trunk_exact": 1
+   },
+   "pct_exact_or_loose": 60.27,
+   "pct_near_any": 50.2,
+   "differ_samples": [
+    {
+     "building": 45278626,
+     "poi": "B2 - R2 - 10 - 11 Royal City",
+     "osm_nearest": "Phố Giáp Nhất",
+     "dist_m": 11.0,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45232906,
+     "poi": "Royal City Mega Mall",
+     "osm_nearest": "Ngách 12/61 Phố Chính Kinh",
+     "dist_m": 1.2,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45209366,
+     "poi": "222 Nguyễn Trãi",
+     "osm_nearest": "Phố Chính Kinh",
+     "dist_m": 4.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45129232,
+     "poi": "384 Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 15.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45208128,
+     "poi": "234 Quan Nhân",
+     "osm_nearest": "Ngõ 53 Phố Vũ Trọng Phụng",
+     "dist_m": 1.0,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45208770,
+     "poi": "50 Vũ Trọng Phụng",
+     "osm_nearest": "Phố Quan Nhân",
+     "dist_m": 8.9,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45209887,
+     "poi": "54A Vũ Trọng Phụng",
+     "osm_nearest": "Phố Quan Nhân",
+     "dist_m": 6.2,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45196258,
+     "poi": "635c Kim Ma",
+     "osm_nearest": "Ngõ 262A+B Đường Nguyễn Trãi",
+     "dist_m": 4.5,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45230848,
+     "poi": "309 Quan Nhân",
+     "osm_nearest": "Ngõ 313",
+     "dist_m": 10.9,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45216580,
+     "poi": "134 Chùa Láng",
+     "osm_nearest": "Phố Quan Nhân",
+     "dist_m": 3.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45242770,
+     "poi": "Hapulico",
+     "osm_nearest": "Phố Nguyễn Huy Tưởng",
+     "dist_m": 24.6,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45248890,
+     "poi": "Hapulico Complex",
+     "osm_nearest": "Phố Nguyễn Huy Tưởng",
+     "dist_m": 8.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45248890,
+     "poi": "72 Vu Trong Phung",
+     "osm_nearest": "Phố Nguyễn Huy Tưởng",
+     "dist_m": 8.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45261882,
+     "poi": "1 Nguyen Huy Tuong",
+     "osm_nearest": "Ngõ 98 Vũ Trọng Phụng",
+     "dist_m": 1.6,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45294684,
+     "poi": "Quán Cơm 2Q(cơm bình dân)",
+     "osm_nearest": "Ngõ 80/9 Phố Nhân Hòa",
+     "dist_m": 7.4,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45294248,
+     "poi": "Cầu Giấy",
+     "osm_nearest": "Ngõ 116 Phố Nhân Hòa",
+     "dist_m": 5.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45298281,
+     "poi": "Quan Nhân",
+     "osm_nearest": "Ngõ 116 Nhân Hòa",
+     "dist_m": 5.7,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45325708,
+     "poi": "Số 1 Nhân Hòa",
+     "osm_nearest": "Ngõ 144 Phố Quan Nhân",
+     "dist_m": 5.2,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45253091,
+     "poi": "Ngõ 58",
+     "osm_nearest": "Ngõ 64 Vũ Trọng Phụng",
+     "dist_m": 4.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45266331,
+     "poi": "Quan Nhan, Nhan Chinh, Thanh Xuan",
+     "osm_nearest": "Ngõ 90 Phố Chính Kinh",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45285563,
+     "poi": "Royal City Vincom Mega Mall",
+     "osm_nearest": "Ngõ 72 Nguyễn Trãi",
+     "dist_m": 1.9,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45289649,
+     "poi": "174 Đường Láng",
+     "osm_nearest": "Ngõ 72 Nguyễn Trãi",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45343036,
+     "poi": "Royal City",
+     "osm_nearest": "Ngách 72/1 Đường Nguyễn Trãi",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45347883,
+     "poi": "B1 Royal City",
+     "osm_nearest": "Ngách 30 Ngõ 109 Phố Quan Nhân",
+     "dist_m": 2.9,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45299188,
+     "poi": "QN",
+     "osm_nearest": "Ngõ 137 Phố Cự Lộc",
+     "dist_m": 2.4,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45314547,
+     "poi": "Royal City",
+     "osm_nearest": "Ngõ 20 Phố Cự Lộc",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45352932,
+     "poi": "B2 Royal City",
+     "osm_nearest": "Ngõ 109 Quan Nhân",
+     "dist_m": 1.0,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45353633,
+     "poi": "R1 Royal City",
+     "osm_nearest": "Ngõ 109 Quan Nhân",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45357071,
+     "poi": "B2-R2 Royal City",
+     "osm_nearest": "Ngõ 109 Quan Nhân",
+     "dist_m": 2.2,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45361699,
+     "poi": "Royal City",
+     "osm_nearest": "Ngõ 89 Phố Quan Nhân",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    }
+   ]
+  },
+  "osm": {
+   "points_on_footprint": 624,
+   "with_street": 434,
+   "fp_unnamed": 137,
+   "fp_no_road": 2,
+   "exact": 177,
+   "loose": 77,
+   "differ": 41,
+   "near_any": 404,
+   "by_how": {
+    "in_differ": 19,
+    "in_exact": 71,
+    "in_loose": 29,
+    "near_differ": 22,
+    "near_exact": 106,
+    "near_loose": 48
+   },
+   "by_highway": {
+    "primary_exact": 16,
+    "residential_differ": 8,
+    "residential_exact": 37,
+    "residential_loose": 16,
+    "secondary_differ": 1,
+    "secondary_exact": 3,
+    "service_differ": 23,
+    "service_exact": 25,
+    "service_loose": 61,
+    "tertiary_differ": 9,
+    "tertiary_exact": 96
+   },
+   "pct_exact_or_loose": 86.1,
+   "pct_near_any": 93.09,
+   "differ_samples": [
+    {
+     "building": 45427824,
+     "poi": "Quan Nhân",
+     "osm_nearest": "Phố Giáp Nhất",
+     "dist_m": 3.4,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45413409,
+     "poi": "Ngõ 68 Quan Nhân",
+     "osm_nearest": "Ngách 52/27 Phố Quan Nhân",
+     "dist_m": 2.5,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45408672,
+     "poi": "Ngõ 68 Quan Nhân",
+     "osm_nearest": "Ngách 52/19 Phố Quan Nhân",
+     "dist_m": 1.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45309658,
+     "poi": "Ngõ 116 Nhân Hòa",
+     "osm_nearest": "Ngõ 80 Phố Nhân Hòa",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45309227,
+     "poi": "Phố Quan Nhân",
+     "osm_nearest": "Phố Cự Lộc",
+     "dist_m": 1.8,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45259284,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Đường nội bộ Honor Village",
+     "dist_m": 1.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45237429,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Ngõ 172",
+     "dist_m": 17.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45236146,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Ngõ 172",
+     "dist_m": 3.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45233083,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Ngõ 172",
+     "dist_m": 6.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45252449,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Đường nội bộ Honor Village",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45407190,
+     "poi": "Ngõ 68 Quan Nhân",
+     "osm_nearest": "Ngách 52/11 Phố Quan Nhân",
+     "dist_m": 3.4,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45407190,
+     "poi": "Ngõ 68 Quan Nhân",
+     "osm_nearest": "Ngách 52/11 Phố Quan Nhân",
+     "dist_m": 3.4,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45309658,
+     "poi": "Ngõ 116 Nhân Hòa",
+     "osm_nearest": "Ngõ 80 Phố Nhân Hòa",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45200493,
+     "poi": "Đường Nguyễn Trãi",
+     "osm_nearest": "Phố Chính Kinh",
+     "dist_m": 7.7,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45236851,
+     "poi": "Đường Nguyễn Trãi",
+     "osm_nearest": "Phố Cự Lộc",
+     "dist_m": 1.6,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45139146,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Ngách 336/9 Đường Nguyễn Trãi",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45139146,
+     "poi": "Đường Nguyễn Tuân",
+     "osm_nearest": "Ngách 336/9 Đường Nguyễn Trãi",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45279892,
+     "poi": "Vũ Trọng Phụng",
+     "osm_nearest": "Phố Nhân Hòa",
+     "dist_m": 6.0,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45252449,
+     "poi": "Phố Ngụy Như Kon Tum",
+     "osm_nearest": "Đường nội bộ Honor Village",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45252449,
+     "poi": "Phố Ngụy Như Kon Tum",
+     "osm_nearest": "Đường nội bộ Honor Village",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45252449,
+     "poi": "Phố Ngụy Như Kon Tum",
+     "osm_nearest": "Đường nội bộ Honor Village",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45279892,
+     "poi": "Vũ Trọng Phụng",
+     "osm_nearest": "Phố Nhân Hòa",
+     "dist_m": 6.0,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45131127,
+     "poi": "Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 6.7,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45129232,
+     "poi": "Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 15.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45129232,
+     "poi": "Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 15.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45129232,
+     "poi": "Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 15.3,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45116643,
+     "poi": "Khuất Duy Tiến",
+     "osm_nearest": "Ngách 470/61 Đường Nguyễn Trãi",
+     "dist_m": 7.5,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45116643,
+     "poi": "Khuất Duy Tiến",
+     "osm_nearest": "Ngách 470/61 Đường Nguyễn Trãi",
+     "dist_m": 7.5,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45214214,
+     "poi": "Ngõ 68 Ngụy Như Kon Tum",
+     "osm_nearest": "Ngõ 140 Đường Khuất Duy Tiến",
+     "dist_m": 7.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45331235,
+     "poi": "Ngõ 144 Phố Quan Nhân",
+     "osm_nearest": "Ngách 2 Ngõ 178 Phố Quan Nhân",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    }
+   ]
+  },
+  "overture": {
+   "points_on_footprint": 9418,
+   "with_street": 8896,
+   "fp_unnamed": 3924,
+   "fp_no_road": 9,
+   "exact": 2082,
+   "loose": 1268,
+   "differ": 1613,
+   "near_any": 6014,
+   "by_how": {
+    "in_differ": 628,
+    "in_exact": 822,
+    "in_loose": 479,
+    "near_differ": 985,
+    "near_exact": 1260,
+    "near_loose": 789
+   },
+   "by_highway": {
+    "primary_differ": 92,
+    "primary_exact": 291,
+    "primary_loose": 11,
+    "residential_differ": 407,
+    "residential_exact": 443,
+    "residential_loose": 207,
+    "secondary_differ": 50,
+    "secondary_exact": 130,
+    "secondary_loose": 6,
+    "service_differ": 734,
+    "service_exact": 313,
+    "service_loose": 973,
+    "tertiary_differ": 312,
+    "tertiary_exact": 861,
+    "tertiary_loose": 71,
+    "trunk_differ": 18,
+    "trunk_exact": 44
+   },
+   "pct_exact_or_loose": 67.5,
+   "pct_near_any": 67.6,
+   "overture_confidence": {
+    "0.0": {
+     "loose": 1268,
+     "exact": 2082,
+     "differ": 1613
+    },
+    "0.5": {
+     "exact": 1144,
+     "differ": 1055,
+     "loose": 685
+    },
+    "0.77": {
+     "loose": 197,
+     "differ": 259,
+     "exact": 326
+    }
+   },
+   "differ_samples": [
+    {
+     "building": 45142033,
+     "poi": "64 Phố Phùng Khoang",
+     "osm_nearest": "Ngõ 19 Phố Tố Hữu",
+     "dist_m": 5.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45142646,
+     "poi": "118B Ngõ 5 Khuất Duy Tiến",
+     "osm_nearest": "Ngõ 13 Khuất Duy Tiến",
+     "dist_m": 5.6,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45143833,
+     "poi": "102 A3 Thanh Xuân Bắc",
+     "osm_nearest": "Ngách 13/28 Đường Khuất Duy Tiến",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45145580,
+     "poi": "Căn tin trường Đại Học Khoa Học Xã Hội và Nhân Văn, 336 Đ. Nguyễn Trãi",
+     "osm_nearest": "Ngõ 336 Đường Nguyễn Trãi",
+     "dist_m": 2.0,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45142556,
+     "poi": "P. Quan Nhân/12 Khuất Duy Tiến",
+     "osm_nearest": "Ngõ 12 Đường Khuất Duy Tiến",
+     "dist_m": 17.5,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45143590,
+     "poi": "14 Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 6.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45142296,
+     "poi": "cửa hàng photocopy, Số nhà 28, ngõ 13/108B-A6 Khuất Duy Tiến",
+     "osm_nearest": "Ngõ 13 Khuất Duy Tiến",
+     "dist_m": 7.2,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45142060,
+     "poi": "4 Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 6.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45141535,
+     "poi": "ĐH Kiến trúc/Ngõ 12 Đ. Khuất Duy Tiến",
+     "osm_nearest": "Ngõ 12 Đường Khuất Duy Tiến",
+     "dist_m": 7.2,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45136913,
+     "poi": "Tập Thể Đại Học Kiến Trúc, 12 Đường Khuất Duy Tiến",
+     "osm_nearest": "Ngõ 12 Đường Khuất Duy Tiến",
+     "dist_m": 4.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45140335,
+     "poi": "108B Đường Thanh Xuân Bắc",
+     "osm_nearest": "Ngõ 11 Đường Khuất Duy Tiến",
+     "dist_m": 4.8,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45138302,
+     "poi": "375 Đường Lương Thế Vinh",
+     "osm_nearest": "Ngách 13/84 Đường Khuất Duy Tiến",
+     "dist_m": 1.5,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45138227,
+     "poi": "Vincom Nguyễn Chí Thanh",
+     "osm_nearest": "Ngách 13/60 Đường Khuất Duy Tiến",
+     "dist_m": 1.1,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45136850,
+     "poi": "BT01 Vimeco, Trung Hòa, Cầu Giấy, Hà Nội",
+     "osm_nearest": "Ngõ 13 Khuất Duy Tiến",
+     "dist_m": 4.0,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45139146,
+     "poi": "2E Đường Nguyễn Tuân",
+     "osm_nearest": "Ngách 336/9 Đường Nguyễn Trãi",
+     "dist_m": 1.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45137932,
+     "poi": "29 Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 6.1,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45135356,
+     "poi": "3 Phố Sa Đôi",
+     "osm_nearest": "Ngõ 12 Đường Khuất Duy Tiến",
+     "dist_m": 11.9,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45131127,
+     "poi": "54I Đường Vũ Trọng Phụng",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 6.7,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45131127,
+     "poi": "375 Đường Nguyễn Trãi",
+     "osm_nearest": "Đường Nguyễn Tuân",
+     "dist_m": 6.7,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45135272,
+     "poi": "71 Phố Phùng Khoang",
+     "osm_nearest": "Ngõ 19 Phố Tố Hữu",
+     "dist_m": 4.8,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45133113,
+     "poi": "Trường Cao Đẳng công nghệ môi trường Hà Nội (Đối diện 279 Vũ Hữu, Thanh Xuân",
+     "osm_nearest": "Phố Vũ Hữu",
+     "dist_m": 3.5,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45132987,
+     "poi": "71 Khu Đô Thị Phùng Khoang",
+     "osm_nearest": "Ngõ 19 Phố Tố Hữu",
+     "dist_m": 4.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45132987,
+     "poi": "71 Khu Đô Thị Phùng Khoang",
+     "osm_nearest": "Ngõ 19 Phố Tố Hữu",
+     "dist_m": 4.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45132987,
+     "poi": "71 Khu Đô Thị Phùng Khoang",
+     "osm_nearest": "Ngõ 19 Phố Tố Hữu",
+     "dist_m": 4.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45135833,
+     "poi": "Khu đô thị Thanh Hà, đường Cienco 5, Hà Nội",
+     "osm_nearest": "Ngách 13/84 Đường Khuất Duy Tiến",
+     "dist_m": 2.3,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45124831,
+     "poi": "96 Ng. 13 Đ. Khuất Duy Tiến",
+     "osm_nearest": "Ngõ 2 Nguyễn Quý Đức",
+     "dist_m": 2.5,
+     "match_within_max_m": true
+    },
+    {
+     "building": 45131957,
+     "poi": "6 Đường Nguyễn Văn Lộc",
+     "osm_nearest": "Phố Vũ Hữu",
+     "dist_m": 3.0,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45131267,
+     "poi": "Số 642, đường Nguyễn Tất Thành, phường Đồng Văn, tỉnh Ninh Bình (Cổng Chợ Lương)",
+     "osm_nearest": "Phố Vũ Hữu",
+     "dist_m": 3.5,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45131060,
+     "poi": "17 Phố Chu Huy Mân",
+     "osm_nearest": "Ngõ 13 Khuất Duy Tiến",
+     "dist_m": 2.2,
+     "match_within_max_m": false
+    },
+    {
+     "building": 45132221,
+     "poi": "134 Phố Đội Cấn",
+     "osm_nearest": "Ngõ 13 Khuất Duy Tiến",
+     "dist_m": 1.8,
+     "match_within_max_m": false
+    }
+   ]
+  }
+ }
+}
