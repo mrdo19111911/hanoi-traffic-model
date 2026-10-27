@@ -20,6 +20,7 @@ GROUPS = [
     ("Cảnh 3D", lambda s: s == "3d"),
     ("Cây và cỏ", lambda s: s.startswith(("trees", "grass", "shrubs"))),
     ("Nhà Việt Nam", lambda s: s.startswith("vnhouse")),
+    ("Chiều cao nhà", lambda s: s.startswith("heights")),
     ("Dựng phố từ ảnh", lambda s: s in ("app", "index", "training", "synth_gen") or s.endswith("_test")),
 ]
 # The home page: the hub with the shared tab bar. "/" serves it and the menu links to it first.

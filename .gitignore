@@ -28,3 +28,7 @@ __pycache__/
 # Local tool state
 /.claude/
 /.superpowers/
+
+# external datasets (downloaded, reproducible)
+data/overture/
+data/dem/

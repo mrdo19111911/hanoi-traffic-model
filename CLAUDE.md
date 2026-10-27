@@ -57,6 +57,23 @@ Two generations of model coexist. Know which one you are touching.
 
 **Import layout:** `model/` and `download/` have no `__init__.py`. Scripts in `model/` import siblings flatly (`from spatial import ...`) and are run as scripts; Modules the backend reaches (`estimate_spatial.py` and, through the legacy fallback, `compare_spatial.py`) try a relative import first and fall back to the flat one, so they work both as `model.<name>` and as scripts; keep that pattern for any `model/` module they start importing. `PackageImportTests` checks this in a fresh interpreter. `crawl_spatial.py` adds the repo root to `sys.path`. `tests/test_estimate_spatial.py` puts `model/` on `sys.path`.
 
+## Big-road map (network A)
+
+National review map of the big roads, separate from the five-class travel-time model (spec `docs/superpowers/specs/2026-10-19-big-road-map-design.md`). `model/build_big_roads.py` (PBF -> `osrm/data/big_roads*.geojson`, `big_road_edges.sqlite`, `vietnam_land/boundary.geojson`; free-flow speeds as the local OSRM car profile drives) and `model/build_provinces.py` write files stamped with `pbf_sha256` and `BIG_ROAD_POLICY_VERSION` (from `osm_classes.py`); `app.py setup` rebuilds them when either is stale. `model/natural_barriers.py` writes `reports/natural_barriers.json` and `osrm/data/main_rivers.geojson`, then `model/clusters.py` writes `big_road_clusters.json` with only the `province` and `natural` partitions (`app.py` treats any other content as outdated). Backend serves them under `/api/big-roads/*`; UI in `frontend/src/BigRoadPanels.tsx` + `bigRoads.ts`. `gate_matrix_experiment.py` and `osrm_mld_boundary.py` are measurement-only experiments writing to `reports/`.
+
+## Buildings layer (`buildings/`)
+
+Nationwide footprints + heights, not used by the backend. Full pipeline and rules in `buildings/README.md`; deps in `requirements-buildings.txt` (duckdb spatial, rasterio, shapely, pyproj, pyarrow). Key points:
+
+- Invariants every published file must pass (`check_road_overlap.py`): 0 buildings on a carriageway or alley, 0 overlaps, file under 95 MB. Fixes are code rules (`fit_footprints.py` shift/cut/shared walls), never hand edits or deletions.
+- `buildings/build_areas.py` builds area by area (one area = one entry of `commune_groups.json`) on 60 % of the CPUs and **commits and pushes each finished `by_area/*.parquet` itself**; use `--no-push`/`--no-git` and `--bbox ... --dst-dir <tmp>` for trial runs.
+- Building ids are assigned once by `merge_buildings.py`; later steps keep them. Heights: Google 2.5D calibrated (`calibrate_heights.py` -> `height_calibration.json`), OSM `building:part` (`part_heights.py`), Wikidata/sibling towers (`extra_heights.py` -> `height_sources.json`), front-row rule (`frontrow_heights.py`).
+- The frontend reads published files straight from `raw.githubusercontent.com/.../buildings/by_area/` at zoom 16+ (`frontend/src/buildings.ts`, browser cache). Its decoder mirrors `compact_layer.py` `SCHEMA`/`decode`; after changing the encoding regenerate the cross-check fixture with `frontend/src/test/buildings_fixture.py [--keep-ids]`.
+
+## Demo pages server
+
+`python tools/nav_server.py --port 8767 --directory PATH` serves the 3D/tree/house demo pages (they live outside this repo) and injects a page menu grouped by the filename rules in `GROUPS`; files on disk are never modified.
+
 ## Speed matrix (`speedmatrix/`)
 
 Nationwide speed layer, vehicle-group views and the gate partition for the VRP matrix (spec `docs/superpowers/specs/2026-10-21-speed-matrix-system-design.md`). Outputs live under the gitignored `runtime/matrix/` (the default `--root`). Modules import relatively first, then flat; `build.py` and `update.py` put the repo root on `sys.path`.
@@ -78,4 +95,6 @@ Nationwide speed layer, vehicle-group views and the gate partition for the VRP m
 
 - Day: 0 = Monday … 6 = Sunday. Slot: `HHMM` string. Hour: decimal (8.5 = 08:30). Times are local UTC+7 (`+07:00` in TomTom `departAt`).
 - Generated and large paths are gitignored: `osrm/tools|data|downloads|logs`, `osrm/build.json`, `osrm/server.json`, `runtime/`, `data/api_raw/`.
+- **Code, never an LLM (absolute rule):** anything that can be done by code (counting, measuring, checks, tests, tables, matching, accept/reject decisions, data conversion, running and monitoring jobs) is done by a script. Never by an LLM or subagent, not even "to be quick". Subagents are only for work that truly needs judgement, and a data decision is always a re-runnable code rule, never per-item LLM judgement.
+- **Heavy jobs run on the 3090 PC, not locally:** every job that costs a lot of CPU, GPU or data (builds, training, bulk downloads, tile fetches, dataset pulls) runs on DESKTOP-L6QJ2RK (`ssh Mrdo@100.123.93.72`, Tailscale; work dirs `G:\vn_dl`, `G:\esri_z19`, `G:\stage`). The local PC is for light edits and checks only. A job already running locally finishes there; new ones go to the 3090. Esri/TomTom data may be copied to it but never goes to GitHub.
 - TomTom free tier is limited (README: ~1600/20000 calls used, Oct 2026); crawls are capped at 60 calls per job.
