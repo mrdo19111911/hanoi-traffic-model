@@ -12,7 +12,7 @@ Streets: OSM ways with a name, keyed by the unaccented name without the Phố / 
 its axis is the longest line of their merged centre lines. A position on the street is s (m along the axis) and a side
 (left / right of the axis direction).
 Footprints (published buildings/by_area) between AREA_M2: a footprint takes the nearest named way within half-width +
-SETBACK_M of its outline whose shortest segment to it crosses no other footprint (the front-row test of
+SETBACK_M (by class: measured on dev streets) of its outline whose shortest segment to it crosses no other footprint (the front-row test of
 frontrow_heights.py, here for every named way, alleys included); position = projection of its centroid on the axis.
 
 Per street side (code rules, nothing assumed per street):
@@ -57,7 +57,7 @@ OUT_DIR = os.path.join(REPO, 'data', 'buildings', '_housenumber')
 
 HW = FR['major_classes'] + FR['named_classes'] + ['service', 'pedestrian', 'footway', 'path', 'track']
 NARROW_HALF_M = 2.0                  # half-width of service / pedestrian / footway / path / track ways
-SETBACK_M = FR['setback_m']
+SETBACK_M = {'major': 10.0, 'named': 5.0, 'narrow': 4.0}   # p75 of OSM-addressed facades past the half-width, dev streets
 AREA_M2 = (15.0, 2000.0)
 JOIN_M = 60.0                        # ways of one name closer than this are one street
 MOUTH_M = 40.0                       # alley end to parent axis, at most
@@ -146,8 +146,11 @@ class Streets:
         ok = np.array([k is not None for k in keys])
         self.way_geom, self.way_hw, self.way_name = g[ok], [r[0] for r, o in zip(rows, ok) if o], [r[2] for r, o in zip(rows, ok) if o]
         self.way_key = [k for k in keys if k is not None]
-        self.way_reach = np.array([(half_width(h, r[1]) if h in FR['major_classes'] + FR['named_classes'] else NARROW_HALF_M)
-                                   + SETBACK_M for h, r in zip(self.way_hw, [r for r, o in zip(rows, ok) if o])])
+        self.way_reach = np.array([half_width(h, r[1]) + SETBACK_M['major'] if h in FR['major_classes'] else
+                                   (half_width(h, r[1]) + SETBACK_M['named'] if h in FR['named_classes'] else NARROW_HALF_M + SETBACK_M['narrow'])
+                                   for h, r in zip(self.way_hw, [r for r, o in zip(rows, ok) if o])])
+        alley = np.array([bool(k[1]) for k in self.way_key])          # an alley is narrow whatever its highway tag
+        self.way_reach[alley] = np.minimum(self.way_reach[alley], NARROW_HALF_M + SETBACK_M['narrow'] + 1.0)
         # join ways of one key closer than JOIN_M (union-find over an STRtree query)
         n = len(self.way_geom)
         parent = np.arange(n)
