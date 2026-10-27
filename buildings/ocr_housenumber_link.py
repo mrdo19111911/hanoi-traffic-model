@@ -1,7 +1,8 @@
 """Measurement only: house numbers read by OCR from street images -> footprints, by code.
 
 Input: ocr.json of ocr_housenumbers.py, the pilot cache of facade_heights.py (meta/img_*.json, thumbs) and its prep output (bld.npz).
-For each text box: address with a street name ("ĐC: 148 Nguyễn Trãi", "Ad 140 N-Thanh Xuan") = strong, a bare 1-3 digit number = weak.
+For each text box: a number followed by words ("ĐC: 148 Nguyễn Trãi", "Ad 140 N-Thanh Xuan") = address (street = the words,
+unaccented, any street: ocr_housenumber_eval.py checks them against OSM), a bare 1-3 digit number = weak.
 The box centre pixel -> world ray (facade_heights.pixel_rays) -> first footprint hit within 60 m = the footprint the sign is on.
 
     python buildings/ocr_housenumber_link.py --ocr .../ocr.json --cache DIR --out DIR_prep --json OUT.json
@@ -14,8 +15,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import facade_heights as F
 
-STREETS = {'nguyen trai': 'Nguyễn Trãi', 'tay son': 'Tây Sơn', 'lang': 'Đường Láng'}
-ADDR = re.compile(r'(\d{1,4}[a-z]?(?:[/-]\d{1,4}[a-z]?)?)\s*[,.\-]?\s*(?:d\w{0,4}ng\s*)?(ngu\w{0,3}\s*t?rai|ngu\w*|tay\s*son|lang)')
+ADDR = re.compile(r'(\d{1,4}[a-z]?(?:[/-]\d{1,4}[a-z]?)?)\s*[,.\-]?\s*(?:(?:pho|duong|d)\b\.?\s*)?([a-z]{2,}(?:\s+[a-z]{2,}){0,3})')
 BARE = re.compile(r'^(?:so\s*)?(\d{1,3}[a-z]?)$')
 
 
@@ -47,7 +47,7 @@ def main():
             g = ADDR.search(t)
             if g and b['conf'] >= 0.5:
                 kind, num = 'address', g.group(1)
-                street = STREETS['nguyen trai' if g.group(2).startswith('nguy') else g.group(2)]
+                street = g.group(2)
             else:
                 g = BARE.match(t)
                 if g and b['conf'] >= 0.8 and 1 <= int(re.sub(r'\D', '', g.group(1)) or 0) <= 999:
