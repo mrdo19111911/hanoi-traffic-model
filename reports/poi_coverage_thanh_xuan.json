@@ -279,16 +279,134 @@
    "points": 0,
    "with_number": 0,
    "with_category": 0
+  },
+  "fsq": {
+   "points": 1601,
+   "with_number": 523,
+   "with_category": 1472,
+   "matched": {
+    "none": 623,
+    "in": 361,
+    "near": 617
+   },
+   "fp_with_number": 266,
+   "fp_with_category": 576,
+   "fp_with_number_in": 105,
+   "top_categories": [
+    [
+     "Dining and Drinking > Cafe, Coffee, and Tea House > Café",
+     128
+    ],
+    [
+     "Dining and Drinking > Restaurant > Asian Restaurant > Vietnamese Restaurant",
+     99
+    ],
+    [
+     "Landmarks and Outdoors > Structure",
+     68
+    ],
+    [
+     "Dining and Drinking > Restaurant > Asian Restaurant",
+     61
+    ],
+    [
+     "Dining and Drinking > Cafe, Coffee, and Tea House > Coffee Shop",
+     47
+    ],
+    [
+     "Community and Government > Residential Building > Apartment or Condo",
+     46
+    ],
+    [
+     "Business and Professional Services > Office",
+     41
+    ],
+    [
+     "Retail > Fashion Retail > Clothing Store",
+     25
+    ],
+    [
+     "Travel and Transportation > Road",
+     21
+    ],
+    [
+     "Dining and Drinking > Restaurant",
+     20
+    ],
+    [
+     "Dining and Drinking > Restaurant > BBQ Joint",
+     20
+    ],
+    [
+     "Business and Professional Services > Health and Beauty Service > Hair Salon",
+     19
+    ],
+    [
+     "Business and Professional Services > Financial Service > Banking and Finance > Bank",
+     19
+    ],
+    [
+     "Business and Professional Services > Automotive Service > Automotive Repair Shop",
+     18
+    ],
+    [
+     "Dining and Drinking > Bakery",
+     15
+    ],
+    [
+     "Dining and Drinking > Cafe, Coffee, and Tea House > Tea Room",
+     14
+    ],
+    [
+     "Dining and Drinking > Bar > Beer Garden",
+     14
+    ],
+    [
+     "Retail > Fashion Retail > Shoe Store",
+     14
+    ],
+    [
+     "Dining and Drinking > Restaurant > Asian Restaurant > Noodle Restaurant",
+     14
+    ],
+    [
+     "Retail > Sporting Goods Retail",
+     14
+    ],
+    [
+     "Dining and Drinking > Restaurant > Seafood Restaurant",
+     13
+    ],
+    [
+     "Retail > Furniture and Home Store",
+     13
+    ],
+    [
+     "Dining and Drinking > Restaurant > Asian Restaurant > Japanese Restaurant",
+     13
+    ],
+    [
+     "Dining and Drinking > Cafe, Coffee, and Tea House > Bubble Tea Shop",
+     12
+    ],
+    [
+     "Community and Government > Education > College and University > University",
+     12
+    ]
+   ],
+   "datasets": [],
+   "pct_fp_number": 2.53,
+   "pct_fp_category": 5.48
   }
  },
  "union": {
-  "fp_with_number": 2418,
-  "pct_number": 23.0,
-  "fp_with_category": 2699,
-  "pct_category": 25.68,
-  "fp_with_both": 2297,
-  "pct_both": 21.85,
-  "fp_number_from_2plus_sources": 253,
-  "of_those_same_number": 66
+  "fp_with_number": 2495,
+  "pct_number": 23.73,
+  "fp_with_category": 2880,
+  "pct_category": 27.4,
+  "fp_with_both": 2378,
+  "pct_both": 22.62,
+  "fp_number_from_2plus_sources": 380,
+  "of_those_same_number": 68
  }
 }

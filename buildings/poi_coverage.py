@@ -92,7 +92,8 @@ def fetch_overture(con, release, bb, cache):
 def fetch_fsq(con, dt, bb, cache):
     dst = os.path.join(cache, f"fsq_{dt}.parquet")
     if not os.path.exists(dst):
-        con.execute("CREATE SECRET hf (TYPE huggingface, PROVIDER credential_chain)")
+        token = os.environ['HF_TOKEN'].replace("'", '')
+        con.execute(f"CREATE SECRET hf (TYPE huggingface, TOKEN '{token}')")
         con.execute(f"COPY (SELECT fsq_place_id id, name, fsq_category_labels[1] AS category, address AS addr, "
                     f"longitude lon, latitude lat FROM read_parquet('{FSQ.format(dt=dt)}') WHERE date_closed IS NULL "
                     f"AND longitude BETWEEN {bb[0]} AND {bb[2]} AND latitude BETWEEN {bb[1]} AND {bb[3]}) "
