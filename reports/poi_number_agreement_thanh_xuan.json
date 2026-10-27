@@ -1,0 +1,1658 @@
+{
+ "points_with_number": {
+  "osm": 469,
+  "overture": 10336,
+  "fsq": 523
+ },
+ "with_street": {
+  "osm": 469,
+  "overture": 10319,
+  "fsq": 457
+ },
+ "pairs": {
+  "fsq~osm": {
+   "footprints": 67,
+   "agree": 26,
+   "single_multi": {
+    "multi_disagree": 8,
+    "multi_agree": 8,
+    "single_disagree": 33,
+    "single_agree": 18
+   },
+   "by_street": {
+    "same_agree": 22,
+    "unknown": 11,
+    "other_street": 11,
+    "same_far": 13,
+    "same_neighbour": 10
+   },
+   "by_how": {
+    "in/in_disagree": 10,
+    "in/in_agree": 11,
+    "in/near_disagree": 4,
+    "in/near_agree": 3,
+    "near/in_disagree": 13,
+    "near/in_agree": 9,
+    "near/near_disagree": 14,
+    "near/near_agree": 3
+   },
+   "disagree_samples": [
+    {
+     "building": 45313631,
+     "fsq": [
+      [
+       "12a",
+       "12A"
+      ]
+     ],
+     "osm": [
+      [
+       "72A, R2",
+       "Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45208428,
+     "fsq": [
+      [
+       "3",
+       "3"
+      ]
+     ],
+     "osm": [
+      [
+       "38/20",
+       "Ngụy Như Kon Tum"
+      ]
+     ]
+    },
+    {
+     "building": 45108572,
+     "fsq": [
+      [
+       "49",
+       "49 Nguyễn Quý Đức, Thanh Xuân Bắc, Thanh Xuân, Hà Nội"
+      ]
+     ],
+     "osm": [
+      [
+       "101-A1",
+       "Tập thể Thanh Xuân Bắc"
+      ]
+     ]
+    },
+    {
+     "building": 45063102,
+     "fsq": [
+      [
+       "5",
+       "Tầng 2, 5 Nguyễn Quý Đức"
+      ]
+     ],
+     "osm": [
+      [
+       "112 C16",
+       "Nguyễn Quý Đức"
+      ]
+     ]
+    },
+    {
+     "building": 45404432,
+     "fsq": [
+      [
+       "52",
+       "52 Quan Nhân"
+      ]
+     ],
+     "osm": [
+      [
+       "54",
+       "Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45346973,
+     "fsq": [
+      [
+       "119",
+       "119"
+      ],
+      [
+       "119",
+       "119 Quan Nhân - Nhân Chính - Thanh Xuân - Hà Nội"
+      ]
+     ],
+     "osm": [
+      [
+       "123",
+       "Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45386223,
+     "fsq": [
+      [
+       "39",
+       "39 Nguyen Ngoc Vu"
+      ]
+     ],
+     "osm": [
+      [
+       "86",
+       "Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45249764,
+     "fsq": [
+      [
+       "68",
+       "68 Le Van Luong"
+      ]
+     ],
+     "osm": [
+      [
+       "118",
+       "Đường Lê Văn Lương"
+      ]
+     ]
+    },
+    {
+     "building": 45236146,
+     "fsq": [
+      [
+       "172",
+       "172"
+      ]
+     ],
+     "osm": [
+      [
+       "174",
+       "Đường Nguyễn Tuân"
+      ]
+     ]
+    },
+    {
+     "building": 45206747,
+     "fsq": [
+      [
+       "129",
+       "129 Nguyễn Tuân"
+      ]
+     ],
+     "osm": [
+      [
+       "118",
+       "Đường Nguyễn Tuân"
+      ]
+     ]
+    },
+    {
+     "building": 45212418,
+     "fsq": [
+      [
+       "143",
+       "143 Nguyễn Tuân"
+      ]
+     ],
+     "osm": [
+      [
+       "141",
+       "Đường Nguyễn Tuân"
+      ]
+     ]
+    },
+    {
+     "building": 45202596,
+     "fsq": [
+      [
+       "61",
+       "61 Ngụy Như Kon Tum, Nhân Chính, Thanh Xuân"
+      ]
+     ],
+     "osm": [
+      [
+       "121",
+       "Đường Nguyễn Tuân"
+      ]
+     ]
+    },
+    {
+     "building": 45389965,
+     "fsq": [
+      [
+       "51",
+       "51 phố quan nhân"
+      ]
+     ],
+     "osm": [
+      [
+       "57",
+       "Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45288041,
+     "fsq": [
+      [
+       "138",
+       "138"
+      ]
+     ],
+     "osm": [
+      [
+       "8",
+       "Ngõ 116 Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45275717,
+     "fsq": [
+      [
+       "118",
+       "118"
+      ],
+      [
+       "85",
+       "85 Vũ Trọng Phụng"
+      ]
+     ],
+     "osm": [
+      [
+       "130",
+       "Vũ Trọng Phụng"
+      ]
+     ]
+    },
+    {
+     "building": 45135170,
+     "fsq": [
+      [
+       "465",
+       "465"
+      ]
+     ],
+     "osm": [
+      [
+       "370",
+       "Đường Nguyễn Trãi"
+      ],
+      [
+       "372",
+       "Đường Nguyễn Trãi"
+      ],
+      [
+       "5",
+       "Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45216368,
+     "fsq": [
+      [
+       "208",
+       "208"
+      ]
+     ],
+     "osm": [
+      [
+       "206",
+       "Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45269247,
+     "fsq": [
+      [
+       "90",
+       "90 Vũ Trọng Phụng"
+      ]
+     ],
+     "osm": [
+      [
+       "120",
+       "Vũ Trọng Phụng"
+      ]
+     ]
+    },
+    {
+     "building": 45175421,
+     "fsq": [
+      [
+       "92",
+       "92 Khuất Duy Tiến"
+      ]
+     ],
+     "osm": [
+      [
+       "96",
+       "Đường Khuất Duy Tiến"
+      ]
+     ]
+    },
+    {
+     "building": 45249750,
+     "fsq": [
+      [
+       "102",
+       "102 Ngụy Như Kon Tum"
+      ],
+      [
+       "77",
+       "77 Nguỵ Như Kon Tum"
+      ]
+     ],
+     "osm": [
+      [
+       "92",
+       "Phố Ngụy Như Kon Tum"
+      ]
+     ]
+    },
+    {
+     "building": 45216596,
+     "fsq": [
+      [
+       "25",
+       "25 Nguy Nhu Kon Tum"
+      ]
+     ],
+     "osm": [
+      [
+       "54",
+       "Phố Ngụy Như Kon Tum"
+      ]
+     ]
+    },
+    {
+     "building": 45129232,
+     "fsq": [
+      [
+       "384",
+       "384 Nguyễn Trãi"
+      ]
+     ],
+     "osm": [
+      [
+       "378",
+       "Đường Nguyễn Trãi"
+      ],
+      [
+       "378",
+       "Đường Nguyễn Trãi"
+      ],
+      [
+       "382",
+       "Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45116643,
+     "fsq": [
+      [
+       "11f",
+       "11F, Zen Tower"
+      ]
+     ],
+     "osm": [
+      [
+       "108",
+       "Khuất Duy Tiến"
+      ],
+      [
+       "108",
+       "Khuất Duy Tiến"
+      ],
+      [
+       "12",
+       "Khuất Duy Tiến"
+      ]
+     ]
+    },
+    {
+     "building": 45296427,
+     "fsq": [
+      [
+       "69",
+       "69 Lê Văn Lương"
+      ],
+      [
+       "2",
+       "Số 2 Lê Văn Thiêm"
+      ]
+     ],
+     "osm": [
+      [
+       "35",
+       "Lê Văn Lương"
+      ],
+      [
+       "35",
+       "Đường Lê Văn Lương"
+      ]
+     ]
+    },
+    {
+     "building": 45391022,
+     "fsq": [
+      [
+       "33",
+       "33 Hoàng Ngân"
+      ]
+     ],
+     "osm": [
+      [
+       "35",
+       "Hoàng Ngân"
+      ]
+     ]
+    }
+   ]
+  },
+  "fsq~overture": {
+   "footprints": 182,
+   "agree": 69,
+   "single_multi": {
+    "multi_disagree": 66,
+    "multi_agree": 60,
+    "single_disagree": 47,
+    "single_agree": 9
+   },
+   "by_street": {
+    "same_agree": 54,
+    "unknown": 24,
+    "same_neighbour": 21,
+    "other_street": 43,
+    "same_far": 40
+   },
+   "by_how": {
+    "in/in_disagree": 20,
+    "in/in_agree": 29,
+    "in/near_disagree": 15,
+    "in/near_agree": 4,
+    "near/in_disagree": 47,
+    "near/in_agree": 29,
+    "near/near_disagree": 31,
+    "near/near_agree": 7
+   },
+   "overture_confidence": {
+    "0.0": {
+     "footprints": 182,
+     "agree": 69
+    },
+    "0.3": {
+     "footprints": 170,
+     "agree": 67
+    },
+    "0.5": {
+     "footprints": 161,
+     "agree": 61
+    },
+    "0.77": {
+     "footprints": 103,
+     "agree": 43
+    },
+    "0.9": {
+     "footprints": 62,
+     "agree": 29
+    }
+   },
+   "disagree_samples": [
+    {
+     "building": 45313631,
+     "fsq": [
+      [
+       "12a",
+       "12A"
+      ]
+     ],
+     "overture": [
+      [
+       "86",
+       "86 Ngõ 72 Nguyễn Trãi"
+      ],
+      [
+       "13",
+       "13 Phố Tông Đản"
+      ],
+      [
+       "282",
+       "282 Hẻm 282 Đường Nguyễn Huy Tưởng"
+      ]
+     ]
+    },
+    {
+     "building": 45108572,
+     "fsq": [
+      [
+       "49",
+       "49 Nguyễn Quý Đức, Thanh Xuân Bắc, Thanh Xuân, Hà Nội"
+      ]
+     ],
+     "overture": [
+      [
+       "51",
+       "51 Đường Nguyễn Quý Đức"
+      ],
+      [
+       "98",
+       "98, Nguyễn Quý Đức"
+      ],
+      [
+       "59",
+       "59, Nguyễn Quý Đức"
+      ]
+     ]
+    },
+    {
+     "building": 45063102,
+     "fsq": [
+      [
+       "5",
+       "Tầng 2, 5 Nguyễn Quý Đức"
+      ]
+     ],
+     "overture": [
+      [
+       "115",
+       "115 C16 Nguyễn Quý Đức"
+      ],
+      [
+       "2",
+       "2 Phố Vũ Hữu"
+      ]
+     ]
+    },
+    {
+     "building": 45404432,
+     "fsq": [
+      [
+       "52",
+       "52 Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "1",
+       "1 Ngõ 52 Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45206747,
+     "fsq": [
+      [
+       "129",
+       "129 Nguyễn Tuân"
+      ]
+     ],
+     "overture": [
+      [
+       "51a",
+       "51A Ô Chợ Dừa"
+      ]
+     ]
+    },
+    {
+     "building": 45202596,
+     "fsq": [
+      [
+       "61",
+       "61 Ngụy Như Kon Tum, Nhân Chính, Thanh Xuân"
+      ]
+     ],
+     "overture": [
+      [
+       "119",
+       "119 Đ. Nguyễn Tuân"
+      ]
+     ]
+    },
+    {
+     "building": 45288041,
+     "fsq": [
+      [
+       "138",
+       "138"
+      ]
+     ],
+     "overture": [
+      [
+       "4",
+       "4 Ng. 116 P. Nhân Hòa"
+      ],
+      [
+       "220",
+       "220 Hoàng Văn Thái , Phương Liệt, Hà Nội"
+      ],
+      [
+       "4",
+       "4 Ng. 116 P. Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45275717,
+     "fsq": [
+      [
+       "118",
+       "118"
+      ],
+      [
+       "85",
+       "85 Vũ Trọng Phụng"
+      ]
+     ],
+     "overture": [
+      [
+       "1b",
+       "1B Ngõ 1 Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45135170,
+     "fsq": [
+      [
+       "465",
+       "465"
+      ]
+     ],
+     "overture": [
+      [
+       "8/2",
+       "8/2 Đường Nguyễn Trãi"
+      ],
+      [
+       "1/17a",
+       "1/17A Thụy Khuê, Tây Hồ, Hà Nội"
+      ],
+      [
+       "336",
+       "336 Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45216368,
+     "fsq": [
+      [
+       "208",
+       "208"
+      ]
+     ],
+     "overture": [
+      [
+       "204",
+       "204 Đường Nguyễn Trãi"
+      ],
+      [
+       "204",
+       "204 Đường Nguyễn Trãi"
+      ],
+      [
+       "206",
+       "206 Đ. Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45269247,
+     "fsq": [
+      [
+       "90",
+       "90 Vũ Trọng Phụng"
+      ]
+     ],
+     "overture": [
+      [
+       "120",
+       "120 Đ. Vũ Trọng Phụng"
+      ],
+      [
+       "85",
+       "85 Đường Vũ Trọng Phụng"
+      ],
+      [
+       "6a",
+       "6a Ngõ 114 Vũ Trọng Phụng"
+      ]
+     ]
+    },
+    {
+     "building": 45245759,
+     "fsq": [
+      [
+       "90",
+       "90 Ngụy Như Kon Tum"
+      ]
+     ],
+     "overture": [
+      [
+       "88",
+       "88 P. Ngụy Như Kon Tum"
+      ],
+      [
+       "88",
+       "88 P. Ngụy Như Kon Tum"
+      ],
+      [
+       "977",
+       "977 Đường Quang Trung"
+      ]
+     ]
+    },
+    {
+     "building": 45216596,
+     "fsq": [
+      [
+       "25",
+       "25 Nguy Nhu Kon Tum"
+      ]
+     ],
+     "overture": [
+      [
+       "5",
+       "5 Ngõ 50 Ngụy Như Kon Tum"
+      ],
+      [
+       "6",
+       "6 Ng. 50 P. Ngụy Như Kon Tum"
+      ],
+      [
+       "52",
+       "52 P. Ngụy Như Kon Tum"
+      ]
+     ]
+    },
+    {
+     "building": 45129232,
+     "fsq": [
+      [
+       "384",
+       "384 Nguyễn Trãi"
+      ]
+     ],
+     "overture": [
+      [
+       "378",
+       "378 Đường Nguyễn Trãi"
+      ],
+      [
+       "378",
+       "378 Đường Nguyễn Trãi"
+      ],
+      [
+       "378",
+       "378 Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45116643,
+     "fsq": [
+      [
+       "11f",
+       "11F, Zen Tower"
+      ]
+     ],
+     "overture": [
+      [
+       "88",
+       "88 Láng Hạ, Đống Đa"
+      ],
+      [
+       "12",
+       "12 Khuất Duy Tiến"
+      ],
+      [
+       "12",
+       "12 Khuất Duy Tiến"
+      ]
+     ]
+    },
+    {
+     "building": 45296427,
+     "fsq": [
+      [
+       "69",
+       "69 Lê Văn Lương"
+      ],
+      [
+       "2",
+       "Số 2 Lê Văn Thiêm"
+      ]
+     ],
+     "overture": [
+      [
+       "35",
+       "35 Đ. Lê Văn Lương"
+      ],
+      [
+       "61",
+       "61 Phố Ngụy Như Kon Tum"
+      ],
+      [
+       "1",
+       "1 Lê Văn Thiêm, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội"
+      ]
+     ]
+    },
+    {
+     "building": 45325708,
+     "fsq": [
+      [
+       "1",
+       "Số 1 Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "144",
+       "144 Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45428889,
+     "fsq": [
+      [
+       "1",
+       "Số 1, Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "7",
+       "7 Phố Yên Hòa"
+      ],
+      [
+       "5",
+       "5 Đường Nguyễn Ngọc Vũ"
+      ],
+      [
+       "16",
+       "16 Ngõ 31 Doãn Kế Thiện"
+      ]
+     ]
+    },
+    {
+     "building": 45253957,
+     "fsq": [
+      [
+       "164",
+       "164"
+      ]
+     ],
+     "overture": [
+      [
+       "66",
+       "66 Đ. Lê Văn Lương"
+      ],
+      [
+       "66",
+       "66 Đ. Lê Văn Lương"
+      ]
+     ]
+    },
+    {
+     "building": 45245906,
+     "fsq": [
+      [
+       "26",
+       "26 ngõ 12"
+      ]
+     ],
+     "overture": [
+      [
+       "19",
+       "19 P. Cự Lộc"
+      ],
+      [
+       "108",
+       "108 Đường Nguyễn Trãi"
+      ],
+      [
+       "108",
+       "108 Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45257681,
+     "fsq": [
+      [
+       "4",
+       "4 ngõ 102 Ngụy Như Kon Tum"
+      ]
+     ],
+     "overture": [
+      [
+       "10",
+       "10 P. Lê Văn Thiêm"
+      ],
+      [
+       "10",
+       "10 P. Lê Văn Thiêm"
+      ],
+      [
+       "107",
+       "107 Đường Ngụy Như Kon Tum"
+      ]
+     ]
+    },
+    {
+     "building": 45235895,
+     "fsq": [
+      [
+       "45",
+       "45 Ngụy Như Kon Tum"
+      ]
+     ],
+     "overture": [
+      [
+       "61",
+       "61 P. Ngụy Như Kon Tum"
+      ],
+      [
+       "61",
+       "61 Phố Ngụy Như Kon Tum"
+      ],
+      [
+       "61",
+       "61 Phố Ngụy Như Kon Tum"
+      ]
+     ]
+    },
+    {
+     "building": 45190989,
+     "fsq": [
+      [
+       "3",
+       "Số 3 Ngõ 336 Nguyễn Trãii"
+      ]
+     ],
+     "overture": [
+      [
+       "90",
+       "90 Đ. Nguyễn Tuân"
+      ]
+     ]
+    },
+    {
+     "building": 45244970,
+     "fsq": [
+      [
+       "190",
+       "190 Nguyen Tuan"
+      ]
+     ],
+     "overture": [
+      [
+       "201",
+       "201 Phố Đ. Nguyễn Tuân"
+      ],
+      [
+       "35/63",
+       "35/63 Trần Quốc Vượng, Cầu Giấy"
+      ],
+      [
+       "201",
+       "201 Đường Nguyễn Trãi"
+      ]
+     ]
+    },
+    {
+     "building": 45136418,
+     "fsq": [
+      [
+       "382",
+       "382"
+      ]
+     ],
+     "overture": [
+      [
+       "35",
+       "35 Đường Nguyễn Tuân"
+      ],
+      [
+       "47",
+       "47 Đường Nguyễn Tuân"
+      ],
+      [
+       "21",
+       "21 Đường Nguyễn Tuân"
+      ]
+     ]
+    }
+   ]
+  },
+  "osm~overture": {
+   "footprints": 245,
+   "agree": 129,
+   "single_multi": {
+    "multi_disagree": 70,
+    "multi_agree": 112,
+    "single_disagree": 46,
+    "single_agree": 17
+   },
+   "by_street": {
+    "same_agree": 125,
+    "same_neighbour": 66,
+    "other_street": 17,
+    "same_far": 37
+   },
+   "by_how": {
+    "in/in_disagree": 23,
+    "in/in_agree": 72,
+    "in/near_disagree": 9,
+    "in/near_agree": 11,
+    "near/in_disagree": 44,
+    "near/in_agree": 34,
+    "near/near_disagree": 40,
+    "near/near_agree": 12
+   },
+   "overture_confidence": {
+    "0.0": {
+     "footprints": 245,
+     "agree": 129
+    },
+    "0.3": {
+     "footprints": 230,
+     "agree": 121
+    },
+    "0.5": {
+     "footprints": 205,
+     "agree": 106
+    },
+    "0.77": {
+     "footprints": 131,
+     "agree": 67
+    },
+    "0.9": {
+     "footprints": 71,
+     "agree": 37
+    }
+   },
+   "disagree_samples": [
+    {
+     "building": 45196474,
+     "osm": [
+      [
+       "152",
+       "Khuất Duy Tiến"
+      ]
+     ],
+     "overture": [
+      [
+       "150",
+       "150 Đường Khuất Duy Tiến"
+      ],
+      [
+       "150",
+       "150 Khuất Duy Tiến"
+      ],
+      [
+       "148",
+       "148 Đường Khuất Duy Tiến"
+      ]
+     ]
+    },
+    {
+     "building": 45063102,
+     "osm": [
+      [
+       "112 C16",
+       "Nguyễn Quý Đức"
+      ]
+     ],
+     "overture": [
+      [
+       "115",
+       "115 C16 Nguyễn Quý Đức"
+      ],
+      [
+       "2",
+       "2 Phố Vũ Hữu"
+      ]
+     ]
+    },
+    {
+     "building": 45392661,
+     "osm": [
+      [
+       "53",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "78",
+       "78 P. Quan Nhân"
+      ],
+      [
+       "92",
+       "92 Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45420637,
+     "osm": [
+      [
+       "24",
+       "Ngõ 52 Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "17",
+       "17 Ngõ 145 Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45403074,
+     "osm": [
+      [
+       "15",
+       "Ngõ 68 Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "11a",
+       "11A Ng. 68 P. Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45388283,
+     "osm": [
+      [
+       "82",
+       "Phố Quan Nhân"
+      ],
+      [
+       "76",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "88",
+       "88 Phố Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45377570,
+     "osm": [
+      [
+       "102",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "108",
+       "108 Phố Quan Nhân"
+      ],
+      [
+       "8b",
+       " Số 8B Tòa V6 The Vesta Phường Phú Lương , TP Hà Nội"
+      ]
+     ]
+    },
+    {
+     "building": 45403559,
+     "osm": [
+      [
+       "56",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "3",
+       "3 Ngõ 52 Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45404432,
+     "osm": [
+      [
+       "54",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "1",
+       "1 Ngõ 52 Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45411575,
+     "osm": [
+      [
+       "11",
+       "Ngõ 52 Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "6",
+       "6 ngách 11 Ng. 52 P. Quan Nhân"
+      ],
+      [
+       "3",
+       "3 Ngõ 68 Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45415650,
+     "osm": [
+      [
+       "19",
+       "Ngõ 52 Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "17",
+       "17 Ng. 52 P. Quan Nhân"
+      ],
+      [
+       "21",
+       "21 Ng. 52 P. Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45401989,
+     "osm": [
+      [
+       "6",
+       "Ngõ 68 Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "2b",
+       "2B Ng. 68 P. Quan Nhân"
+      ]
+     ]
+    },
+    {
+     "building": 45284910,
+     "osm": [
+      [
+       "98",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "97",
+       "97 Phố Nhân Hòa"
+      ],
+      [
+       "94",
+       "94 P. Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45284588,
+     "osm": [
+      [
+       "110",
+       "Phố Nhân Hòa"
+      ],
+      [
+       "112",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "1p",
+       "Số 1P Trần Quang Diệu - Đống Đa - Hà Nội"
+      ],
+      [
+       "108",
+       "108 P. Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45298261,
+     "osm": [
+      [
+       "28",
+       "Ngõ 116 Nhân Hòa"
+      ],
+      [
+       "22",
+       "Ngõ 116 Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "30",
+       "30 Ng. 116 P. Nhân Hòa"
+      ],
+      [
+       "30",
+       "30 Ngõ 116 Nhân Hòa"
+      ],
+      [
+       "30",
+       "30 Ng. 116 P. Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45302382,
+     "osm": [
+      [
+       "38",
+       "Ngõ 116 Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "36",
+       "36 Ngõ 116 Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45287191,
+     "osm": [
+      [
+       "56",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "24",
+       "24 Phố Nhân Hòa"
+      ],
+      [
+       "107",
+       "107 Ngõ 60 Nhân Hòa"
+      ],
+      [
+       "66",
+       "66 P. Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45281114,
+     "osm": [
+      [
+       "43",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "57",
+       "57, Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45289206,
+     "osm": [
+      [
+       "40",
+       "Phố Nhân Hòa"
+      ],
+      [
+       "42",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "18",
+       "18 Đường Lê Trọng Tấn"
+      ],
+      [
+       "44/55",
+       "44/55 Ng. 44 Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45287978,
+     "osm": [
+      [
+       "46",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "44",
+       "44 Phố Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45288562,
+     "osm": [
+      [
+       "48",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "116",
+       "116 P. Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45289394,
+     "osm": [
+      [
+       "6",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "18",
+       "18 Phố Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45288907,
+     "osm": [
+      [
+       "10",
+       "Phố Nhân Hòa"
+      ]
+     ],
+     "overture": [
+      [
+       "6",
+       "6 Phố Nhân Hòa"
+      ],
+      [
+       "80/8",
+       "80/8 Phố Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45321732,
+     "osm": [
+      [
+       "176",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "6",
+       "6 Phố Nhân Hòa"
+      ]
+     ]
+    },
+    {
+     "building": 45294315,
+     "osm": [
+      [
+       "187",
+       "Phố Quan Nhân"
+      ]
+     ],
+     "overture": [
+      [
+       "189",
+       "189 Phố Quan Nhân"
+      ],
+      [
+       "189",
+       "189 Phố Quan Nhân"
+      ],
+      [
+       "189",
+       "189 Phố Quan Nhân"
+      ]
+     ]
+    }
+   ]
+  }
+ },
+ "position": {
+  "osm->fsq": {
+   "points": 469,
+   "same_number_street_in_ref": 119,
+   "not_in_ref": 350,
+   "dist_m_p25_p50_p75_p90": [
+    25.3,
+    46.8,
+    89.5,
+    192.6
+   ],
+   "within_10m": 12,
+   "within_30m": 41,
+   "within_100m": 92,
+   "within_300m": 114
+  },
+  "overture->fsq": {
+   "points": 10319,
+   "same_number_street_in_ref": 3405,
+   "not_in_ref": 6914,
+   "dist_m_p25_p50_p75_p90": [
+    28.0,
+    63.5,
+    205.0,
+    642.8
+   ],
+   "within_10m": 198,
+   "within_30m": 920,
+   "within_100m": 2128,
+   "within_300m": 2783
+  },
+  "fsq->osm": {
+   "points": 457,
+   "same_number_street_in_ref": 164,
+   "not_in_ref": 293,
+   "dist_m_p25_p50_p75_p90": [
+    28.6,
+    59.1,
+    114.3,
+    227.5
+   ],
+   "within_10m": 12,
+   "within_30m": 44,
+   "within_100m": 114,
+   "within_300m": 153
+  },
+  "overture->osm": {
+   "points": 10319,
+   "same_number_street_in_ref": 3705,
+   "not_in_ref": 6614,
+   "dist_m_p25_p50_p75_p90": [
+    21.5,
+    53.9,
+    150.7,
+    440.8
+   ],
+   "within_10m": 392,
+   "within_30m": 1289,
+   "within_100m": 2456,
+   "within_300m": 3179
+  },
+  "fsq->overture": {
+   "points": 457,
+   "same_number_street_in_ref": 365,
+   "not_in_ref": 92,
+   "dist_m_p25_p50_p75_p90": [
+    11.4,
+    25.2,
+    68.3,
+    238.2
+   ],
+   "within_10m": 85,
+   "within_30m": 202,
+   "within_100m": 298,
+   "within_300m": 342
+  },
+  "osm->overture": {
+   "points": 469,
+   "same_number_street_in_ref": 384,
+   "not_in_ref": 85,
+   "dist_m_p25_p50_p75_p90": [
+    6.3,
+    13.7,
+    39.0,
+    172.2
+   ],
+   "within_10m": 153,
+   "within_30m": 268,
+   "within_100m": 323,
+   "within_300m": 365
+  }
+ },
+ "self_spread": {
+  "fsq": {
+   "keys": 339,
+   "keys_with_2plus_points": 57,
+   "spread_over_50m": 41
+  },
+  "osm": {
+   "keys": 422,
+   "keys_with_2plus_points": 35,
+   "spread_over_50m": 15
+  },
+  "overture": {
+   "keys": 3802,
+   "keys_with_2plus_points": 1331,
+   "spread_over_50m": 817
+  }
+ }
+}

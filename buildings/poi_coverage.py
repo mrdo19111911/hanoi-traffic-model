@@ -17,7 +17,7 @@ Footprints = the published file of the commune (buildings/by_area), centroid ins
 """
 import argparse, collections, json, math, os, re, sys, time, unicodedata, urllib.request
 
-import duckdb, numpy as np, osmium, shapely
+import duckdb, numpy as np, osmium, pyarrow as pa, pyarrow.parquet as pq, shapely
 from shapely import wkb as swkb
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -195,6 +195,7 @@ def main():
 
     n_fp = len(fps)
     per_fp = collections.defaultdict(lambda: collections.defaultdict(dict))   # fp -> src -> {number, category}
+    points = []                                                                # every point in the ward, for poi_number_agreement.py
     report = {'commune': name, 'osm_relation': a.commune_rel, 'footprints': n_fp, 'overture_release': release,
               'near_m': NEAR_M, 'sources': {}}
     for src, recs in tables.items():
@@ -206,6 +207,9 @@ def main():
             idx, how = assign(np.array([[r['lon'], r['lat']] for r in recs]), tree, to_m)
             st['matched'] = dict(collections.Counter(how))
             for r, f, hw in zip(recs, idx, how):
+                points.append(dict(src=src, id=str(r['id']), lon=r['lon'], lat=r['lat'], number=r.get('number'),
+                                   street=r.get('street'), addr=r.get('addr'), category=r.get('category'),
+                                   confidence=r.get('confidence'), building=int(ids[f]) if f >= 0 else None, how=hw))
                 if f < 0:
                     continue
                 for key in ('number', 'category'):
@@ -243,6 +247,7 @@ def main():
             s['pct_fp_number'], s['pct_fp_category'] = pct(s['fp_with_number']), pct(s['fp_with_category'])
     with open(os.path.join(a.out, 'poi_coverage.json'), 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
+    pq.write_table(pa.Table.from_pylist(points), os.path.join(a.out, 'poi_points.parquet'))
     with open(os.path.join(a.out, 'poi_per_building.jsonl'), 'w', encoding='utf-8') as f:
         for i in sorted(per_fp):
             f.write(json.dumps({'id': int(ids[i]), **{s: v for s, v in per_fp[i].items() if v}}, ensure_ascii=False) + '\n')
