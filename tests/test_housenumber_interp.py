@@ -7,7 +7,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "buildings"))
 
-from housenumber_interp import clean_side, lis_keep, number_side, parse_number, street_key  # noqa: E402
+from housenumber_interp import clean_side, lead_address, lis_keep, number_of_object, number_side, parse_number, street_key  # noqa: E402
 
 
 class StreetKeyTests(unittest.TestCase):
@@ -20,6 +20,23 @@ class StreetKeyTests(unittest.TestCase):
         self.assertEqual(street_key("Ngách 421/4 Hoàng Quốc Việt"), ("hoang quoc viet", (421, 4)))
         self.assertEqual(street_key("Ngách 124 Ngõ 20 Phú Minh"), ("phu minh", (20, 124)))
         self.assertIsNone(street_key("Ngõ 10"))
+
+
+class AddressTextTests(unittest.TestCase):
+    def test_number_leading_the_street(self):
+        self.assertEqual(lead_address("73 ngõ 77 bùi xương trạch,"), (("bui xuong trach", (77,)), 73, ""))
+        self.assertEqual(lead_address("73/1 ngõ 77 Bùi Xương Trạch"), (("bui xuong trach", (77, 73)), 1, ""))
+        self.assertEqual(lead_address("Số 12, Ngõ 85, Sài Đồng, Long Biên, Hà Nội"), (("sai dong", (85,)), 12, ""))
+        self.assertEqual(lead_address("số 3, ngách 4, ngõ 20, Phú Minh"), (("phu minh", (20, 4)), 3, ""))
+        self.assertIsNone(lead_address("125 - 135 Nguyễn Trãi"))
+        self.assertIsNone(lead_address("Cafe 24h"))
+
+    def test_object_rules(self):
+        base = dict(hn=None, street=None, full=None, housename=None, place=None, name=None)
+        self.assertEqual(number_of_object({**base, "hn": "5", "street": "Ngõ 49 Thúy Lĩnh"}),
+                         (("thuy linh", (49,)), 5, "", "housenumber+street"))
+        self.assertEqual(number_of_object({**base, "street": "73/1 ngõ 77 bùi xương trạch"})[3], "number_in_street")
+        self.assertEqual(number_of_object({**base, "name": "Cafe 24h"}), (None, "no_number"))
 
 
 class NumberTests(unittest.TestCase):

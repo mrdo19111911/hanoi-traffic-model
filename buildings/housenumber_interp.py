@@ -1,8 +1,13 @@
 """House numbers for every street-front footprint, interpolated between known numbers along each street (code only).
 
 Anchors (known numbers), each with its source:
-  osm     OSM addr:housenumber + addr:street of buildings (osm_buildings.parquet) and of nodes (`points`, from the PBF);
-  mouth   an alley named "Ngõ 85 <Phố X>" (or "Ngách 85/12 ...") gives number 85 (12) on its parent street where it starts;
+  osm     every OSM node and way with a number in its tags (`points`, from the PBF): addr:housenumber + addr:street,
+          else a number leading addr:street ("73 ngõ 77 bùi xương trạch" = 73 on Ngõ 77; "73/1 ngõ 77 ..." = 1 on
+          Ngách 77/73), addr:housenumber itself, addr:full, addr:housename, addr:place or name (lead_address: number or
+          a/b/n, then street words up to the ward / district part); counted per rule;
+  mouth   an alley named "Ngõ 85 <Phố X>" gives number 85 on its parent street where it starts, at every level
+          ("Ngách 77/50" = 50 on Ngõ 77, "Hẻm 77/10/2" = 2 on Ngách 77/10); the mouth is the end of any of its ways
+          within MOUTH_M of any way of the parent;
   ocr     OCR reads (ocr_housenumber_link.py) are NOT used: 2 of 28 checkable reads were right (ocr_housenumber_eval.py);
   truth   street_truth.csv rows carry no coordinates, so none can be placed.
 Numbers parse as "<n>[letter]" or "<a>/<n>[letter]" (= number n of alley a of addr:street); others are counted, unused.
@@ -27,7 +32,11 @@ Per street side (code rules, nothing assumed per street):
              RATE_SPAN_M or more) or the city median rate, never below 1; source 'extrap', confidence low;
   rule       a street or alley with no kept anchor gets nothing unless RULES measured on the dev streets say so.
 A footprint holding an OSM address of its own street and side keeps it (src 'osm') unless that anchor was
-  dropped as a conflict.
+  dropped as a conflict; an address outside every footprint goes to the nearest street-front house of its street and
+  side within OWN_M.
+Ablation (hold-out, all Ha Noi, 2026-10-28 PBF): anchors matched to any way of their street instead of its axis made
+every number worse (exact 62 -> 58 %, p90 6 -> 12: a branch's address projects to the wrong place on the axis), so
+anchors match the axis; mouths from any way end and the text rules changed nothing measurable and stay (more anchors).
 
 Evaluation (`eval`): streets split into dev / hold-out by a hash of the base street name (alleys go with their street).
 On hold-out streets every anchor is dropped in turn and predicted from the others; reported: median / p90 |delta n|,
@@ -60,7 +69,10 @@ NARROW_HALF_M = 2.0                  # half-width of service / pedestrian / foot
 SETBACK_M = {'major': 10.0, 'named': 5.0, 'narrow': 4.0}   # p75 of OSM-addressed facades past the half-width, dev streets
 AREA_M2 = (15.0, 2000.0)
 JOIN_M = 60.0                        # ways of one name closer than this are one street
-MOUTH_M = 40.0                       # alley end to parent axis, at most
+MOUTH_M = 40.0                       # alley end to a way of its parent, at most
+ANCHOR_M = 60.0                      # an address to a way of its street, at most
+OPT = dict(anchor_to='axis', mouth_from='ways', text_rules=True)   # defaults chosen by the hold-out ablation (eval flags)
+OWN_M = 8.0                          # an address outside every footprint: nearest street-front house within this
 EXTRAP_M = 150.0
 RATE_CLAMP = (0.05, 2.0)             # numbers per metre along one side
 RATE_SPAN_M = 50.0                   # a side's own rate needs anchors spread over at least this
@@ -181,6 +193,8 @@ class Streets:
             self.name[s] = Counter(self.way_name[i] for i in idx).most_common(1)[0][0]
             self.hw[s] = min((self.way_hw[i] for i in idx), key=lambda h: rank[h])
         self.axis = np.array(self.axis, object)
+        self.geom = np.array([shapely.union_all(self.way_geom[groups[s]]) for s in range(m)], object)
+        self.ways_of = groups
         self.by_key = defaultdict(list)
         for s, k in enumerate(self.key):
             self.by_key[k].append(s)
@@ -205,7 +219,8 @@ class Streets:
         if not cand:
             return out
         pts = shapely.points(px, py)
-        d = np.stack([shapely.distance(self.axis[c], pts) for c in cand])
+        g = self.geom if OPT['anchor_to'] == 'ways' else self.axis
+        d = np.stack([shapely.distance(g[c], pts) for c in cand])
         k = d.argmin(0)
         ok = d[k, np.arange(len(px))] <= max_d
         out[ok] = np.array(cand)[k[ok]]
@@ -258,59 +273,118 @@ def frontage(path, streets, bbox=None):
 
 # ---------------------------------------------------------------------------------------------------- anchors
 
+LEAD = re.compile(r'^(?:so\s*)?(\d{1,4}[a-z]?(?:\s*/\s*\d{1,4}[a-z]?)*)\s*[,.:]?\s+([a-z].*)$')
+STOP = re.compile(r'^(phuong|quan|huyen|thi xa|thi tran|xa|tp|thanh pho|ha noi|hanoi|viet nam|vietnam|p|q|tx|tt)\b')
+
+
+def split_number(token):
+    """'73/1b' -> ((73,), 1, 'B'); None when it is not numbers separated by slashes."""
+    parts = [x.strip() for x in token.split('/')]
+    m = [re.match(r'^(\d{1,4})([a-z]?)$', x) for x in parts]
+    if not all(m):
+        return None
+    return tuple(int(x.group(1)) for x in m[:-1]), int(m[-1].group(1)), m[-1].group(2).upper()
+
+
+def lead_address(text):
+    """'73 ngõ 77 bùi xương trạch,' / 'Số 12, Ngõ 85, Sài Đồng, Long Biên' -> (street key, number, suffix) or None:
+    a leading number (or a/b/n) then the street words up to the first ward / district / city part."""
+    t = unaccent(text)
+    m = LEAD.match(t)
+    if not m:
+        return None
+    num = split_number(m.group(1))
+    if num is None:
+        return None
+    words = []                                       # alley parts, then the first street part: "Ngõ 85, Sài Đồng, ..."
+    for part in m.group(2).split(','):
+        part = part.strip()
+        if not part or STOP.match(part):
+            break
+        words.append(part)
+        am = ALLEY.match(strip_prefix(part))
+        if not am or am.group(3):                    # a street, or an alley that names its street: complete
+            break
+    k = street_key(' '.join(words)) if words else None
+    if k is None:
+        return None
+    path, n, suf = num
+    return (k[0], k[1] + path), n, suf
+
+
+def number_of_object(r):
+    """(street key, number, suffix, rule) of one OSM object (dict of its tags), or (None, reason)."""
+    hn, st = r['hn'], r['street']
+    if hn and st:
+        p = parse_number(re.sub(r'^\s*(so|số)\s*', '', hn, flags=re.I))
+        if not isinstance(p, str):
+            k = street_key(st)
+            lead = lead_address(st)
+            if lead and lead[1] == p[1]:                     # 'addr:street' repeats the number: its street part
+                return lead[0], p[1], p[2], 'housenumber+street_with_number'
+            if k is not None:
+                return (k[0], k[1] + p[0]), p[1], p[2], 'housenumber+street'
+    if not OPT['text_rules']:
+        return None, 'no_number'
+    for field, rule in (('street', 'number_in_street'), ('hn', 'number_in_housenumber'), ('full', 'addr_full'),
+                        ('housename', 'addr_housename'), ('place', 'addr_place'), ('name', 'name')):
+        if r[field]:
+            lead = lead_address(r[field])
+            if lead:
+                return lead[0], lead[1], lead[2], rule
+    return None, 'no_number'
+
+
 def osm_addresses(bbox):
-    """(x, y, street name, housenumber, kind) of OSM building addresses (centroid) and address nodes in the bbox."""
-    import duckdb
-    con = duckdb.connect(); con.execute('LOAD spatial')
+    """OSM objects with a number somewhere in their tags (points: nodes and way centroids) inside the bbox."""
+    t = pq.read_table(POINTS).to_pylist()
     W, S, E, N = bbox
-    rows = con.execute(f"""SELECT ST_X(c), ST_Y(c), addr_street, addr_housenumber FROM (SELECT ST_Centroid(geometry) c,
-        addr_street, addr_housenumber FROM '{OSM_B}' WHERE addr_housenumber IS NOT NULL AND addr_street IS NOT NULL)
-        WHERE ST_X(c) BETWEEN {W} AND {E} AND ST_Y(c) BETWEEN {S} AND {N}""").fetchall()
-    kind = ['building'] * len(rows)
-    if os.path.exists(POINTS):
-        p = con.execute(f"""SELECT lon, lat, street, hn FROM '{POINTS}' WHERE lon BETWEEN {W} AND {E} AND lat BETWEEN {S} AND {N}""").fetchall()
-        rows += p; kind += ['node'] * len(p)
-    x, y = xy([r[0] for r in rows], [r[1] for r in rows])
-    return x, y, [r[2] for r in rows], [r[3] for r in rows], kind
+    return [r for r in t if W <= r['lon'] <= E and S <= r['lat'] <= N]
 
 
 def build_anchors(streets, bbox, counts):
     """Anchors: dict street -> list of (s, side, n, suffix, src, x, y)."""
     A = defaultdict(list)
-    x, y, st_names, hns, kind = osm_addresses(bbox)
-    for i in range(len(x)):
-        k = street_key(st_names[i])
-        p = parse_number(hns[i])
-        if k is None:
-            counts['osm_no_street'] += 1; continue
-        if isinstance(p, str):
-            counts[f'osm_number_{p}'] += 1; continue
-        path, n, suf = p
-        key = (k[0], k[1] + path)
-        st = streets.street_of_key(key, np.array([x[i]]), np.array([y[i]]), 60.0)[0]
+    for r in osm_addresses(bbox):
+        key, n_or_reason, *rest = number_of_object(r)
+        if key is None:
+            counts[f'osm_{n_or_reason}'] += 1; continue
+        n, suf, rule = n_or_reason, rest[0], rest[1]
+        x, y = xy(np.array([r['lon']]), np.array([r['lat']]))
+        st = streets.street_of_key(key, x, y, ANCHOR_M)[0]
         if st < 0:
             counts['osm_no_matching_way'] += 1; continue
-        s, side = streets.locate(st, np.array([x[i]]), np.array([y[i]]))
-        A[st].append((float(s[0]), int(side[0]), n, suf, 'osm', x[i], y[i]))
-        counts[f'osm_{kind[i]}'] += 1
-    for st, (base, path) in enumerate(streets.key):                        # alley mouths on the parent street
+        s, side = streets.locate(st, x, y)
+        A[st].append((float(s[0]), int(side[0]), n, suf, 'osm', float(x[0]), float(y[0])))
+        counts[f'osm_{rule}'] += 1
+        counts[f'osm_{r["otype"]}' + ('_building' if r['building'] else '')] += 1
+    for st, (base, path) in enumerate(streets.key):                        # alley mouths on the parent, every level
         if not path:
             continue
-        ax = streets.axis[st]
-        ends = shapely.get_coordinates(ax)[[0, -1]]
-        par = [streets.street_of_key((base, path[:-1]), ends[j:j + 1, 0], ends[j:j + 1, 1], MOUTH_M)[0] for j in (0, 1)]
-        dd = [shapely.distance(streets.axis[p], shapely.points(*ends[j])) if p >= 0 else np.inf for j, p in enumerate(par)]
-        j = int(np.argmin(dd))
-        if not np.isfinite(dd[j]):
+        par_cand = streets.by_key.get((base, path[:-1]), [])
+        best = None                                                         # (distance, parent, way, end)
+        ways = OPT['mouth_from'] == 'ways'
+        for g in ([streets.way_geom[w] for w in streets.ways_of[st]] if ways else [streets.axis[st]]):
+            ends = shapely.get_coordinates(g)[[0, -1]]
+            for j in (0, 1):
+                pt = shapely.points(*ends[j])
+                for p in par_cand:
+                    d = float(shapely.distance(streets.geom[p] if ways else streets.axis[p], pt))
+                    if d <= MOUTH_M and (best is None or d < best[0]):
+                        best = (d, p, g, j)
+        if best is None:
             counts['mouth_no_parent'] += 1; continue
-        p = par[j]
-        L = shapely.length(ax)
-        inner = shapely.get_coordinates(shapely.line_interpolate_point(ax, min(15.0, L / 2) if j == 0 else max(L - 15.0, L / 2)))
-        s, _ = streets.locate(p, ends[j:j + 1, 0], ends[j:j + 1, 1])
+        _, p, g, j = best
+        L = float(shapely.length(g))
+        end = shapely.get_coordinates(g)[[0, -1]][j]
+        inner = shapely.get_coordinates(shapely.line_interpolate_point(g, min(15.0, L / 2) if j == 0 else max(L - 15.0, L / 2)))
+        s, _ = streets.locate(p, end[None, 0], end[None, 1])
         _, side = streets.locate(p, inner[:, 0], inner[:, 1])
-        A[p].append((float(s[0]), int(side[0]), path[-1], '', 'mouth', ends[j, 0], ends[j, 1]))
-        streets.mouth[st] = 0.0 if j == 0 else float(L)
-        counts['mouth'] += 1
+        A[p].append((float(s[0]), int(side[0]), path[-1], '', 'mouth', float(end[0]), float(end[1])))
+        counts[f'mouth_level_{len(path)}'] += 1
+        ms, _ = streets.locate(st, end[None, 0], end[None, 1])
+        L_ax = float(shapely.length(streets.axis[st]))
+        streets.mouth[st] = 0.0 if ms[0] <= L_ax / 2 else L_ax             # mouth end of the alley's own axis
     return A
 
 
@@ -549,13 +623,25 @@ def osm_owner(parts, A, streets, plan):
     if not pts:
         return {}
     P = shapely.points([q[0] for q in pts], [q[1] for q in pts])
-    own, off = {}, 0
-    for p in parts:
+    own, off, placed = {}, 0, np.zeros(len(pts), bool)
+    for p in parts:                                  # 1) the footprint containing the address
         tree = shapely.STRtree(p['geoms'][p['house']])
         for a_i, g_i in zip(*tree.query(P, predicate='within')):
             q = pts[a_i]
             if p['street'][g_i] == q[5] and p['side'][g_i] == q[6]:          # same street and side as the house
-                own[off + int(g_i)] = q[2:5]
+                own[off + int(g_i)] = q[2:5]; placed[a_i] = True
+        off += len(p['house'])
+    off = 0
+    for p in parts:                                  # 2) else the nearest street-front house of that street and side
+        geoms = p['geoms'][p['house']]
+        tree = shapely.STRtree(geoms)
+        left = np.flatnonzero(~placed)
+        if len(left):
+            a_i, g_i = tree.query_nearest(P[left], max_distance=OWN_M, all_matches=False)
+            for a, g in zip(left[a_i], g_i):
+                q = pts[a]
+                if p['street'][g] == q[5] and p['side'][g] == q[6] and off + int(g) not in own:
+                    own[off + int(g)] = q[2:5]; placed[a] = True
         off += len(p['house'])
     return own
 
@@ -667,22 +753,47 @@ def cmd_eval(a):
 
 
 def cmd_points(a):
+    """Every OSM node and way whose tags may hold a house number -> POINTS (lon, lat of the node / way centroid)."""
     import osmium
+    keys = ('addr:housenumber', 'addr:street', 'addr:full', 'addr:housename', 'addr:place')
+    lead = re.compile(r'^\s*(s[oố]\s*)?\d', re.I)
     rows = []
-    fp = osmium.FileProcessor(PBF, osmium.osm.NODE).with_filter(osmium.filter.KeyFilter('addr:housenumber'))
-    for o in fp:
-        st = o.tags.get('addr:street')
-        if st and o.location.valid():
-            rows.append((o.location.lon, o.location.lat, st, o.tags['addr:housenumber']))
-    t = pa.table({'lon': [r[0] for r in rows], 'lat': [r[1] for r in rows], 'street': [r[2] for r in rows], 'hn': [r[3] for r in rows]})
-    pq.write_table(t, POINTS, compression='zstd')
-    print(f'{len(rows)} address nodes -> {POINTS}')
+
+    class H(osmium.SimpleHandler):
+        def take(self, o, lon, lat):
+            t = o.tags
+            if not any(k in t for k in keys) and not lead.match(t.get('name', '')):
+                return
+            if 'highway' in t:
+                return
+            rows.append(dict(lon=lon, lat=lat, otype=o.__class__.__name__.lower(), oid=o.id, building='building' in t,
+                             hn=t.get('addr:housenumber'), street=t.get('addr:street'), full=t.get('addr:full'),
+                             housename=t.get('addr:housename'), place=t.get('addr:place'), name=t.get('name')))
+
+        def node(self, n):
+            if len(n.tags) and n.location.valid():
+                self.take(n, n.location.lon, n.location.lat)
+
+        def way(self, w):
+            if not len(w.tags):
+                return
+            try:
+                c = np.array([(nd.lon, nd.lat) for nd in w.nodes])
+            except osmium.InvalidLocationError:
+                return
+            if len(c):
+                self.take(w, float(c[:, 0].mean()), float(c[:, 1].mean()))
+
+    H().apply_file(a.pbf, locations=True, idx='flex_mem')
+    pq.write_table(pa.Table.from_pylist(rows), POINTS, compression='zstd')
+    print(f'{len(rows)} objects -> {POINTS} | {Counter(r["otype"] for r in rows)}')
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='cmd', required=True)
-    sub.add_parser('points')
+    p = sub.add_parser('points')
+    p.add_argument('--pbf', default=PBF)
     for c in ('run', 'eval'):
         p = sub.add_parser(c)
         p.add_argument('--files', nargs='*')
@@ -691,7 +802,12 @@ def main():
             p.add_argument('--out', default=OUT_DIR)
         else:
             p.add_argument('--json')
+            p.add_argument('--anchor-to', choices=['ways', 'axis'], default='axis')
+            p.add_argument('--mouth-from', choices=['ways', 'axis'], default='ways')
+            p.add_argument('--no-text-rules', action='store_true')
     a = ap.parse_args()
+    if a.cmd == 'eval':
+        OPT.update(anchor_to=a.anchor_to, mouth_from=a.mouth_from, text_rules=not a.no_text_rules)
     {'points': cmd_points, 'run': cmd_run, 'eval': cmd_eval}[a.cmd](a)
 
 
