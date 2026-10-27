@@ -52,7 +52,10 @@ apply: rewrites height_dm, height_src and floors of published files in place: 'g
   holding any of these is skipped as well; --no-sources applies the calibration only.
   Last, the front-row houses of Ha Noi listed in buildings/frontrow_heights.json (frontrow_heights.py build) whose
   height_src is then 'g25cal' / 'est' get height >= 3 x 3.3 m and floors >= 3 ('frontrow' where that changes them):
-  a domain rule from the user, not a measurement; --no-frontrow leaves it out.
+  a domain rule from the user, not a measurement; --no-frontrow leaves it out. Before that minimum, the front-row
+  houses of the Ha Noi ward files (alpha_frontrow.py) that are 'g25cal' with a raw 2.5D value get
+  height = min(8 x 3.3 m, max(height, 1.7 x raw h25)) ('frontrow_alpha' where that lifts them above the front-row
+  minimum; the others go on to the minimum): the factor the user chose against their street photos on 2026-10-27; --no-alpha leaves it out.
 """
 import argparse, datetime, glob, json, math, os, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -308,7 +311,7 @@ LOCAL_GRID = [(0.0, 0.0)] + [(R, k) for R in (300.0, 500.0) for k in (1.0, 3.0, 
 RES_CLIP = 0.7                           # anchor residuals clipped to +-this (log units; a 2x disagreement) before averaging
 LOCAL_SIGMA = 0.5                        # anchors count by similarity of raw 2.5D: exp(-(dlog h25)^2 / (2 sigma^2))
 BANDS = ((0, 10), (10, 30), (30, 60), (60, 1e9))
-NEW_SRC = ('g25cal', 'est', 'wikidata', 'sibling', 'frontrow')
+NEW_SRC = ('g25cal', 'est', 'wikidata', 'sibling', 'frontrow', 'frontrow_alpha')
 FRONTROW = os.path.join(REPO, 'buildings', 'frontrow_heights.json')   # front-row houses (frontrow_heights.py build)
 SOURCES = os.path.join(REPO, 'buildings', 'height_sources.json')   # Wikidata / sibling rows (extra_heights.py build)
 
@@ -1130,7 +1133,7 @@ def tall_from_params(P):
 
 # ---------------------------------------------------------------------------------------------------- apply
 
-def load_params(path, sources=None, frontrow=None):
+def load_params(path, sources=None, frontrow=None, alpha=False):
     """Parameters written by fit; the clamps of the file replace the module's, so apply follows the file. `sources`:
     height_sources.json (Wikidata and sibling rows, extra_heights.py build), or None for none; `frontrow`:
     frontrow_heights.json (front-row house ids, frontrow_heights.py build), or None for none."""
@@ -1142,6 +1145,9 @@ def load_params(path, sources=None, frontrow=None):
     if frontrow:
         from frontrow_heights import load_frontrow
         P['_frontrow'] = load_frontrow(frontrow)
+        if alpha:
+            from alpha_frontrow import ward_file_names
+            P['_alpha_wards'] = ward_file_names()
     st = P['settings']
     RATIO_CLAMP, H_CLAMP, EST_CLAMP = tuple(st['ratio_clamp']), tuple(st['height_clamp']), tuple(st['est_clamp'])
     A = P['anchors']
@@ -1230,9 +1236,19 @@ def apply_table(tbl, P, dk, dc, province=None, name=None):
                 new_h[k] = h_dm / 10; new_src[k] = kind
                 xi.append(k); xfl.append(fl); done.add(k)
     xi = np.array(xi, int)
+    fr = P.get('_frontrow', {}).get(name) if name else None
+    # Front-row alpha (the user's factor, Ha Noi wards): listed g25cal houses get min(cap, max(h, alpha x raw h25)).
+    ai = np.zeros(0, int)
+    if fr is not None and len(fr) and P.get('_alpha_wards'):
+        from alpha_frontrow import alpha_rows
+        from frontrow_heights import MIN_H_DM
+        ai, ah = alpha_rows(name, tbl['id'].to_numpy(), new_src, F['h25'], new_h, fr, P['_alpha_wards'])
+        up = ah > MIN_H_DM / 10                      # at or under the minimum the front-row rule below decides
+        ai, ah = ai[up], ah[up]
+        new_h[ai] = ah
+        new_src[ai] = 'frontrow_alpha'
     # Front-row prior (a domain rule): listed houses now g25cal / est get at least MIN_FLOORS floors and height.
     fi = np.zeros(0, int); fr_prev = {}
-    fr = P.get('_frontrow', {}).get(name) if name else None
     if fr is not None and len(fr):
         from frontrow_heights import frontrow_rows, MIN_FLOORS, MIN_H_DM
         cur_fl = floors_of(new_h)
@@ -1242,7 +1258,7 @@ def apply_table(tbl, P, dk, dc, province=None, name=None):
         fr_prev = {s: int((new_src[fi] == s).sum()) for s in ('g25cal', 'est')}
         new_h[fi] = np.maximum(new_h[fi], MIN_H_DM / 10)
         new_src[fi] = 'frontrow'
-    chg = np.unique(np.r_[gi, ei, xi, fi].astype(int))
+    chg = np.unique(np.r_[gi, ei, xi, ai, fi].astype(int))
     if not len(chg):
         return tbl, {'changed': {}}
     tbl = tbl.combine_chunks()
@@ -1255,8 +1271,10 @@ def apply_table(tbl, P, dk, dc, province=None, name=None):
     flv[chg] = floors_of(new_h[chg])
     if len(xi):
         flv[xi] = np.array(xfl, np.uint8)            # listed floors (Wikidata P1101 / the siblings' floors)
-    if len(fi):
-        flv[fi] = np.maximum(flv[fi], MIN_FLOORS)    # front-row minimum floors
+    if len(fi) or len(ai):
+        from frontrow_heights import MIN_FLOORS
+        fa = np.r_[fi, ai].astype(int)
+        flv[fa] = np.maximum(flv[fa], MIN_FLOORS)    # front-row minimum floors
     keep_null = hnull.copy(); keep_null[chg] = False
     fkeep_null = fnull.copy(); fkeep_null[chg] = False
     sch = tbl.schema
@@ -1276,8 +1294,8 @@ def apply_table(tbl, P, dk, dc, province=None, name=None):
 
 
 def _apply_file(args):
-    path, out_path, params, density, no_est, province, sources, frontrow = args
-    P = load_params(params, sources, frontrow)
+    path, out_path, params, density, no_est, province, sources, frontrow, alpha = args
+    P = load_params(params, sources, frontrow, alpha)
     if no_est:
         P['est']['on'] = False
     dk, dc = density
@@ -1321,7 +1339,7 @@ def cmd_apply(a):
     sources = None if a.no_sources else a.sources
     frontrow = None if a.no_frontrow else a.frontrow
     jobs = [(f, os.path.join(out_dir, os.path.basename(f)), a.params, density, a.no_est, prov.get(os.path.basename(f)), sources,
-             frontrow) for f in files]
+             frontrow, not a.no_alpha) for f in files]
     changed, total = {}, {s: 0 for s in NEW_SRC}
     with ProcessPoolExecutor(min(a.workers, 6)) as ex:
         vc = {'value_changed': 0, 'floors_changed': 0, 'tall_targets': 0, 'frontrow_from_g25cal': 0, 'frontrow_from_est': 0}
@@ -1370,7 +1388,8 @@ def main():
     p.add_argument('--sources', default=SOURCES, help='Wikidata / sibling rows (extra_heights.py build)')
     p.add_argument('--no-sources', action='store_true', help='calibration only, no Wikidata / sibling rows')
     p.add_argument('--frontrow', default=FRONTROW, help='front-row house ids (frontrow_heights.py build)')
-    p.add_argument('--no-frontrow', action='store_true', help='no front-row minimum')
+    p.add_argument('--no-frontrow', action='store_true', help='no front-row minimum (and no front-row alpha)')
+    p.add_argument('--no-alpha', action='store_true', help='no front-row alpha in the Ha Noi wards')
     p.add_argument('--log', help='write the changed files (name -> bytes) and counts to this JSON')
     a = ap.parse_args()
     {'truth': cmd_truth, 'fit': cmd_fit, 'tall': cmd_tall, 'apply': cmd_apply}[a.cmd](a)

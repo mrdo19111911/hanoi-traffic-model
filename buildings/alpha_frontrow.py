@@ -1,8 +1,11 @@
-"""TRIAL, not applied: raise the front-row houses of the Ha Noi wards by a factor alpha over the raw Google 2.5D height.
+"""Front-row alpha of the Ha Noi wards: raise the front-row houses by a factor alpha over the raw Google 2.5D height.
 
-Street View truth (data/buildings/_truth/alpha_segments.json, 4 streets) puts real / raw Google at about 1.3 pooled
-(inner-city streets 1.35-1.63, Long Bien 1.07-1.10); the user leans to rounding up (alpha = 2). Nothing is decided,
-so this script never writes into buildings/by_area: `apply` needs --dst-dir and refuses the published folder.
+Decided by the user on 2026-10-27: alpha = 1.7 over raw Google, no limit on the Google value, cap 8 floors, front-row
+houses of the Ha Noi wards only (ALPHA, CAP_FLOORS). Measured against the user's own street photos
+(alpha_vs_photos.py): on Nguyen Trai and Tay Son the segment medians end within +0.6 / -0.3 m of the photos (1.5:
+-1.1 / -2.2 m, 2.0: +3.0 / +2.5 m); on the two Long Bien streets every alpha overshoots by 3-5 m. calibrate_heights.py
+apply calls alpha_rows() before the front-row minimum (height_src 'frontrow_alpha'). This script keeps the grid report
+and the scratch-dir trial for other values; `apply` here refuses the published folder.
 
 Rule (one rule for every file in scope, all constants on the command line):
   scope   = rows of the Ha Noi files whose commune group is wards only (every commune name starts with "Phường",
@@ -11,7 +14,8 @@ Rule (one rule for every file in scope, all constants on the command line):
             'est' rows (no Google reading of their own), OSM, building:part, Wikidata and sibling rows are never touched.
   height  = min(cap, max(published, alpha x raw Google)): never lowers a house, never lifts one past the cap
             (cap = cap_floors x 3.3 m; a house already above the cap keeps its height).
-  floors  = max(published floors, calibrate_heights.floors_of(height)); height_src 'alpha' where height or floors change.
+  floors  = max(published floors, calibrate_heights.floors_of(height)); height_src 'frontrow_alpha' where height or
+            floors change.
 Re-runnable from the raw layer: the result depends on the raw height and the published height only, and applying it to
 its own output gives the same output (max with alpha x raw is idempotent).
 
@@ -32,6 +36,7 @@ RAW_DIR = os.path.join(REPO, 'data', 'buildings', '_calib', 'raw_by_area')
 GROUPS = os.path.join(REPO, 'buildings', 'commune_groups.json')
 FRONTROW = os.path.join(REPO, 'buildings', 'frontrow_heights.json')
 SCOPE_SRC = ('g25cal', 'frontrow')
+ALPHA, CAP_FLOORS = 1.7, 8                  # the user's decision, 2026-10-27
 FLOOR_BINS = [(1, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 255)]
 
 
@@ -40,6 +45,21 @@ def ward_files():
     G = json.load(open(GROUPS, encoding='utf-8'))
     return [(g['file'], [c['name'] for c in g['communes']]) for g in G['groups']
             if g['file'].startswith('ha_noi_') and all(c['name'].startswith('Phường') for c in g['communes'])]
+
+
+def ward_file_names():
+    return {f for f, _ in ward_files()}
+
+
+def alpha_rows(name, ids, new_src, h25, new_h, fr_ids, wards):
+    """For calibrate_heights apply: (positions, new heights in m) of the rows of file `name` the rule raises: a ward
+    file, a listed front-row id, now 'g25cal', with a raw Google height; heights by rule() with ALPHA and CAP_FLOORS."""
+    if name not in wards or fr_ids is None or not len(fr_ids):
+        return np.zeros(0, int), np.zeros(0)
+    k = np.flatnonzero(np.isin(ids, fr_ids) & (new_src == 'g25cal') & np.isfinite(h25) & (h25 > 0))
+    nh, _ = rule(new_h[k], np.ones(len(k), int), h25[k], ALPHA, CAP_FLOORS)
+    up = nh > new_h[k] + 1e-9
+    return k[up], nh[up]
 
 
 def load(name, fr_ids):
@@ -90,7 +110,7 @@ def run(names, fr_ids, alpha, cap_floors, dst=None):
             fl = D['pub'].column('floors').to_numpy().copy()
             src = D['src'].copy()
             pos = np.flatnonzero(s)[changed]
-            h_dm[pos] = dm_of(nh[changed]); fl[pos] = nf[changed]; src[pos] = 'alpha'
+            h_dm[pos] = dm_of(nh[changed]); fl[pos] = nf[changed]; src[pos] = 'frontrow_alpha'
             t = D['pub']
             t = t.set_column(t.schema.get_field_index('height_dm'), 'height_dm', pa.array(h_dm, pa.uint16()))
             t = t.set_column(t.schema.get_field_index('floors'), 'floors', pa.array(fl, pa.uint8()))
@@ -115,8 +135,8 @@ def main():
     g.add_argument('--caps', type=int, nargs='+', default=[6, 8, 0], help='cap in floors, 0 = no cap')
     g.add_argument('--report')
     p = sub.add_parser('apply', help='write the ward files with the rule applied into --dst-dir (never by_area)')
-    p.add_argument('--alpha', type=float, required=True)
-    p.add_argument('--cap-floors', type=int, default=8, help='0 = no cap')
+    p.add_argument('--alpha', type=float, default=ALPHA)
+    p.add_argument('--cap-floors', type=int, default=CAP_FLOORS, help='0 = no cap')
     p.add_argument('--dst-dir', required=True)
     p.add_argument('--report')
     a = ap.parse_args()
@@ -132,7 +152,7 @@ def main():
     else:
         dst = os.path.abspath(a.dst_dir)
         if os.path.normcase(dst) == os.path.normcase(os.path.abspath(PUB_DIR)):
-            raise SystemExit('refusing to write into buildings/by_area: the alpha rule is not decided')
+            raise SystemExit('refusing to write into buildings/by_area: calibrate_heights.py apply writes it')
         os.makedirs(dst, exist_ok=True)
         res = run(names, fr_ids, a.alpha, a.cap_floors, dst)
         print(json.dumps(res['total'], ensure_ascii=False))
