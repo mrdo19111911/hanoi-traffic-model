@@ -60,19 +60,42 @@ def street_of(addr):
 
 
 def street_key(s):
-    """Street text -> (name words tuple, alley numbers tuple) or None."""
+    """Street text -> (name words tuple, alley numbers tuple, outer alley first) or None.
+    The numbers after an alley word are its levels: "ngõ 43" = (43), "ngách 43/66" = (43, 66), a lone
+    "ngách 66" is level 2, so "ngách 66 ngõ 43" also gives (43, 66). Other numbers are dropped."""
     if not s:
         return None
     toks = re.findall(r'[a-z]+|\d+', norm(s))
-    words, alley, prev = [], [], ''
-    for t in toks:
-        if t.isdigit():
-            if prev in ALLEY or (alley and prev.isdigit()):
-                alley.append(t.lstrip('0'))
-        elif t not in GENERIC and t not in ALLEY:
+    words, levels, i = [], {}, 0
+    while i < len(toks):
+        t = toks[i]
+        if t in ALLEY:
+            j = i + 1
+            while j < len(toks) and toks[j].isdigit():
+                j += 1
+            nums = [x.lstrip('0') or '0' for x in toks[i + 1:j]]
+            first = 2 if t == 'ngach' and len(nums) == 1 else 1
+            for n, x in enumerate(nums):
+                levels.setdefault(first + n, x)
+            i = j
+            continue
+        if not t.isdigit() and t not in GENERIC:
             words.append(t)
-        prev = t
-    return (tuple(words), tuple(alley)) if words or alley else None
+        i += 1
+    alley = tuple(levels[l] for l in sorted(levels))
+    return (tuple(words), alley) if words or alley else None
+
+
+def house_parts(number):
+    """House number text -> (extra alley levels, house int) or None: "25/7" = house 7 in alley 25 of the street,
+    "12/34/5" = house 5 in ngách 12/34; "12A", "12-14" = 12."""
+    s = str(number or '')
+    parts = re.findall(r'\d+', s)
+    if not parts:
+        return None
+    if '/' in s and len(parts) > 1:
+        return tuple(p.lstrip('0') or '0' for p in parts[:-1]), int(parts[-1])
+    return (), int(parts[0])
 
 
 def same_street(a, b):

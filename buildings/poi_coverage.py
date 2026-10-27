@@ -146,6 +146,21 @@ def assign(lonlat, tree, to_m):
     return idx, how
 
 
+def load_commune(con, admin, rel, area):
+    """-> name, commune polygon, bbox (+~200 m), footprints whose centroid is inside (lon/lat), their ids, and
+    to_m: lon/lat array -> local metres around the bbox centre."""
+    name, w = con.execute(f"SELECT name, wkb FROM '{admin}' WHERE kind = 'commune' AND rel_id = {rel}").fetchone()
+    ward = swkb.loads(bytes(w))
+    bb = [round(v, 5) for v in ward.buffer(0.002).bounds]
+    rows = con.execute(f"SELECT * FROM '{area}'").fetch_arrow_table().to_pylist()
+    polys = [decode(r) for r in rows]
+    keep = shapely.contains(ward, shapely.centroid(polys))
+    lon0, lat0 = (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2
+    k = np.array([111320 * math.cos(math.radians(lat0)), 110574])
+    return (name, ward, bb, np.array(polys, dtype=object)[keep], np.array([r['id'] for r in rows])[keep],
+            lambda xy: (np.asarray(xy) - [lon0, lat0]) * k)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--commune-rel', type=int, required=True)
@@ -160,17 +175,7 @@ def main():
     t0 = time.time()
     con = duckdb.connect()
     con.execute("INSTALL httpfs; LOAD httpfs; INSTALL spatial; LOAD spatial")
-    name, w = con.execute(f"SELECT name, wkb FROM '{a.admin}' WHERE kind = 'commune' AND rel_id = {a.commune_rel}").fetchone()
-    ward = swkb.loads(bytes(w))
-    bb = [round(v, 5) for v in ward.buffer(0.002).bounds]
-    rows = con.execute(f"SELECT * FROM '{a.area}'").fetch_arrow_table().to_pylist()
-    polys = [decode(r) for r in rows]
-    keep = shapely.contains(ward, shapely.centroid(polys))
-    fps = np.array(polys, dtype=object)[keep]
-    ids = np.array([r['id'] for r in rows])[keep]
-    lon0, lat0 = (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2
-    k = np.array([111320 * math.cos(math.radians(lat0)), 110574])
-    to_m = lambda xy: (np.asarray(xy) - [lon0, lat0]) * k
+    name, ward, bb, fps, ids, to_m = load_commune(con, a.admin, a.commune_rel, a.area)
     tree = shapely.STRtree(shapely.transform(fps, to_m))
     print(name, '|', len(fps), 'footprints | bbox', bb, flush=True)
 

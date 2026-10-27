@@ -1,0 +1,111 @@
+{
+ "commune": "Phường Thanh Xuân",
+ "osm_relation": 19335051,
+ "footprints": 10512,
+ "stat": {
+  "roads": 4024,
+  "named_roads": 1719,
+  "alley_ways_named": 6,
+  "parts": 1132,
+  "front_named": 4435,
+  "unnamed_road": 3328,
+  "behind_other": 2462,
+  "no_road_within": 287,
+  "anchor_far": 988,
+  "anchor_no_street": 1230,
+  "anchors": 8990
+ },
+ "parts_with_model": 119,
+ "numbered": 1767,
+ "pct_numbered": 16.81,
+ "why_not": {
+  "ok": 1767,
+  "unnamed_road": 3328,
+  "behind_other": 2462,
+  "street_without_model": 2288,
+  "no_road_within": 287,
+  "beyond_anchors": 380
+ },
+ "holdout": {
+  "all_sources": {
+   "truth": 159,
+   "unnamed_road": 59,
+   "ok": 54,
+   "exact": 8,
+   "within_2": 22,
+   "within_6": 31,
+   "parity_ok": 50,
+   "street_without_model": 14,
+   "beyond_anchors": 5,
+   "no_road_within": 21,
+   "behind_other": 6,
+   "other_street": 4
+  },
+  "all_sources_snap": {
+   "truth": 159,
+   "unnamed_road": 59,
+   "ok": 54,
+   "exact": 4,
+   "within_2": 14,
+   "within_6": 34,
+   "parity_ok": 48,
+   "street_without_model": 14,
+   "beyond_anchors": 5,
+   "no_road_within": 21,
+   "behind_other": 6,
+   "other_street": 4
+  },
+  "no_osm": {
+   "truth": 159,
+   "unnamed_road": 59,
+   "ok": 54,
+   "exact": 7,
+   "within_2": 21,
+   "within_6": 31,
+   "parity_ok": 46,
+   "street_without_model": 14,
+   "beyond_anchors": 5,
+   "no_road_within": 21,
+   "behind_other": 6,
+   "other_street": 4
+  },
+  "no_osm_snap": {
+   "truth": 159,
+   "unnamed_road": 59,
+   "ok": 54,
+   "exact": 6,
+   "within_2": 19,
+   "within_6": 36,
+   "parity_ok": 46,
+   "street_without_model": 14,
+   "beyond_anchors": 5,
+   "no_road_within": 21,
+   "behind_other": 6,
+   "other_street": 4
+  },
+  "position_method": {
+   "truth": 159,
+   "has_number": 115,
+   "exact": 75,
+   "within_2": 84
+  }
+ },
+ "params": {
+  "FRONT_M": 30.0,
+  "ANCHOR_M": 150.0,
+  "SIDE_M": 2.0,
+  "EXTRAP_M": 20.0,
+  "MIN_ANCHORS": 3,
+  "PARITY": 0.7,
+  "VOTE_M": 25.0,
+  "VOTE_MIN": 2,
+  "VOTE_SHARE": 0.6,
+  "PARENT_M": 15.0,
+  "W": {
+   "osm_building": 4.0,
+   "osm": 2.0,
+   "overture": 1.0,
+   "fsq": 1.0
+  }
+ }
+}
