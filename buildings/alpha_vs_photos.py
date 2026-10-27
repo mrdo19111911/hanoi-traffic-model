@@ -30,7 +30,8 @@ SEG = {   # street in the truth file: (name in OSM roads, segment centre lon/lat
     'Ngô Gia Tự': ('Ngô Gia Tự', (105.8944, 21.0613), 'low (extrapolated from no. 188)'),
 }
 OPTIONS = [('published now', None, None), ('alpha 1.3, Google <= 15 m', 1.3, 15), ('alpha 1.5, Google <= 15 m', 1.5, 15),
-           ('alpha 1.5, no limit', 1.5, None), ('alpha 2.0, Google <= 15 m', 2.0, 15), ('alpha 2.0, no limit', 2.0, None)]
+           ('alpha 1.5, no limit', 1.5, None), ('alpha 1.6, no limit', 1.6, None), ('alpha 1.7, no limit', 1.7, None),
+           ('alpha 1.8, no limit', 1.8, None), ('alpha 2.0, Google <= 15 m', 2.0, 15), ('alpha 2.0, no limit', 2.0, None)]
 KX, KY = 111320 * math.cos(math.radians(21)), 110540
 
 
