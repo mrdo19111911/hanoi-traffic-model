@@ -467,15 +467,15 @@ class OsrmBaseUrlTests(unittest.TestCase):
     def test_probe_targets_osrm_base_url(self):
         import io
         from unittest import mock
-        import backend.app as backend_app
+        import backend.osrm_client as osrm_client
         seen = []
 
         def fake_urlopen(url, timeout=None):
             seen.append(url)
             return io.BytesIO(b'{"code": "Ok"}')
 
-        with mock.patch.dict(os.environ, {"OSRM_BASE_URL": "http://10.0.0.5:5555/"}),              mock.patch.object(backend_app, "urlopen", fake_urlopen):
-            self.assertTrue(backend_app.probe_osrm())
+        with mock.patch.dict(os.environ, {"OSRM_BASE_URL": "http://10.0.0.5:5555/"}),              mock.patch.object(osrm_client, "urlopen", fake_urlopen):
+            self.assertTrue(osrm_client.probe_osrm())
         self.assertEqual(len(seen), 1)
         self.assertTrue(seen[0].startswith("http://10.0.0.5:5555/nearest/v1/driving/"), seen[0])
 
