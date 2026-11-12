@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {describe,it,expect,vi} from 'vitest';
 import fixture from './test/buildings_fixture.json';
-import {BuildingStore,byRelevance,BUILDINGS_BASE,MIN_BUILDING_ZOOM,buildFile,buildingLines,buildingsIn,buildingsShown,decodeFootprint,filesForBBox,floorColor,footprintOf,padBBox,readBuildingParquet,selectBuildings,BUILDING_BINS,UNKNOWN_BUILDING_COLOR,type BBox,type IndexEntry,type Ring} from './buildings';
+import {BuildingStore,byRelevance,BUILDINGS_BASE,MIN_BUILDING_ZOOM,buildFile,buildingLines,buildingsIn,buildingsShown,decodeFootprint,filesForBBox,floorColor,floorsFromHeightM,floorsOf,footprintOf,padBBox,readBuildingParquet,selectBuildings,BUILDING_BINS,UNKNOWN_BUILDING_COLOR,type BBox,type IndexEntry,type Ring} from './buildings';
 
 // Published files committed in the repository (the same v1 files as on GitHub main).
 const published=(name:string)=>{const b=readFileSync(resolve(process.cwd(),'../buildings/by_area',name));return new Uint8Array(b).buffer as ArrayBuffer;};
@@ -106,6 +106,26 @@ describe('spatial index and draw cap',()=>{
   expect([0,1,2].map(i=>buildingLines(g,i)[2])).toEqual(['Chiều cao: 9,5 m (OSM (khối nhà))','Chiều cao: 9,5 m (Google, đã hiệu chỉnh)','Chiều cao: 9,5 m (ước tính từ nhà lân cận)']);
   const w=synthetic([105.8,105.801,105.802],true,['wikidata','sibling','frontrow']);
   expect([0,1,2].map(i=>buildingLines(w,i)[2])).toEqual(['Chiều cao: 9,5 m (Wikidata)','Chiều cao: 9,5 m (theo tòa cùng cụm)','Chiều cao: 9,5 m (nhà mặt đường, tối thiểu 3 tầng)']);
+ });
+});
+
+// Floors from height: the rule of buildings/calibrate_heights.py floors_of and heights_25d.py attrs_query.
+const heightRows=(rows:[number,number][])=>{const n=rows.length;return buildFile('h.parquet',{id:rows.map((_,i)=>i+1),src:Array(n).fill('osm'),lon_e6:rows.map((_,i)=>105_800_000+1000*i),lat_e6:Array(n).fill(21_000_000),length_dm:Array(n).fill(100),width_dm:Array(n).fill(100),angle_cdeg:Array(n).fill(0),ring:Array(n).fill(null),height_dm:rows.map(r=>r[1]),height_src:Array(n).fill('g25'),floors:rows.map(r=>r[0])});};
+describe('floors fallback from height',()=>{
+ it('estimates floors at 3.3 m a floor over a 3.9 m ground floor',()=>{
+  const f=heightRows([[0,33],[0,72],[0,88],[0,90],[0,105],[0,120],[0,20]]);
+  expect([0,1,2,3,4,5,6].map(i=>floorsOf(f,i))).toEqual([1,2,2,3,3,3,1]);
+ });
+ it('keeps a known floors value and reports unknown when neither is known',()=>{
+  const f=heightRows([[7,33],[1,300],[0,0],[5,0]]);
+  expect([0,1,2,3].map(i=>floorsOf(f,i))).toEqual([7,1,null,5]);
+  expect(floorColor(floorsOf(f,2))).toBe(UNKNOWN_BUILDING_COLOR);
+ });
+ it('rounds half away from zero, at least 1 and at most 255, as floors_of',()=>{
+  const ref=(h:number)=>{const x=(h-3.9)/3.3;return Math.min(255,Math.max(1,1+Math.sign(x)*Math.floor(Math.abs(x)+.5)));};
+  for(let dm=0;dm<=65530;dm++)expect(floorsFromHeightM(dm/10)).toBe(ref(dm/10));
+  // Exact .5 quotients in doubles: 5.55 -> .5, 12.15 -> 2.5, 2.25 -> -.5; 8.85 gives 1.4999999999999998 in numpy too.
+  expect([3.3,2,0,5.55,12.15,2.25,8.85,900].map(floorsFromHeightM)).toEqual([1,1,1,2,4,1,2,255]);
  });
 });
 

@@ -133,8 +133,11 @@ export function selectBuildings(files:BuildingFile[],bbox:BBox,view:BBox,cap=MAX
 // ---- colours and popup text ----
 export const UNKNOWN_BUILDING_COLOR='#9aa3a8';
 export const BUILDING_BINS:{min:number;label:string;color:string}[]=[{min:1,label:'1–2',color:'#86b6ef'},{min:3,label:'3–4',color:'#5598e7'},{min:5,label:'5–7',color:'#2a78d6'},{min:8,label:'8–14',color:'#1c5cab'},{min:15,label:'≥ 15',color:'#0d366b'}];
-// Floors, or the height at 3.2 m a floor when only the height is known; null when neither is.
-export function floorsOf(f:BuildingFile,i:number){return f.floors[i]?f.floors[i]:f.height[i]?Math.max(1,Math.round(f.height[i]/32)):null;}
+// Floors from a height in metres, exactly as buildings/calibrate_heights.py floors_of (:483-486) and heights_25d.py
+// attrs_query: 1 + round((h - 3.9) / 3.3) rounding half away from zero, clipped to 1..255.
+export function floorsFromHeightM(h:number){const x=(h-3.9)/3.3;return Math.min(255,Math.max(1,1+Math.sign(x)*Math.floor(Math.abs(x)+.5)));}
+// Floors, or the estimate from the height when only the height is known; null when neither is.
+export function floorsOf(f:BuildingFile,i:number){return f.floors[i]?f.floors[i]:f.height[i]?floorsFromHeightM(f.height[i]/10):null;}
 export function floorColor(floors:number|null){if(!floors)return UNKNOWN_BUILDING_COLOR;let c=BUILDING_BINS[0].color;for(const b of BUILDING_BINS)if(floors>=b.min)c=b.color;return c;}
 const SRC_LABEL:Record<string,string>={osm:'OSM',google:'Google',microsoft:'Microsoft'},HSRC_LABEL:Record<string,string>={osm:'OSM',osm_part:'OSM (khối nhà)',g25:'Google 2.5D',g25cal:'Google, đã hiệu chỉnh',est:'ước tính từ nhà lân cận',wikidata:'Wikidata',sibling:'theo tòa cùng cụm',frontrow:'nhà mặt đường, tối thiểu 3 tầng',frontrow_alpha:'nhà mặt đường, Google × 1,7'};
 const vn=(v:number,d=0)=>v.toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
