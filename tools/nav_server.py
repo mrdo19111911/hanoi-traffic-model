@@ -112,8 +112,19 @@ class NavHandler(SimpleHTTPRequestHandler):
     # here carries Content-Length (files, listings, errors, the injected HTML), which HTTP/1.1 needs.
     protocol_version = "HTTP/1.1"
 
+    def end_headers(self):
+        # Every file is revalidated (If-Modified-Since -> 304), so an edited JS module is never served from a stale cache.
+        if not any(h.lower().startswith(b"cache-control") for h in getattr(self, "_headers_buffer", [])):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def send_head(self):
         path = Path(self.translate_path(self.path))
+        # Google-Maps-style links (/maps/@lat,lon,64m/data=!3m1!1e3?h=..&t=..): the hub page, whose 3D tab reads the view
+        # from the path; swapping the host for www.google.com opens the same place in Google's satellite view.
+        maps = self.path.split("?")[0].split("#")[0].startswith("/maps/")
+        if maps:
+            path = Path(self.directory) / HOME
         if path.is_dir():
             home = path / HOME
             path = home if self.path.split("?")[0].split("#")[0] == "/" and home.is_file() else path / "index.html"
@@ -125,6 +136,12 @@ class NavHandler(SimpleHTTPRequestHandler):
         tag = ("<script>" + js + "</script>").encode("utf-8")
         i = body.lower().rfind(b"</body>")
         body = body[:i] + tag + body[i:] if i >= 0 else body + tag
+        if maps:   # relative URLs from the root; '#tab' links change only the hash (the base would make them '/#tab')
+            head = (b'<base href="/"><script>document.addEventListener("click", function (e) { var a = e.target.closest && '
+                    b'e.target.closest(\'a[href^="#"]\'); if (a) { e.preventDefault(); location.hash = a.getAttribute("href"); } }, true);</script>')
+            j = body.lower().find(b"<head")
+            j = body.find(b">", j) + 1 if j >= 0 else 0
+            body = body[:j] + head + body[j:]
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
