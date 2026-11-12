@@ -18,10 +18,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 
-try:
-    from .graph import TurnGraph, load_graph
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.graph import TurnGraph, load_graph
+from .graph import TurnGraph, load_graph
 
 # Private memory of one parallel_table worker on a nationwide-size graph: measured 2.26 GB peak (2026-10-24, a
 # synthetic turn graph with the E = 10.1M EBNs and T = 19.3M turns of the 2026-10-21 build, one table() call):

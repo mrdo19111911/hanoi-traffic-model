@@ -31,34 +31,20 @@ import shutil
 import sys
 from types import SimpleNamespace
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started from another directory
-    sys.path.insert(0, str(_REPO))
 
 from model.spatial import MissingRoadData  # noqa: E402
 
-try:
-    from .groups import build_group_view, group_rules_sha, save_group_view
-    from .rulecheck import blocks, resolve_rule
-    from .rules import GROUP_NAME, LAYERS, RuleError, load_seed_file, validate_rule
-    from .scopes import ScopeResolver, ZoneError
-    from .segments import (SegmentTable, _sha256_file, build_admin, build_segments, build_water_lines, load_admin,
-                           load_segments, load_water_lines, save_admin, save_segments, save_water_lines)
-    from .speeds import (FreeFlowSource, ReleaseMismatch, build_speed_layer, check_layer_version, load_layer,
-                         save_layer, speed_version)
-    from .state import open_state
-except ImportError:  # pragma: no cover - flat import
-    from groups import build_group_view, group_rules_sha, save_group_view
-    from rulecheck import blocks, resolve_rule
-    from rules import GROUP_NAME, LAYERS, RuleError, load_seed_file, validate_rule
-    from scopes import ScopeResolver, ZoneError
-    from segments import (SegmentTable, _sha256_file, build_admin, build_segments, build_water_lines, load_admin,
-                          load_segments, load_water_lines, save_admin, save_segments, save_water_lines)
-    from speeds import (FreeFlowSource, ReleaseMismatch, build_speed_layer, check_layer_version, load_layer,
-                        save_layer, speed_version)
-    from state import open_state
+from .common import DEFAULT_ROOT, read_json, sha256_file, write_json
+from .groups import build_group_view, group_rules_sha, save_group_view
+from .rulecheck import blocks, resolve_rule
+from .rules import GROUP_NAME, LAYERS, RuleError, load_seed_file, validate_rule
+from .scopes import ScopeResolver, ZoneError
+from .segments import (SegmentTable, build_admin, build_segments, build_water_lines, load_admin,
+                       load_segments, load_water_lines, save_admin, save_segments, save_water_lines)
+from .speeds import (FreeFlowSource, ReleaseMismatch, build_speed_layer, check_layer_version, load_layer,
+                     save_layer, speed_version)
+from .state import open_state
 
-DEFAULT_ROOT = _REPO / "runtime" / "matrix"
 SEED_AUTHOR = "seed"
 _TZ = timezone(timedelta(hours=7))
 
@@ -84,13 +70,6 @@ def _remove(*paths) -> None:
         if path.exists():
             shutil.rmtree(path)
 
-
-def _write_json(path: Path, obj) -> None:
-    path.write_text(json.dumps(obj, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
-
-
-def _read_json(path: Path):
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 class _State:
@@ -122,7 +101,7 @@ def _load_inputs(segments_dir) -> tuple:
 
 def _segments_sha(pbf: Path, bbox) -> str:
     """SegmentTable.sha256 of the table build_segments would return, without reading the ways."""
-    meta = {"pbf_sha256": _sha256_file(pbf), "bbox": bbox}
+    meta = {"pbf_sha256": sha256_file(pbf), "bbox": bbox}
     return SegmentTable.sha256.fget(SimpleNamespace(meta=meta))
 
 
@@ -261,7 +240,7 @@ def cmd_speeds(args) -> int:
                 layer = build_speed_layer(table, source, rules, resolver)
                 save_layer(layer, staging)
                 stats = layer.stats
-                _write_json(staging / "report.json", {
+                write_json(staging / "report.json", {
                     "version": layer.version, "as_of": as_of.isoformat(), "source_id": source.id,
                     "segments_dir": str(Path(args.segments)), "segments_sha256": table.sha256,
                     "speed_rules": sorted(stats["orphans"]),
@@ -302,7 +281,7 @@ def cmd_groups(args) -> int:
         raise BuildError(f"speed layer {speeds_dir.name} has {layer.n} segments, {Path(args.segments).name} {table.n}")
     report_path = speeds_dir / "report.json"
     if report_path.is_file():
-        built_on = _read_json(report_path).get("segments_sha256")
+        built_on = read_json(report_path).get("segments_sha256")
         if built_on and built_on != table.sha256:
             raise BuildError(f"speed layer {speeds_dir.name} was built on segments {built_on[:12]}, "
                              f"not {table.sha256[:12]}")
@@ -336,7 +315,7 @@ def cmd_groups(args) -> int:
         orphans = {}
         for view in views:
             orphans.update(view.report["orphans"])
-        _write_json(tmp / "report.json", {
+        write_json(tmp / "report.json", {
             "as_of": as_of.isoformat(), "speed_version": layer.version, "segments_sha256": table.sha256,
             "rules_sha": group_rules_sha(rules), "base_group": bases[0],
             "groups": {v.group.name: {"is_base": v.group.is_base, "caps": v.caps, "cap_rules": v.report["cap_rules"],
@@ -421,7 +400,7 @@ def cmd_status(args) -> int:
     print(f"root: {root}")
     print("segments:")
     for seg in _builds(root / "segments"):
-        meta = _read_json(seg / "meta.json") if (seg / "meta.json").is_file() else {}
+        meta = read_json(seg / "meta.json") if (seg / "meta.json").is_file() else {}
         print(f"  {seg.name}\tsegments={sum(meta.get('counts', {}).values())}\tbbox={meta.get('bbox')}"
               f"\tpbf_sha256={str(meta.get('pbf_sha256'))[:12]}")
     print("speed layers:")
@@ -436,7 +415,7 @@ def cmd_status(args) -> int:
         groups, active = [], Counter()
     for spd in _builds(root / "speeds"):
         info = recorded.get(spd.name, {})
-        report = _read_json(spd / "report.json") if (spd / "report.json").is_file() else {}
+        report = read_json(spd / "report.json") if (spd / "report.json").is_file() else {}
         views = [d.name for d in _builds(spd / "groups")]
         print(f"  {spd.name}\tcreated={info.get('created_at', '?')}\tas_of={report.get('as_of', '?')}"
               f"\tgroup views={views}")

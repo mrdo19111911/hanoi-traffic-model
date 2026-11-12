@@ -417,7 +417,7 @@ class UpdateTests(unittest.TestCase):
         R = self.R
         code = ("import sys; from pathlib import Path; from speedmatrix.update import lock\n"
                 "with lock(Path(sys.argv[1])):\n    print('held', flush=True)\n    sys.stdin.read()\n")
-        child = subprocess.Popen([sys.executable, "-c", code, str(R)], cwd=str(update._REPO), stdin=subprocess.PIPE,
+        child = subprocess.Popen([sys.executable, "-c", code, str(R)], cwd=str(update.REPO), stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, text=True)
         self.addCleanup(child.kill)
         self.assertEqual(child.stdout.readline().strip(), "held")
@@ -767,7 +767,7 @@ class UpdateTests(unittest.TestCase):
 
         def fake(cmd, log, cwd, env=None):
             calls.append([str(c) for c in cmd])
-            self.assertEqual((Path(cwd), env["PYTHONIOENCODING"], Path(log)), (update._REPO, "utf-8", R / "l.log"))
+            self.assertEqual((Path(cwd), env["PYTHONIOENCODING"], Path(log)), (update.REPO, "utf-8", R / "l.log"))
             module = cmd[2]
             if module == "speedmatrix.matrix_osrm":
                 write_json(rel / "osrm" / "build_matrix.json", {

@@ -22,12 +22,8 @@ from scipy.sparse import coo_matrix, csr_matrix
 from scipy.sparse.csgraph import breadth_first_order, connected_components, dijkstra, maximum_flow
 from scipy.spatial import cKDTree
 
-try:
-    from .geo import haversine_m
-    from .sysres import default_workers
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.geo import haversine_m
-    from speedmatrix.sysres import default_workers
+from .geo import haversine_m
+from .sysres import default_workers
 
 # Min-cut capacity per highway value: when two cuts cross as many roads, the one over bigger roads wins.
 CAPACITY = {"motorway": 6, "motorway_link": 6, "trunk": 6, "trunk_link": 6, "primary": 7, "primary_link": 7,

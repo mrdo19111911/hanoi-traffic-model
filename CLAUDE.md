@@ -74,7 +74,7 @@ Nationwide footprints + heights, not used by the backend. Full pipeline and rule
 
 ## Speed matrix (`speedmatrix/`)
 
-Nationwide speed layer, vehicle-group views and the gate partition for the VRP matrix (spec `docs/superpowers/specs/2026-10-21-speed-matrix-system-design.md`). Outputs live under the gitignored `runtime/matrix/` (the default `--root`). Modules import relatively first, then flat; `build.py` and `update.py` put the repo root on `sys.path`.
+Nationwide speed layer, vehicle-group views and the gate partition for the VRP matrix (spec `docs/superpowers/specs/2026-10-21-speed-matrix-system-design.md`). Outputs live under the gitignored `runtime/matrix/` (the default `--root`). Modules use plain relative imports and are run as `python -m speedmatrix.<module>` from the repo root; `speedmatrix/common.py` holds `REPO`, `DEFAULT_ROOT`, `import_osrm_manage()`, `read_json`/`write_json` (atomic), `sha256_file`, `open_sqlite_ro`. Only `update.py` also runs as a script (the scheduled task) and bootstraps itself through `runpy`.
 
 ```powershell
 .venv/Scripts/python.exe -m speedmatrix.build import-rules FILE...          # seed rules, vehicle groups, holidays -> state.sqlite

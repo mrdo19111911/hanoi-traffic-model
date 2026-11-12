@@ -17,7 +17,8 @@ import osmium
 from osmium.geom import GeoJSONFactory
 
 from model.osm_classes import DEFAULT_SPEEDS_KMH, POLICY_VERSION, classify_osm, parse_maxspeed
-from speedmatrix.geo import haversine_m
+from .common import sha256_file
+from .geo import haversine_m
 
 ROAD_CLASSES = ("caotoc", "quoclo", "chinh", "noido", "nho", "pha")
 HGV_VALUES = ("", "no", "yes", "designated", "destination", "delivery", "other")
@@ -206,10 +207,6 @@ class _SegmentHandler(osmium.SimpleHandler):
             self.counts[ROAD_CLASSES[road_class]] += 1
 
 
-def _sha256_file(path):
-    with Path(path).open("rb") as source:
-        return hashlib.file_digest(source, "sha256").hexdigest()
-
 
 def build_segments(pbf, bbox) -> SegmentTable:
     """Read the PBF once and return the segment table (ways touching ``bbox``, or all with None)."""
@@ -229,7 +226,7 @@ def build_segments(pbf, bbox) -> SegmentTable:
     arrays["length_m"] = haversine_m(arrays["a_lat"].astype(np.float64), arrays["a_lon"].astype(np.float64),
                                      arrays["b_lat"].astype(np.float64), arrays["b_lon"].astype(np.float64)
                                      ).astype(np.float32)
-    meta = {"pbf_sha256": _sha256_file(pbf), "bbox": bbox, "format": SEGMENTS_FORMAT,
+    meta = {"pbf_sha256": sha256_file(pbf), "bbox": bbox, "format": SEGMENTS_FORMAT,
             "policy_version": POLICY_VERSION, "counts": handler.counts, "unparsed": handler.unparsed}
     return SegmentTable(strings=list(handler.strings.items), meta=meta, **arrays)
 

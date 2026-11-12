@@ -15,13 +15,14 @@ from sm_osrm_fixture import (TOWN_BANNED, TOWN_COORDS, TOWN_OBSTACLES, TOWN_WAYS
 from speedmatrix.graph import GRAPH_FORMAT, GraphError, build_graph, load_graph, main, save_graph, segment_ds
 from speedmatrix.geo import osrm_length_m
 from speedmatrix.osrmfiles import OsrmFormatError, read_block
-from speedmatrix.segments import ROAD_CLASSES, _sha256_file, build_segments, save_segments
+from speedmatrix.common import sha256_file
+from speedmatrix.segments import ROAD_CLASSES, build_segments, save_segments
 
 
 def _table(root, name, ways):
     osm = root / f"{name}.osm"
     write_osm(osm, TOWN_COORDS, ways)
-    return build_segments(osm, None), _sha256_file(osm)
+    return build_segments(osm, None), sha256_file(osm)
 
 
 class GraphTests(unittest.TestCase):

@@ -24,6 +24,14 @@ of the exception's own (spec §13). The only network calls go to ``https://downl
 ``schedule [--day SUN] [--time 03:00]`` / ``unschedule`` register or remove the weekly Windows scheduled task
 ``HanoiTrafficMatrixUpdate`` (Decision 24). This replaces ``reports/gate_compose_spike/update_matrix.py``.
 """
+if __package__ in (None, ""):  # pragma: no cover - the scheduled task runs this file as a script
+    import runpy as _runpy
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    _runpy.run_module("speedmatrix.update", run_name="__main__", alter_sys=True)
+    raise SystemExit(0)
+
 import argparse
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -43,25 +51,13 @@ from typing import Protocol
 import urllib.error
 import urllib.request
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started as a script (the scheduled task)
-    sys.path.insert(0, str(_REPO))
-sys.path.insert(0, str(_REPO / "osrm"))
-try:
-    import manage  # noqa: E402
-finally:
-    sys.path.remove(str(_REPO / "osrm"))
+from .common import DEFAULT_ROOT, REPO, import_osrm_manage, open_sqlite_ro, read_json_or_none, write_json
+from .state import State, open_state
+from .sysres import available_memory_gb, free_disk_gb, run_measured
+from .verify_osrm import (ROUTED_MAX_TABLE, ROUTED_READY_S, ROUTED_THREADS, _answers, _check_port, _free_port,
+                          _terminate_if, dataset_base)
 
-try:
-    from .state import State, open_state
-    from .sysres import available_memory_gb, free_disk_gb, run_measured
-    from .verify_osrm import (ROUTED_MAX_TABLE, ROUTED_READY_S, ROUTED_THREADS, _answers, _check_port, _free_port,
-                              _terminate_if, dataset_base)
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.state import State, open_state
-    from speedmatrix.sysres import available_memory_gb, free_disk_gb, run_measured
-    from speedmatrix.verify_osrm import (ROUTED_MAX_TABLE, ROUTED_READY_S, ROUTED_THREADS, _answers, _check_port,
-                                         _free_port, _terminate_if, dataset_base)
+manage = import_osrm_manage()
 
 TASK_NAME = "HanoiTrafficMatrixUpdate"
 BUILD_PORT = 5058
@@ -75,7 +71,6 @@ GEOFABRIK_PBF = manage.MAP_URL
 GEOFABRIK_MD5 = GEOFABRIK_PBF + ".md5"
 GEOFABRIK_PREFIX = "https://download.geofabrik.de/"
 PBF_NAME = GEOFABRIK_PBF.rsplit("/", 1)[1]
-DEFAULT_ROOT = _REPO / "runtime" / "matrix"
 DOWNLOAD_TIMEOUT_S = 120
 DOWNLOAD_CHUNK = 1 << 20
 WITHHELD = "error text withheld (spec 13)"
@@ -117,20 +112,10 @@ def now_iso() -> str:
     return datetime.now(_TZ).isoformat(timespec="seconds")
 
 
-def _read_json(path: Path):
-    """The parsed file, or None when it does not exist."""
-    path = Path(path)
-    if not path.is_file():
-        return None
-    return json.loads(path.read_text(encoding="utf-8"))
 
-
-def _write_json(path: Path, doc) -> None:
-    """Write to a temp sibling and rename it into place."""
-    path = Path(path)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1, default=str), encoding="utf-8", newline="\n")
-    os.replace(tmp, path)
+def _write_json(path, doc) -> None:
+    """Release records may hold Paths and dates: stringify them (``default=str``)."""
+    write_json(path, doc, default=str)
 
 
 def _abs(root: Path, p) -> Path:
@@ -406,7 +391,7 @@ def _releases(root: Path) -> list:
 
 def _status(rel: Path):
     try:
-        return (_read_json(rel / "release.json") or {}).get("status")
+        return (read_json_or_none(rel / "release.json") or {}).get("status")
     except (OSError, ValueError):
         return None
 
@@ -434,7 +419,7 @@ def _references(root: Path, releases) -> set:
     """Resolved segments and speeds dirs referenced by ``releases`` and by ``current.json``."""
     docs = [_status_doc(p) for p in releases]
     try:
-        docs.append(_read_json(Path(root) / "current.json") or {})
+        docs.append(read_json_or_none(Path(root) / "current.json") or {})
     except (OSError, ValueError):
         pass
     refs = set()
@@ -447,7 +432,7 @@ def _references(root: Path, releases) -> set:
 
 def _status_doc(rel: Path) -> dict:
     try:
-        return _read_json(rel / "release.json") or {}
+        return read_json_or_none(rel / "release.json") or {}
     except (OSError, ValueError):
         return {}
 
@@ -563,7 +548,7 @@ class RealSteps:
         hook = self.on_child
         kw = {"on_start": lambda pid: hook(pid, name)} if hook is not None else {}
         try:
-            result = run_measured(cmd, self.log_path, _REPO, env=dict(os.environ, PYTHONIOENCODING="utf-8"), **kw)
+            result = run_measured(cmd, self.log_path, REPO, env=dict(os.environ, PYTHONIOENCODING="utf-8"), **kw)
         finally:
             if hook is not None:
                 hook(None)
@@ -653,7 +638,7 @@ class RealSteps:
 
 def code_version(runner=subprocess.run) -> str:
     """``git rev-parse HEAD`` plus ``+dirty`` when ``git status --porcelain -- speedmatrix`` is not empty."""
-    kw = dict(cwd=str(_REPO), capture_output=True, text=True, check=True)
+    kw = dict(cwd=str(REPO), capture_output=True, text=True, check=True)
     if os.name == "nt":
         kw["creationflags"] = subprocess.CREATE_NO_WINDOW
     try:
@@ -666,7 +651,7 @@ def code_version(runner=subprocess.run) -> str:
 
 def _extract_peak_gb(root: Path, current) -> float:
     if current:
-        doc = _read_json(_release_dir(root, current) / "osrm" / "build_matrix.json") or {}
+        doc = read_json_or_none(_release_dir(root, current) / "osrm" / "build_matrix.json") or {}
         peak = ((doc.get("steps") or {}).get("extract") or {}).get("peak_bytes")
         if peak:
             return peak / 1e9
@@ -675,7 +660,7 @@ def _extract_peak_gb(root: Path, current) -> float:
 
 def _live_server(root: Path):
     try:
-        doc = _read_json(Path(root) / "server.json")
+        doc = read_json_or_none(Path(root) / "server.json")
     except (OSError, ValueError):
         return None
     return doc if _is_live(doc) else None
@@ -734,7 +719,7 @@ class _Pipeline:
 
     def run(self, pbf, force, keep, min_free_gb, as_of, seed, memory, disk) -> str:
         root, steps, rel = self.root, self.steps, self.rel
-        current = _read_json(root / "current.json")
+        current = read_json_or_none(root / "current.json")
         if pbf is not None:
             pbf = Path(pbf)
             if not pbf.is_file():
@@ -931,7 +916,7 @@ def serve(root, port=SERVE_PORT) -> dict:
     """Start osrm-routed (detached) on the current release at 127.0.0.1:``port``; record it in ``server.json``."""
     port = _check_port(port)
     root = Path(root)
-    current = _read_json(root / "current.json")
+    current = read_json_or_none(root / "current.json")
     if not current:
         raise UpdateError("no current release; run `python -m speedmatrix.update run` first")
     running = _live_server(root)
@@ -971,7 +956,7 @@ def stop(root) -> dict | None:
     None (no server, or a stale record, which is removed)."""
     path = Path(root) / "server.json"
     try:
-        doc = _read_json(path)
+        doc = read_json_or_none(path)
     except (OSError, ValueError):
         doc = None
     if not _is_live(doc):
@@ -990,8 +975,7 @@ def status(root) -> dict:
     jobs = []
     path = root / "state.sqlite"
     if path.is_file():
-        db = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
-        db.row_factory = sqlite3.Row
+        db = open_sqlite_ro(path)
         try:
             jobs = State(db).jobs(limit=10)
         except sqlite3.OperationalError:
@@ -999,7 +983,7 @@ def status(root) -> dict:
         finally:
             db.close()
     held = _read_lock(root / "update.lock") if (root / "update.lock").exists() else None
-    return {"root": str(root), "current": _read_json(root / "current.json"), "server": _live_server(root),
+    return {"root": str(root), "current": read_json_or_none(root / "current.json"), "server": _live_server(root),
             "lock": held if _lock_live(held) else None,
             "releases": [{"id": p.name, "status": _status(p)} for p in _releases(root)], "jobs": jobs}
 
@@ -1015,7 +999,7 @@ def schedule(root, day="SUN", time="03:00", runner=subprocess.run) -> int:
     if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", str(time)):
         raise ValueError(f"time must be HH:MM, not {time!r}")
     pythonw = Path(sys.executable).with_name("pythonw.exe")
-    command = f'"{pythonw}" "{_REPO / "speedmatrix" / "update.py"}" run --root "{Path(root).resolve()}"'
+    command = f'"{pythonw}" "{REPO / "speedmatrix" / "update.py"}" run --root "{Path(root).resolve()}"'
     argv = ["schtasks", "/Create", "/TN", TASK_NAME, "/TR", command, "/SC", "WEEKLY", "/D", day, "/ST", time, "/F"]
     return runner(argv, check=False).returncode
 

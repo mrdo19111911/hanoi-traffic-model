@@ -16,20 +16,12 @@ from pathlib import Path
 
 import numpy as np
 
-try:
-    from .bans import ClosureSet, group_closures
-    from .rules import rule_set_sha
-    from .segments import ROAD_CLASSES
-    from .speeds import ReleaseMismatch
-    from .timeslots import DAYTYPES
-    from .vehicles import VehicleGroup, matches
-except ImportError:  # pragma: no cover - flat import
-    from bans import ClosureSet, group_closures
-    from rules import rule_set_sha
-    from segments import ROAD_CLASSES
-    from speeds import ReleaseMismatch
-    from timeslots import DAYTYPES
-    from vehicles import VehicleGroup, matches
+from .bans import ClosureSet, group_closures
+from .rules import rule_set_sha
+from .segments import ROAD_CLASSES
+from .speeds import ReleaseMismatch
+from .timeslots import DAYTYPES
+from .vehicles import VehicleGroup, matches
 
 GROUP_VIEW_FORMAT = 3            # 3: affected_idx of a non-base group is measured against the base view
 GROUP_RULE_KINDS = ("ban", "cap")

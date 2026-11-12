@@ -17,14 +17,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-try:
-    from .geo import haversine_m
-    from .graph import TurnGraph
-    from .segments import ROAD_CLASSES
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.geo import haversine_m
-    from speedmatrix.graph import TurnGraph
-    from speedmatrix.segments import ROAD_CLASSES
+from .geo import haversine_m
+from .graph import TurnGraph
+from .segments import ROAD_CLASSES
 
 if TYPE_CHECKING:  # pragma: no cover
     from .partition import NodeGraph, Partition

@@ -23,7 +23,8 @@ from speedmatrix import verify_osrm
 from speedmatrix.geo import osrm_length_m
 from speedmatrix.graph import build_graph, save_graph, segment_ds
 from speedmatrix.osrmfiles import read_block, read_datasources, read_packed
-from speedmatrix.segments import _sha256_file, build_segments, save_segments
+from speedmatrix.common import sha256_file
+from speedmatrix.segments import build_segments, save_segments
 from speedmatrix.speeds import FreeFlowSource, ReleaseMismatch, build_speed_layer, save_layer
 from speedmatrix.staticroute import StaticRouter
 from speedmatrix.sysres import StepResult
@@ -40,7 +41,7 @@ def make(root, name, coords, ways, obstacles={}, banned=set()):
     osm = root / f"{name}.osm"
     write_osm(osm, coords, ways)
     table = build_segments(osm, None)
-    base = write_dataset(root / name, coords, ways, obstacles, banned, pbf_sha256=_sha256_file(osm))
+    base = write_dataset(root / name, coords, ways, obstacles, banned, pbf_sha256=sha256_file(osm))
     return table, build_graph(base, base.parent / "build_matrix.json", table), base
 
 
@@ -445,7 +446,7 @@ class VerifyFlowTests(unittest.TestCase):
         osm = root / "map.osm"
         write_osm(osm, coords, ways)
         table = build_segments(osm, None)
-        base = write_dataset(self.release / "osrm" / "data", coords, ways, pbf_sha256=_sha256_file(osm))
+        base = write_dataset(self.release / "osrm" / "data", coords, ways, pbf_sha256=sha256_file(osm))
         self.g = build_graph(base, base.parent / "build_matrix.json", table)
         save_graph(self.g, self.release / "graph")
         save_segments(table, root / "segments")

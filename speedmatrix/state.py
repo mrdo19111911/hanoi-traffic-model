@@ -8,12 +8,8 @@ from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-try:
-    from .rules import Rule, rule_from_dict, rule_to_dict, validate_rule
-    from .vehicles import VehicleGroup
-except ImportError:  # pragma: no cover - flat import
-    from rules import Rule, rule_from_dict, rule_to_dict, validate_rule
-    from vehicles import VehicleGroup
+from .rules import Rule, rule_from_dict, rule_to_dict, validate_rule
+from .vehicles import VehicleGroup
 
 SCHEMA = 2
 _TZ = timezone(timedelta(hours=7))

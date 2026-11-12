@@ -16,24 +16,13 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import sys
 
 import numpy as np
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started as a script
-    sys.path.insert(0, str(_REPO))
-
-try:
-    from .geo import osrm_length_m
-    from .osrmfiles import OsrmFormatError, check_build_json, read_dataset
-    from .segments import SegmentTable, load_segments, pair_lookup
-    from .speeds import way_free_flow_kmh
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.geo import osrm_length_m
-    from speedmatrix.osrmfiles import OsrmFormatError, check_build_json, read_dataset
-    from speedmatrix.segments import SegmentTable, load_segments, pair_lookup
-    from speedmatrix.speeds import way_free_flow_kmh
+from .geo import osrm_length_m
+from .osrmfiles import OsrmFormatError, check_build_json, read_dataset
+from .segments import SegmentTable, load_segments, pair_lookup
+from .speeds import way_free_flow_kmh
 
 GRAPH_FORMAT = 2                 # 2: seg_len_m is OSRM v26's own segment length (cheap ruler), was haversine
 _CHUNK = 1 << 22

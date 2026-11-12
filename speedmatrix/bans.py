@@ -10,18 +10,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-try:
-    from .rules import BAN_LAYERS, Rule
-    from .scopes import ScopeResolver
-    from .segments import HGV_VALUES, SegmentTable, parse_tonnes
-    from .timeslots import DAYTYPES, SLOTS, ConditionalParseError, parse_conditional, when_mask
-    from .vehicles import VehicleGroup, matches
-except ImportError:  # pragma: no cover - flat import
-    from rules import BAN_LAYERS, Rule
-    from scopes import ScopeResolver
-    from segments import HGV_VALUES, SegmentTable, parse_tonnes
-    from timeslots import DAYTYPES, SLOTS, ConditionalParseError, parse_conditional, when_mask
-    from vehicles import VehicleGroup, matches
+from .rules import BAN_LAYERS, Rule
+from .scopes import ScopeResolver
+from .segments import HGV_VALUES, SegmentTable, parse_tonnes
+from .timeslots import DAYTYPES, SLOTS, ConditionalParseError, parse_conditional, when_mask
+from .vehicles import VehicleGroup, matches
 
 HGV_GROSS_T = 3.5                      # OSM "hgv" means vehicles above 3.5 t gross
 _SHAPE = (len(DAYTYPES), SLOTS)

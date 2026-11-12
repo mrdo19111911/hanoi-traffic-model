@@ -245,13 +245,14 @@ def make_graphs(root, coords, ways, rivers=None, obstacles={}):
     default)."""
     from speedmatrix.graph import build_graph
     from speedmatrix.partition import node_graph
-    from speedmatrix.segments import _sha256_file, build_segments
+    from speedmatrix.common import sha256_file
+    from speedmatrix.segments import build_segments
 
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     osm = root / "map.osm"
     write_osm(osm, coords, ways)
     table = build_segments(osm, None)
-    base = write_dataset(root, coords, ways, obstacles, pbf_sha256=_sha256_file(osm))
+    base = write_dataset(root, coords, ways, obstacles, pbf_sha256=sha256_file(osm))
     g = build_graph(base, root / "build_matrix.json", table)
     return table, g, node_graph(g, rivers if rivers is not None else {"type": "FeatureCollection", "features": []})

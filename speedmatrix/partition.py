@@ -14,7 +14,6 @@ indices to stable int64 cell codes.
 """
 import argparse
 from dataclasses import asdict, dataclass, replace
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -25,28 +24,18 @@ from scipy.sparse import coo_matrix, csr_matrix
 from scipy.sparse.csgraph import connected_components, dijkstra
 from scipy.spatial import cKDTree
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started as a script
-    sys.path.insert(0, str(_REPO))
-
-try:
-    from .geo import points_in_geometry
-    from .graph import TurnGraph, load_graph
-    from .mincut import (EXPRESSWAY, PER_WORKER_GB_L2, PER_WORKER_GB_L3, CellGraph, cell_hash, expressway_rule,
-                         merge_fragments, split_jobs, split_k)
-    from .segments import ROAD_CLASSES
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.geo import points_in_geometry
-    from speedmatrix.graph import TurnGraph, load_graph
-    from speedmatrix.mincut import (EXPRESSWAY, PER_WORKER_GB_L2, PER_WORKER_GB_L3, CellGraph, cell_hash,
-                                    expressway_rule, merge_fragments, split_jobs, split_k)
-    from speedmatrix.segments import ROAD_CLASSES
+from .common import REPO, sha256_file
+from .geo import points_in_geometry
+from .graph import TurnGraph, load_graph
+from .mincut import (EXPRESSWAY, PER_WORKER_GB_L2, PER_WORKER_GB_L3, CellGraph, cell_hash, expressway_rule,
+                     merge_fragments, split_jobs, split_k)
+from .segments import ROAD_CLASSES
 from model.clusters import _RiverIndex  # noqa: E402
 
 PARTITION_FORMAT = 1
 MAX_CELLS = 65535
-DEFAULT_POLYGONS = _REPO / "data" / "partition" / "regions_l1_v3.2.geojson"
-DEFAULT_RIVERS = _REPO / "osrm" / "data" / "main_rivers.geojson"
+DEFAULT_POLYGONS = REPO / "data" / "partition" / "regions_l1_v3.2.geojson"
+DEFAULT_RIVERS = REPO / "osrm" / "data" / "main_rivers.geojson"
 SEED_FILES = ("node_region_v3.2.npz", "node_region_h32all.npz", "labels_l3.npy")
 MIN_LENGTH_M = 1e-3   # propagation edge length floor, so a zero-length edge is still an edge
 _FERRY = ROAD_CLASSES.index("pha")
@@ -285,10 +274,6 @@ def _atomic(path: Path, write) -> None:
     os.replace(tmp, path)
 
 
-def _sha256_file(path) -> str:
-    with Path(path).open("rb") as f:
-        return hashlib.file_digest(f, "sha256").hexdigest()
-
 
 def import_seed(scratch: Path, out: Path) -> dict:
     """The v3.2 seed tables (``SEED_FILES`` in ``scratch``) as one ``ids``/``codes`` npz at ``out``.
@@ -318,7 +303,7 @@ def import_seed(scratch: Path, out: Path) -> dict:
         c = codes[:, level]
         info[f"l{level + 1}_codes"] = int(len(np.unique(c[c >= 0])))
         info[f"l{level + 1}_unlabelled"] = int((c < 0).sum())
-    info["sha256"] = {name: _sha256_file(scratch / name) for name in SEED_FILES}
+    info["sha256"] = {name: sha256_file(scratch / name) for name in SEED_FILES}
     return info
 
 
@@ -991,10 +976,7 @@ def _config(args) -> PartitionConfig:
 def _cmd_run(args) -> int:
     """Labels, gates and ``partition.json`` of a release; exits 0 once ``partition.json`` is written, whatever its
     checks say (Decision 27): the caller reads the checks."""
-    try:
-        from . import gates as gt
-    except ImportError:  # pragma: no cover - run as a script
-        from speedmatrix import gates as gt
+    from . import gates as gt
     release = Path(args.release)
     config = _config(args)
     g = load_graph(release / "graph", mmap=True)
@@ -1017,8 +999,8 @@ def _cmd_run(args) -> int:
                                             "gone": d["gone"], "checked": d["checked"], "examples": d["examples"]}
     p.info["checks"] = checks
     p.info["gate_stats"] = gt.gate_stats(g, gates)
-    p.info["polygons_sha256"] = _sha256_file(args.polygons)
-    p.info["rivers_sha256"] = _sha256_file(args.rivers)
+    p.info["polygons_sha256"] = sha256_file(args.polygons)
+    p.info["rivers_sha256"] = sha256_file(args.rivers)
     del g
     gt.save_gates(gates, release / "gates.npz")
     save_partition(p, release)

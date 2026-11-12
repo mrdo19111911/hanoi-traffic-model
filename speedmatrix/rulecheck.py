@@ -11,23 +11,13 @@ from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
-import sqlite3
 import sys
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started from another directory
-    sys.path.insert(0, str(_REPO))
-
-try:
-    from .rules import RuleError
-    from .scopes import ScopeResolver, ZoneError
-    from .segments import find_segments, load_admin, load_segments, load_water_lines
-    from .state import State
-except ImportError:  # pragma: no cover - flat import
-    from rules import RuleError
-    from scopes import ScopeResolver, ZoneError
-    from segments import find_segments, load_admin, load_segments, load_water_lines
-    from state import State
+from .common import DEFAULT_ROOT, open_sqlite_ro
+from .rules import RuleError
+from .scopes import ScopeResolver, ZoneError
+from .segments import find_segments, load_admin, load_segments, load_water_lines
+from .state import State
 
 TRUSTED = ("cao", "tb")
 CHANGED_FRACTION = 0.2      # "changed": the segment count moves by more than this share of the old one ...
@@ -138,8 +128,7 @@ def rules_in_force(root, as_of: date) -> list:
     path = Path(root) / "state.sqlite"
     if not path.is_file():
         raise FileNotFoundError(f"no state in {path}")
-    db = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
-    db.row_factory = sqlite3.Row
+    db = open_sqlite_ro(path)
     try:
         return State(db).rules(active_only=False, as_of=as_of)
     finally:
@@ -155,7 +144,7 @@ def _iso_date(text: str) -> date:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="python -m speedmatrix.rulecheck", description=__doc__.splitlines()[0])
-    parser.add_argument("--root", type=Path, default=_REPO / "runtime" / "matrix")
+    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--segments", required=True, metavar="DIR")
     parser.add_argument("--previous", default=None, metavar="DIR")
     parser.add_argument("--as-of", type=_iso_date, default=None, metavar="YYYY-MM-DD")

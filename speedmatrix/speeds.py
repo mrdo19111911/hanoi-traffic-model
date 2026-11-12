@@ -18,14 +18,9 @@ import numpy as np
 from model.osm_classes import free_flow_speed
 from model.spatial import MissingRoadData
 
-try:
-    from .rules import Rule, rule_set_sha
-    from .segments import EXTRA_HIGHWAYS, ROAD_CLASSES, SegmentTable
-    from .timeslots import DAYTYPES, SLOTS, when_mask
-except ImportError:  # pragma: no cover - flat import
-    from rules import Rule, rule_set_sha
-    from segments import EXTRA_HIGHWAYS, ROAD_CLASSES, SegmentTable
-    from timeslots import DAYTYPES, SLOTS, when_mask
+from .rules import Rule, rule_set_sha
+from .segments import EXTRA_HIGHWAYS, ROAD_CLASSES, SegmentTable
+from .timeslots import DAYTYPES, SLOTS, when_mask
 
 SPEED_CODE_VERSION = 1
 OSRM_DEFAULT_KMH = 10  # osrm/tools/profiles/car.lua default_speed; a test keeps them equal

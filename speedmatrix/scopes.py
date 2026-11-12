@@ -21,14 +21,9 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components, dijkstra
 from scipy.spatial import cKDTree
 
-try:
-    from .geo import haversine_m, points_in_geometry
-    from .rules import RuleError
-    from .segments import ROAD_CLASSES, find_segments, pair_lookup
-except ImportError:  # pragma: no cover - flat import
-    from geo import haversine_m, points_in_geometry
-    from rules import RuleError
-    from segments import ROAD_CLASSES, find_segments, pair_lookup
+from .geo import haversine_m, points_in_geometry
+from .rules import RuleError
+from .segments import ROAD_CLASSES, find_segments, pair_lookup
 
 M_PER_DEG = 111320.0
 PIECE_SLACK = 1.1           # a piece keeps nodes with d_from + d_to <= PIECE_SLACK * D + PIECE_EXTRA_M

@@ -6,14 +6,9 @@ from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
 
-try:
-    from .segments import ROAD_CLASSES
-    from .timeslots import when_mask
-    from .vehicles import ATTRS, KINDS, OPS, VehicleGroup, cond_pairs
-except ImportError:  # pragma: no cover - flat import
-    from segments import ROAD_CLASSES
-    from timeslots import when_mask
-    from vehicles import ATTRS, KINDS, OPS, VehicleGroup, cond_pairs
+from .segments import ROAD_CLASSES
+from .timeslots import when_mask
+from .vehicles import ATTRS, KINDS, OPS, VehicleGroup, cond_pairs
 
 RULE_KINDS = ("speed_set", "speed_pct", "cap", "ban")
 LAYERS = ("official", "company", "edit")

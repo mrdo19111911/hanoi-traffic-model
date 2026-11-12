@@ -43,29 +43,15 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started as a script
-    sys.path.insert(0, str(_REPO))
-sys.path.insert(0, str(_REPO / "osrm"))
-try:
-    import manage  # noqa: E402
-finally:
-    sys.path.remove(str(_REPO / "osrm"))
+from .common import import_osrm_manage, write_json
+from .geo import haversine_m
+from .graph import TurnGraph, load_graph, segment_ds
+from .osrmfiles import DURATION_BITS, read_block, read_datasources, read_packed
+from .speeds import ReleaseMismatch, load_layer
+from .staticroute import PER_WORKER_GB, parallel_table
+from .sysres import StepResult, cpu_workers, default_workers, free_disk_gb, run_measured
 
-try:
-    from .geo import haversine_m
-    from .graph import TurnGraph, load_graph, segment_ds
-    from .osrmfiles import DURATION_BITS, read_block, read_datasources, read_packed
-    from .speeds import ReleaseMismatch, load_layer
-    from .staticroute import PER_WORKER_GB, parallel_table
-    from .sysres import StepResult, cpu_workers, default_workers, free_disk_gb, run_measured
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.geo import haversine_m
-    from speedmatrix.graph import TurnGraph, load_graph, segment_ds
-    from speedmatrix.osrmfiles import DURATION_BITS, read_block, read_datasources, read_packed
-    from speedmatrix.speeds import ReleaseMismatch, load_layer
-    from speedmatrix.staticroute import PER_WORKER_GB, parallel_table
-    from speedmatrix.sysres import StepResult, cpu_workers, default_workers, free_disk_gb, run_measured
+manage = import_osrm_manage()
 
 PROTECTED_PORTS = (5000, 8000)
 SAMPLE_SLOT = ("weekday", 16)
@@ -366,7 +352,7 @@ class Routed:
                 raise RuntimeError(f"osrm-routed exited before its identity was recorded, see {self.log_path}")
             if self.run_file is not None:
                 self.run_file.parent.mkdir(parents=True, exist_ok=True)
-                _write_json(self.run_file, {"pid": self.proc.pid, "identity": self.identity, "port": self.port,
+                write_json(self.run_file, {"pid": self.proc.pid, "identity": self.identity, "port": self.port,
                                             "base": str(self.base.resolve())})
             deadline = time.monotonic() + self.ready_s
             while True:
@@ -681,11 +667,6 @@ def _cleanup(work: Path, quiet: bool) -> None:
         _warn(f"could not remove {work} ({type(e).__name__})")
 
 
-def _write_json(path: Path, doc) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
-    tmp.replace(path)
-
 
 def verify_release(release_dir, speeds_dir, tools, port, workers, points: int = SAMPLE_POINTS,
                    mask: np.ndarray | None = None) -> dict:
@@ -761,7 +742,7 @@ def verify_release(release_dir, speeds_dir, tools, port, workers, points: int = 
             "tolerance": {"abs_ds": SEGMENT_TOL[0], "rel": SEGMENT_TOL[1]},
             "speed_file_rows": rows, "speed_file_conflicts": conflicts},
     }
-    _write_json(out, checks)
+    write_json(out, checks)
     return checks
 
 

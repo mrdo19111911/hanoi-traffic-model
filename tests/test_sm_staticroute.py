@@ -12,7 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from sm_osrm_fixture import KMH, TOWN_BANNED, TOWN_COORDS, TOWN_OBSTACLES, TOWN_WAYS, write_dataset, write_osm
 from speedmatrix.graph import build_graph, save_graph, segment_ds
-from speedmatrix.segments import _sha256_file, build_segments
+from speedmatrix.common import sha256_file
+from speedmatrix.segments import build_segments
 from speedmatrix.staticroute import StaticRouter, ebn_weights, parallel_table
 
 ISLAND_COORDS = {**TOWN_COORDS, 201: (105.8100, 21.0100), 202: (105.8110, 21.0100)}
@@ -23,7 +24,7 @@ def make_graph(root, name, coords, ways, banned):
     osm = root / f"{name}.osm"
     write_osm(osm, coords, ways)
     table = build_segments(osm, None)
-    base = write_dataset(root / name, coords, ways, TOWN_OBSTACLES, banned, pbf_sha256=_sha256_file(osm))
+    base = write_dataset(root / name, coords, ways, TOWN_OBSTACLES, banned, pbf_sha256=sha256_file(osm))
     g = build_graph(base, base.parent / "build_matrix.json", table)
     kmh = np.array([KMH[h] for h in g.meta["highways"]], dtype=np.float64)[g.seg_highway]
     return g, segment_ds(g, kmh)

@@ -15,23 +15,12 @@ import json
 from pathlib import Path
 import re
 import shutil
-import sys
 
-_REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:  # pragma: no cover - when started as a script
-    sys.path.insert(0, str(_REPO))
-sys.path.insert(0, str(_REPO / "osrm"))
-try:
-    import manage  # noqa: E402
-finally:
-    sys.path.remove(str(_REPO / "osrm"))
+from .common import import_osrm_manage
+from .osrmfiles import OSRM_VERSION, check_build_json
+from .sysres import cpu_workers, run_measured
 
-try:
-    from .osrmfiles import OSRM_VERSION, check_build_json
-    from .sysres import cpu_workers, run_measured
-except ImportError:  # pragma: no cover - run as a script
-    from speedmatrix.osrmfiles import OSRM_VERSION, check_build_json
-    from speedmatrix.sysres import cpu_workers, run_measured
+manage = import_osrm_manage()
 
 PATCHES = [
     ("car.lua", "weight_name                     = 'routability',",
