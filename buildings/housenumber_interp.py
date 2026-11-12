@@ -8,7 +8,7 @@ Anchors (known numbers), each with its source:
   mouth   an alley named "Ngõ 85 <Phố X>" gives number 85 on its parent street where it starts, at every level
           ("Ngách 77/50" = 50 on Ngõ 77, "Hẻm 77/10/2" = 2 on Ngách 77/10); the mouth is the end of any of its ways
           within MOUTH_M of any way of the parent;
-  ocr     OCR reads (ocr_housenumber_link.py) are NOT used: 2 of 28 checkable reads were right (ocr_housenumber_eval.py);
+  ocr     OCR reads are NOT used: 2 of 28 checkable reads were right (the OCR scripts were removed 2026-11-12; see git history);
   truth   street_truth.csv rows carry no coordinates, so none can be placed.
 Numbers parse as "<n>[letter]" or "<a>/<n>[letter]" (= number n of alley a of addr:street); others are counted, unused.
 

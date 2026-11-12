@@ -182,18 +182,18 @@ class EstimatorTests(unittest.TestCase):
 
 
 class PackageImportTests(unittest.TestCase):
-    def test_backend_style_import_falls_back_to_legacy_samples(self):
+    def test_backend_style_import_raises_on_missing_samples(self):
         # A fresh interpreter keeps model/ off sys.path, as when the backend imports model.estimate_spatial.
+        # Missing samples must raise (no silent substitution), and the error class must keep its name.
         import subprocess
         code = ("import sys; from model.estimate_spatial import SpatialEstimator; "
-                "e = SpatialEstimator(root=sys.argv[1]); e._load_samples(); print(e._source, len(e._rows))")
+                "SpatialEstimator(root=sys.argv[1])._load_samples()")
         with tempfile.TemporaryDirectory() as empty_root:
             completed = subprocess.run([sys.executable, "-c", code, empty_root], cwd=Path(__file__).resolve().parents[1],
                                        capture_output=True, text=True, timeout=120)
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        source, count = completed.stdout.split()
-        self.assertEqual(source, "legacy_exploratory")
-        self.assertGreater(int(count), 0)
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("MissingRoadData", completed.stderr)
+        self.assertIn("Missing spatial_samples.jsonl", completed.stderr)
 
 
 if __name__ == "__main__":

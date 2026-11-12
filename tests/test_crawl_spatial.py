@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from download import crawl_spatial
 from download.crawl_spatial import crawl, extract_snapshot, rebuild_samples, select_trace_indices
 
 
@@ -103,3 +104,20 @@ class CrawlSpatialTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MatchBaseUrlTests(unittest.TestCase):
+    def test_match_targets_osrm_base_url(self):
+        import io
+        import os
+        from unittest import mock
+        seen = []
+
+        def fake_urlopen(url, timeout=None):
+            seen.append(url)
+            return io.BytesIO(b'{"code": "Ok", "matchings": []}')
+
+        with mock.patch.dict(os.environ, {"OSRM_BASE_URL": "http://10.0.0.5:5555"}),              mock.patch.object(crawl_spatial, "urlopen", fake_urlopen):
+            self.assertEqual(crawl_spatial.match_osrm([(21.0, 105.8), (21.001, 105.801)])["code"], "Ok")
+        self.assertTrue(seen[0].startswith("http://10.0.0.5:5555/match/v1/driving/"), seen[0])
+

@@ -129,24 +129,7 @@ class SpatialEstimator:
             self._sample_stamp = stamp
             self._base_warnings = []
             return
-        if self._sample_stamp == "legacy":
-            return
-        try:
-            try:
-                from .compare_spatial import legacy_samples
-            except ImportError:
-                from compare_spatial import legacy_samples
-            rows, _ = legacy_samples()
-        except (OSError, ValueError, ImportError) as exc:
-            raise MissingRoadData(f"Missing {self.sample_path.name}; crawl spatial speed samples first") from exc
-        # Old positions were reconstructed from route proportions, not observed.
-        for row in rows:
-            row["lat"] = 21.05 + row["y"] / 111320
-            row["lon"] = 105.85 + row["x"] / (111320 * math.cos(math.radians(21.05)))
-            row["day"] = 1
-        self._set_samples(rows, "legacy_exploratory")
-        self._sample_stamp = "legacy"
-        self._base_warnings = ["Exploratory legacy samples: approximate route-proportional locations and name-based classes; accuracy is unverified."]
+        raise MissingRoadData(f"Missing {self.sample_path.name}; crawl spatial speed samples first")
 
     def _osrm_route(self, lat1, lon1, lat2, lon2):
         base = os.environ.get("OSRM_BASE_URL", "http://127.0.0.1:5000").rstrip("/")

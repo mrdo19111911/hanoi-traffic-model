@@ -120,9 +120,13 @@ def read_api_key():
     return None
 
 
+def osrm_base():
+    return os.environ.get("OSRM_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+
+
 def probe_osrm():
     try:
-        with urlopen("http://127.0.0.1:5000/nearest/v1/driving/105.85,21.03?number=1", timeout=1.5) as response:
+        with urlopen(osrm_base() + "/nearest/v1/driving/105.85,21.03?number=1", timeout=1.5) as response:
             return json.load(response).get("code") == "Ok"
     except Exception:
         return False
@@ -145,7 +149,7 @@ NO_ROUTE = "Không tìm được tuyến giữa hai điểm."
 
 def osrm_big_route(lat1, lon1, lat2, lon2):
     """OSRM /route with per-node annotations; NoRoute answers (HTTP 400) are returned, not raised."""
-    base = os.environ.get("OSRM_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+    base = osrm_base()
     url = (f"{base}/route/v1/driving/{lon1},{lat1};{lon2},{lat2}"
            "?overview=full&geometries=geojson&annotations=nodes,distance,duration")
     try:

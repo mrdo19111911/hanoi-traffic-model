@@ -28,7 +28,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from download.download_day import ROUTES
+from download.routes import ROUTES
 
 CLASSES = {"caotoc", "quoclo", "chinh", "noido", "nho"}
 REQUEST_OPTIONS = {"travelMode": "car", "traffic": "false", "computeTravelTimeFor": "all",
@@ -145,7 +145,8 @@ def match_osrm(points):
                        "gaps": "ignore", "tidy": "false", "steps": "false",
                        "radiuses": ";".join("20" for _ in points)})
     try:
-        with urlopen(f"http://127.0.0.1:5000/match/v1/driving/{coordinates}?{query}", timeout=45) as response:
+        base = os.environ.get("OSRM_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+        with urlopen(f"{base}/match/v1/driving/{coordinates}?{query}", timeout=45) as response:
             return json.load(response)
     except Exception:
         raise CrawlError("Local OSRM map matching unavailable") from None
@@ -338,19 +339,6 @@ def rebuild_samples(root=None, match_provider=None, class_lookup=None):
     return summary
 
 
-def _all_routes(root):
-    routes = list(ROUTES)
-    path = root / "data/geometries_full.json"
-    if path.is_file():
-        geometry = json.loads(path.read_text(encoding="utf-8"))
-        points = geometry.get("EXP_hn_hp", {}).get("poly", [])
-        if len(points) > 1:
-            for index, (start, end) in enumerate([(.20, .26), (.45, .51), (.70, .76)], 1):
-                origin, destination = point_at_fraction(points, start), point_at_fraction(points, end)
-                routes.append((f"EXP_probe_{index}", ",".join(map(str, origin)), ",".join(map(str, destination))))
-    return routes
-
-
 def _same_snapshot(snapshot, origin, destination, request):
     try:
         return (snapshot["request"] == request and bool(snapshot["response"]["routes"])
@@ -375,7 +363,7 @@ def crawl(root, day_date, slots, max_calls, *, fetcher=None, match_provider=None
     raw = root / "data/api_raw"
     raw.mkdir(parents=True, exist_ok=True)
     calls, cached, failures, key = 0, 0, Counter(), None
-    for route_id, start, end in (routes if routes is not None else _all_routes(root)):
+    for route_id, start, end in (routes if routes is not None else ROUTES):
         origin, destination = [float(x) for x in start.split(",")], [float(x) for x in end.split(",")]
         prefix = route_id.split("_", 1)[0] if re.match(r"^R\d{2}_", route_id) else route_id
         for slot in slots:

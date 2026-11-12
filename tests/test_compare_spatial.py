@@ -58,31 +58,22 @@ class SpatialSamplesTests(unittest.TestCase):
 
 
 class SourceSelectionTests(unittest.TestCase):
-    def legacy(self):
-        return [{"legacy": True}], {"unknown_road_class": 2}
-
-    def test_auto_prefers_spatial_samples_when_present(self):
+    def test_reads_spatial_samples_when_present(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "s.jsonl"
             write_jsonl(path, [row("R01")])
-            samples, _, source = cs.load_samples("auto", path, legacy=self.legacy)
+            samples, _, source = cs.load_samples(path)
         self.assertEqual(source, "spatial_samples")
         self.assertEqual(samples[0]["route"], "R01")
 
-    def test_auto_falls_back_to_legacy_when_missing_or_empty(self):
+    def test_missing_or_empty_file_raises_instead_of_substituting(self):
         with tempfile.TemporaryDirectory() as temp:
             missing = Path(temp) / "none.jsonl"
             empty = Path(temp) / "empty.jsonl"
             empty.write_text("", encoding="utf-8")
             for path in [missing, empty]:
-                samples, excluded, source = cs.load_samples("auto", path, legacy=self.legacy)
-                self.assertEqual(source, "legacy")
-                self.assertEqual(samples, [{"legacy": True}])
-
-    def test_spatial_source_requires_samples(self):
-        with tempfile.TemporaryDirectory() as temp:
-            with self.assertRaises(ValueError):
-                cs.load_samples("spatial", Path(temp) / "none.jsonl", legacy=self.legacy)
+                with self.assertRaises(ValueError):
+                    cs.load_samples(path)
 
 
 class HoldoutTests(unittest.TestCase):
@@ -142,11 +133,6 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(report["limitations"])
         self.assertTrue(any("TomTom" in item for item in report["limitations"]))
 
-    def test_legacy_report_keeps_street_holdout(self):
-        report = cs.build_report([], {}, "legacy", "street", Path("x"))
-        self.assertEqual(report["source"], "legacy")
-        self.assertNotIn("pbf_sha256", report)
-        self.assertTrue(any("Legacy" in item for item in report["limitations"]))
 
 
 if __name__ == "__main__":
