@@ -49,6 +49,7 @@ from shapely.strtree import STRtree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clip_to_roads import HALF, SKIP, ROUND_M, KEEP_SHARE, MIN_M2, GAP_M, UTM
+from common import UTM_EPSG, metres_per_deg_np, spatial_connection
 
 CELL = 0.25
 MAX_SHIFT_M = 3.0
@@ -143,7 +144,7 @@ def to_e6(geoms):
     """UTM 48N metres -> lon/lat in units of 1e-6 degree, not snapped."""
     global _TR
     if _TR is None:
-        _TR = Transformer.from_crs(32648, 4326, always_xy=True)
+        _TR = Transformer.from_crs(UTM_EPSG, 4326, always_xy=True)
     return shapely.transform(geoms, lambda c: np.column_stack(_TR.transform(c[:, 0], c[:, 1])) * 1e6)
 
 
@@ -154,7 +155,7 @@ def to_grid(geoms):
 
 def metres_per_unit(lat):
     """Metres per grid unit east and north at a latitude."""
-    return 111320 * np.cos(np.radians(lat)) * 1e-6, 110574 * 1e-6
+    return tuple(k * 1e-6 for k in metres_per_deg_np(lat))
 
 
 def prepare(con, out, work, bbox):
@@ -559,8 +560,7 @@ def main():
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
     work = p('_fit_work')
     shutil.rmtree(work, ignore_errors=True); os.makedirs(work + '/a')
-    con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
-    con.execute(f"SET temp_directory = '{p('_tmp')}'")
+    con = spatial_connection(); con.execute(f"SET temp_directory = '{p('_tmp')}'")
     cells = prepare(con, a.out, work, a.bbox)
     print('cells', len(cells), f'| {time.time() - t0:.0f}s', flush=True)
 

@@ -27,7 +27,7 @@ import numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 PART_TAGS = ('building:part', 'height', 'min_height', 'building:levels', 'building:min_level', 'roof:height', 'name')
-LEVEL_M = 3.3
+from common import FLOOR_BASE_M, LEVEL_M, M_PER_DEG_LAT, PARQUET_KW, metres_per_deg_np, spatial_connection
 MAX_H = 900.0                      # metres; taller values are tagging errors (the tallest building in Vietnam is 461 m)
 MAX_ROOF_H = 100.0
 MIN_OVERLAP = 0.5                  # share of the part's area that must lie on the footprint (or its representative point inside)
@@ -66,14 +66,14 @@ def part_height(height, levels, roof_height):
                 h = None
     if h is None:
         return None, None
-    fl = int(np.floor(lv + 0.5)) if lv else max(1, 1 + int(np.floor((h - 3.9) / LEVEL_M + 0.5)))
+    fl = int(np.floor(lv + 0.5)) if lv else max(1, 1 + int(np.floor((h - FLOOR_BASE_M) / LEVEL_M + 0.5)))
     return h, min(max(fl, 1), 255)
 
 
 # ---------------------------------------------------------------------------------------------------- extract
 
 def extract(pbf, out):
-    import duckdb, osmium
+    import osmium
 
     class Handler(osmium.SimpleHandler):
         def __init__(self, f):
@@ -99,7 +99,7 @@ def extract(pbf, out):
         h = Handler(f)
         h.apply_file(pbf, locations=True, idx='flex_mem')      # one pass; osmium assembles the multipolygons
     print('building:part areas', h.n, f'{time.time() - t0:.0f}s', flush=True)
-    con = duckdb.connect(); con.execute('INSTALL spatial; LOAD spatial;')
+    con = spatial_connection(install=True, progress_bar=True)
     cols = ', '.join(f"{k.replace(':', '_')}: 'VARCHAR'" for k in ('osm_id', *PART_TAGS)) + ", g: 'VARCHAR'"
     src, dst = tmp.replace('\\', '/'), out.replace('\\', '/')
     con.execute(f"""COPY (SELECT * EXCLUDE (g), ST_GeomFromHEXWKB(g) AS geometry FROM read_json('{src}', format='newline_delimited',
@@ -138,7 +138,6 @@ def subset(p, s):
 def footprint_bounds(tbl):
     """(x0, y0, x1, y1) in degrees of every decoded footprint, vectorised (rings: cumulative steps; rects: centre
     plus half diagonal, a slight overestimate)."""
-    from compact_layer import metres_per_deg
     lon, lat = tbl['lon_e6'].to_numpy().astype(np.int64), tbl['lat_e6'].to_numpy().astype(np.int64)
     x0, x1, y0, y1 = lon.copy(), lon.copy(), lat.copy(), lat.copy()
     ring = tbl['ring'].combine_chunks()
@@ -161,8 +160,8 @@ def footprint_bounds(tbl):
     rr = np.flatnonzero(~has)
     if len(rr):
         half = np.hypot(tbl['length_dm'].to_numpy()[rr], tbl['width_dm'].to_numpy()[rr]) / 20 * 1.01 + 0.5   # metres
-        dx = np.ceil(half / (111320 * np.cos(np.radians(lat[rr] / 1e6))) * 1e6)     # metres_per_deg, per row
-        dy = np.ceil(half / metres_per_deg(0)[1] * 1e6)
+        dx = np.ceil(half / metres_per_deg_np(lat[rr] / 1e6)[0] * 1e6)     # metres per degree, per row
+        dy = np.ceil(half / M_PER_DEG_LAT * 1e6)
         x0[rr] -= dx.astype(np.int64); x1[rr] += dx.astype(np.int64); y0[rr] -= dy.astype(np.int64); y1[rr] += dy.astype(np.int64)
     return x0 / 1e6, y0 / 1e6, x1 / 1e6, y1 / 1e6
 
@@ -255,7 +254,7 @@ def _apply_file(args):
     ids = t2['id'].to_numpy()[rows]
     lon, lat = t2['lon_e6'].to_numpy()[rows], t2['lat_e6'].to_numpy()[rows]
     tmp = path + '.tmp'
-    pq.write_table(t2, tmp, compression='zstd', compression_level=19, row_group_size=500_000)
+    pq.write_table(t2, tmp, **PARQUET_KW)
     os.replace(tmp, path)
     out = [{'file': os.path.basename(path), 'id': int(i), 'lon': float(x) / 1e6, 'lat': float(y) / 1e6, 'old_dm': int(o), 'new_dm': int(d),
             'floors': int(f), 'part': p, 'name': n} for i, x, y, o, d, f, p, n in

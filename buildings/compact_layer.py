@@ -21,7 +21,8 @@ Output: data/buildings/vn_buildings_compact.parquet, zstd level 19.
     .venv/Scripts/python.exe buildings/compact_layer.py [--out data/buildings] [--batch 1000000]
 """
 import argparse, math, os, time
-import duckdb, numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
+import numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
+from common import ROW_GROUP, ZSTD_LEVEL, metres_per_deg, spatial_connection
 
 RECT_FILL = 0.95
 RECT_SAFE_M = 0.15                 # covers centre/size/angle rounding of the rectangle
@@ -32,10 +33,6 @@ SCHEMA = pa.schema([
     ('length_dm', pa.uint16()), ('width_dm', pa.uint16()), ('angle_cdeg', pa.uint16()), ('ring', pa.binary()),
     ('height_dm', pa.uint16()), ('height_src', pa.dictionary(pa.int8(), pa.string())), ('floors', pa.uint8()),
 ])
-
-
-def metres_per_deg(lat):
-    return 111320 * math.cos(math.radians(lat)), 110574
 
 
 def keyhole(g):
@@ -158,14 +155,14 @@ def main():
     from part_heights import apply_in_build        # imported here: part_heights imports this module
     t0 = time.time()
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
-    con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
+    con = spatial_connection()
     cols = {c[0] for c in con.execute(f"DESCRIBE SELECT * FROM '{p(a.src)}'").fetchall()}
     # Distance to the nearest thing a rectangle must not reach; files from clip_to_roads.py have no nb_gap_m.
     gap = ("CASE WHEN m.road_gap_m IS NULL AND m.nb_gap_m IS NULL THEN NULL "
            "ELSE least(coalesce(m.road_gap_m, 1e9), coalesce(m.nb_gap_m, 1e9)) END") if 'nb_gap_m' in cols else 'm.road_gap_m'
     q = con.execute(f"""SELECT m.id, m.src, ST_AsWKB(m.geometry) wkb, b.height_dm, b.height_src, b.floors, {gap} gap
                         FROM '{p(a.src)}' m JOIN '{p(a.attrs)}' b USING (id) ORDER BY m.id""")
-    writer = pq.ParquetWriter(p(a.dst), SCHEMA, compression='zstd', compression_level=19)
+    writer = pq.ParquetWriter(p(a.dst), SCHEMA, compression='zstd', compression_level=ZSTD_LEVEL)
     n = n_rect = 0
     check = []
     while True:
@@ -175,7 +172,7 @@ def main():
         ids, src, wkb, hdm, hsrc, fl, gap = zip(*rb)
         tbl, is_rect, geoms = encode_rows(ids, src, wkb, hdm, hsrc, fl, gap)
         tbl, _ = apply_in_build(tbl, p('osm_parts.parquet'))     # heights of OSM building:part (part_heights.py)
-        writer.write_table(tbl, row_group_size=500_000)
+        writer.write_table(tbl, row_group_size=ROW_GROUP)
         # Round-trip check on a sample: decoded footprint vs original (IoU).
         for i in range(0, len(geoms), max(1, len(geoms) // 200)):
             row = {k: tbl.column(k)[i].as_py() for k in ('lon_e6', 'lat_e6', 'length_dm', 'width_dm', 'angle_cdeg', 'ring')}

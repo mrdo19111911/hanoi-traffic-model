@@ -22,6 +22,7 @@ import numpy as np, osmium, pyarrow as pa, pyarrow.parquet as pq, shapely
 from shapely.strtree import STRtree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from common import PARQUET_KW
 from compact_layer import SCHEMA
 
 COMMUNE_PREFIX = ('Xã ', 'Phường ', 'Đặc khu ')
@@ -207,7 +208,7 @@ def main():
     for s, e in zip(starts, ends):
         g = groups[k[s]]
         f = os.path.join(dst, g['file'])
-        pq.write_table(t.slice(s, e - s).cast(SCHEMA), f, compression='zstd', compression_level=19, row_group_size=500_000)
+        pq.write_table(t.slice(s, e - s).cast(SCHEMA), f, **PARQUET_KW)
         index.append({'file': g['file'], 'province': g['province'], 'province_iso': g['province_iso'],
                       'buildings': int(e - s), 'bytes': os.path.getsize(f),
                       'bbox': [float(lon[s:e].min() / 1e6), float(lat[s:e].min() / 1e6), float(lon[s:e].max() / 1e6), float(lat[s:e].max() / 1e6)],

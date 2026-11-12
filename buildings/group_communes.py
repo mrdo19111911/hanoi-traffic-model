@@ -22,10 +22,11 @@ Output (committed, it is the table of contents of the published data):
     .venv/Scripts/python.exe buildings/group_communes.py [--footprints data/buildings/vn_buildings_clean.parquet]
 """
 import argparse, json, os, sys, time
-import duckdb, numpy as np, shapely
+import numpy as np, shapely
 from shapely.strtree import STRtree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from common import spatial_connection
 from split_by_area import assign_communes, load_admin
 
 SIZE = {'ward': 3, 'commune': 10}               # units per file
@@ -38,7 +39,7 @@ ISLAND_KM = 60                                    # an isolated commune joins th
 
 
 def centroids(path):
-    con = duckdb.connect(); con.execute('LOAD spatial; SET enable_progress_bar = false;')
+    con = spatial_connection()
     q = con.execute(f"SELECT ST_X(c) x, ST_Y(c) y FROM (SELECT ST_Centroid(geometry) c FROM '{path}')").fetchnumpy()
     return q['x'], q['y']
 

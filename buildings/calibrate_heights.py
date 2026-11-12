@@ -65,9 +65,8 @@ import numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from compact_layer import SCHEMA, decode, metres_per_deg
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BY_AREA = os.path.join(REPO, 'buildings', 'by_area')
-WORK = os.path.join(REPO, 'data', 'buildings', '_calib')
+from common import BY_AREA, CALIB_DIR as WORK, FLOOR_BASE_M, LEVEL_M, M_PER_DEG_LAT, M_PER_DEG_LON, PARQUET_KW, RAW_DIR, REPO
+from common import floors_of, load_index, metres_per_deg_np
 TRUTH_SRC = ('osm', 'osm_part')          # heights from OSM tags: ground truth, never changed
 CELL_M = 250.0                           # density cell
 LAT0 = 8.0                               # density grid origin (south of Vietnam)
@@ -81,8 +80,8 @@ def ring_geoms(tbl):
     slits have zero width, so area, centroid and the oriented envelope are already right."""
     n = tbl.num_rows
     lat = tbl['lat_e6'].to_numpy().astype(np.float64) / 1e6
-    kx = 111320 * np.cos(np.radians(lat)) / 1e6
-    ky = np.full(n, 110574 / 1e6)
+    kx = metres_per_deg_np(lat)[0] / 1e6
+    ky = np.full(n, M_PER_DEG_LAT / 1e6)
     ring = tbl['ring'].combine_chunks() if isinstance(tbl['ring'], pa.ChunkedArray) else tbl['ring']
     valid = ring.is_valid().to_numpy(zero_copy_only=False)
     geoms = np.empty(n, object)
@@ -158,10 +157,10 @@ def features(tbl):
 
 def cell_keys(lon, lat):
     """Density cell of each point: rows of CELL_M in latitude, columns of CELL_M at the row's centre latitude."""
-    ky = 110574.0
+    ky = float(M_PER_DEG_LAT)
     r = np.floor((lat - LAT0) * ky / CELL_M).astype(np.int64)
     latc = LAT0 + (r + 0.5) * CELL_M / ky
-    c = np.floor((lon - 100.0) * 111320.0 * np.cos(np.radians(latc)) / CELL_M).astype(np.int64)
+    c = np.floor((lon - 100.0) * M_PER_DEG_LON * np.cos(np.radians(latc)) / CELL_M).astype(np.int64)
     return r * 1_000_000 + c
 
 
@@ -296,7 +295,6 @@ def cmd_truth(a):
 
 # ---------------------------------------------------------------------------------------------------- model
 
-LEVEL_M = 3.3
 BLOCK_M = 2000.0                         # spatial blocks for the hold-out and the cross-validation
 HOLDOUT = 0.20                           # share of the calibration rows held out (whole blocks)
 INNER_FOLDS = 5
@@ -389,8 +387,8 @@ def wmedian(v, w):
 
 
 def block_keys(lon, lat, size=BLOCK_M):
-    r = np.floor((lat - LAT0) * 110574.0 / size).astype(np.int64)
-    c = np.floor((lon - 100.0) * 111320.0 * np.cos(np.radians(lat)) / size).astype(np.int64)
+    r = np.floor((lat - LAT0) * M_PER_DEG_LAT / size).astype(np.int64)
+    c = np.floor((lon - 100.0) * M_PER_DEG_LON * np.cos(np.radians(lat)) / size).astype(np.int64)
     return r * 1_000_000 + c
 
 
@@ -480,12 +478,6 @@ def est_pred(F, idx, egs, nbr):
     return np.clip(np.exp(np.where(has, c + d * lnb, med)), *EST_CLAMP)
 
 
-def floors_of(h):
-    """Floors as heights_25d.attrs_query: 1 + round((h - 3.9) / 3.3) (half away from zero), at least 1."""
-    x = (np.asarray(h, float) - 3.9) / LEVEL_M
-    return np.clip(1 + np.sign(x) * np.floor(np.abs(x) + 0.5), 1, 255).astype(np.uint8)
-
-
 def dm_of(h):
     """Metres -> decimetres as attrs_query (round half up for positive values)."""
     return np.clip(np.floor(np.asarray(h, float) * 10 + 0.5), 0, 65530).astype(np.uint16)
@@ -537,7 +529,7 @@ def truth_frame():
     T['block'] = block_keys(T['lon'], T['lat'])
     T['xyz'] = xyz(T['lon'], T['lat'])
     r = T['real']
-    der = np.maximum(1, 1 + np.floor((r - 3.9) / LEVEL_M + 0.5))
+    der = np.maximum(1, 1 + np.floor((r - FLOOR_BASE_M) / LEVEL_M + 0.5))
     T['junk'] = (r < 2) | (r > 500) | (np.abs(T['floors'] - der) > np.maximum(2, 0.5 * der))
     uni = np.zeros(len(r), bool)
     o = T['src'] == 'osm'
@@ -741,7 +733,6 @@ def cmd_fit(a):
 # ---------------------------------------------------------------------------------------------------- tall stage
 
 RAW_COMMIT = '703e019'                   # last commit whose by_area files hold the raw (uncalibrated) 2.5D values
-RAW_DIR = os.path.join(WORK, 'raw_by_area')
 TALL_ANCHOR_H25, TALL_ANCHOR_REAL = 30.0, 60.0   # an anchor has a 2.5D value >= this or a real height >= this
 TALL_WINDOW = 0.25                       # anchors count when |h25_anchor - h25| <= this x h25
 TALL_ALPHA_CLAMP = (0.8, 4.0)
@@ -767,7 +758,7 @@ def tiers_of(radii):
 
 def province_map(index_path=None):
     """File name -> province ISO code (VN-xx) from by_area/index.json."""
-    idx = json.load(open(index_path or os.path.join(BY_AREA, 'index.json'), encoding='utf-8'))
+    idx = load_index(index_path)
     return {e['file']: e['province_iso'] for e in idx['files']}
 
 
@@ -1311,7 +1302,7 @@ def _apply_file(args):
         if c not in ('height_dm', 'height_src', 'floors') and not t[c].equals(t2[c]):
             raise RuntimeError(f'{path}: column {c} changed')
     tmp = out_path + '.tmp'
-    pq.write_table(t2, tmp, compression='zstd', compression_level=19, row_group_size=500_000)
+    pq.write_table(t2, tmp, **PARQUET_KW)
     for attempt in range(10):                        # another process (indexer, antivirus) may hold the file briefly
         try:
             os.replace(tmp, out_path)

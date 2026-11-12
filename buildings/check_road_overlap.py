@@ -11,19 +11,20 @@ without touching, with the area of gaps under 1 m wide.
         [--clean vn_buildings_clean.parquet] [--compact vn_buildings_compact.parquet]
 """
 import argparse, os, sys
-import duckdb, numpy as np, pyarrow.parquet as pq, shapely
+import numpy as np, pyarrow.parquet as pq, shapely
 from pyproj import Transformer
 from shapely.strtree import STRtree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clip_to_roads import HALF, SKIP
+from common import UTM_EPSG, UTM_SQL, spatial_connection
 from compact_layer import decode
 from fit_footprints import GEOSError, overlay
 
 SNAP_M = 1e-3                      # UTM metres: grid of the last retry of an overlay GEOS refuses
 
 
-_T = Transformer.from_crs(4326, 32648, always_xy=True)
+_T = Transformer.from_crs(4326, UTM_EPSG, always_xy=True)
 
 
 def utm(geoms):
@@ -35,7 +36,7 @@ def utm(geoms):
 def carriageways(con, roads_parquet, bbox):
     """Carriageway polygons (UTM, half-width HALF, no rounding margin) of roads meeting a lon/lat box, and their tree."""
     env = 'ST_MakeEnvelope({}, {}, {}, {})'.format(*bbox)
-    roads = con.execute(f"""SELECT ST_AsWKB(ST_Buffer(ST_Transform(geometry, 'EPSG:4326', 'EPSG:32648', always_xy := true), {HALF}))
+    roads = con.execute(f"""SELECT ST_AsWKB(ST_Buffer(ST_Transform(geometry, {UTM_SQL}), {HALF}))
         FROM '{roads_parquet}' WHERE {HALF} IS NOT NULL AND {SKIP} AND ST_Intersects(geometry, {env})""").fetchall()
     R = [shapely.make_valid(shapely.from_wkb(bytes(w))) for (w,) in roads]
     return R, STRtree(R)
@@ -84,7 +85,7 @@ def main():
     W, S, E, N = a.bbox
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
     env = f'ST_MakeEnvelope({W}, {S}, {E}, {N})'
-    con = duckdb.connect(); con.execute('LOAD spatial')
+    con = spatial_connection(progress_bar=True)
     R, tree = carriageways(con, p('osm_roads.parquet'), a.bbox)
     overlap = lambda geoms: on_road_m2(geoms, R, tree)
 

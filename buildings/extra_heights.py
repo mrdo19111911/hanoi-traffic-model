@@ -18,10 +18,9 @@ import numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from common import LEVEL_M, RAW_DIR, REPO, load_index
 WD_DIR = os.path.join(REPO, 'data', 'buildings', '_wikidata')
 EXTRA = os.path.join(REPO, 'data', 'buildings', '_extra')
-RAW_DIR = os.path.join(REPO, 'data', 'buildings', '_calib', 'raw_by_area')
 OUT_JSON = os.path.join(REPO, 'buildings', 'height_sources.json')
 PBF = os.path.join(REPO, 'osrm', 'data', 'vietnam-latest.osm.pbf')
 UA = 'hanoi-traffic-model/1.0 (https://github.com/mrdo19111911/hanoi-traffic-model; building heights; contact via GitHub issues)'
@@ -308,7 +307,7 @@ def cmd_scan(a):
     t0 = time.time()
     os.makedirs(EXTRA, exist_ok=True)
     items = wikidata_items()
-    idx = json.load(open(os.path.join(a.raw_dir, 'index.json'), encoding='utf-8'))
+    idx = load_index(os.path.join(a.raw_dir, 'index.json'))
     pts = [(q, lo, la) for q, it in items.items() for lo, la in item_points(it)]
     jobs = []
     for e in idx['files']:
@@ -402,7 +401,7 @@ def load_names():
 
 PBF_DATE = '2026-10-20'                  # items opened / built after the map extract cannot be on it
 WD_H_RANGE = (3.0, 600.0)                # accepted Wikidata heights (m)
-WD_FLOOR_M, WD_FLOOR_BASE = 3.3, 4.0     # height from floors: floors x 3.3 + 4 m
+WD_FLOOR_M, WD_FLOOR_BASE = LEVEL_M, 4.0  # height from floors: floors x 3.3 + 4 m
 WD_PREC_MAX = 0.001                      # coordinate precision coarser than this (degrees, ~110 m): rejected
 WD_STATE_WORDS = ('proposed', 'planned', 'construction', 'demolish', 'destroyed', 'former', 'abandoned', 'cancel',
                   'not in use', 'unfinished', 'unbuilt', 'disused')

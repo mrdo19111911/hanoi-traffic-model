@@ -30,8 +30,7 @@ import numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RAW_DIR = os.path.join(REPO, 'data', 'buildings', '_calib', 'raw_by_area')
+from common import LEVEL_M, RAW_DIR, REPO, load_index, metres_per_deg_np
 ROADS = os.path.join(REPO, 'data', 'buildings', 'osm_roads.parquet')
 OUT_JSON = os.path.join(REPO, 'buildings', 'frontrow_heights.json')
 
@@ -51,7 +50,7 @@ PARAMS = {
     'cross_tolerance_m': 0.1,
     'not_streets': 'bridge, tunnel, covered, indoor or area tagged (anything but no / empty)',
     'min_floors': 3,
-    'level_m': 3.3,
+    'level_m': LEVEL_M,
     'scope_height_src': ['g25cal', 'est'],
 }
 MIN_FLOORS = PARAMS['min_floors']
@@ -116,7 +115,7 @@ def common_frame(tbl):
     lon = tbl['lon_e6'].to_numpy().astype(np.float64) / 1e6
     lat = tbl['lat_e6'].to_numpy().astype(np.float64) / 1e6
     lon0, lat0 = float(lon.mean()), float(lat.mean())
-    kx, ky = 111320 * np.cos(np.radians(lat0)), 110574.0
+    kx, ky = metres_per_deg_np(lat0)
     xy, ri = shapely.get_coordinates(geoms, return_index=True)
     lo = lon[ri] + xy[:, 0] / (kx_row[ri] * 1e6)
     la = lat[ri] + xy[:, 1] / (ky_row[ri] * 1e6)
@@ -180,7 +179,7 @@ def _build_file(args):
 def cmd_build(a):
     from concurrent.futures import ProcessPoolExecutor
     t0 = time.time()
-    idx = json.load(open(os.path.join(a.raw_dir, 'index.json'), encoding='utf-8'))
+    idx = load_index(os.path.join(a.raw_dir, 'index.json'))
     ents = [e for e in idx['files'] if e['file'].startswith(PARAMS['files_prefix'])]
     if a.files:
         ents = [e for e in ents if e['file'] in a.files]

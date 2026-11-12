@@ -24,10 +24,11 @@ Output data/buildings/vn_buildings.parquet, compact and zstd-compressed, one row
 """
 import argparse, hashlib, json, os, threading, time, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
-import duckdb, numpy as np, pyarrow as pa, rasterio, shapely
+import numpy as np, pyarrow as pa, rasterio, shapely
 from pyproj import Transformer
 from rasterio.features import rasterize
 from rasterio.windows import Window
+from common import FLOOR_BASE_M, LEVEL_M, spatial_connection
 
 BUCKET = 'open-buildings-temporal-data'
 GCS = f'https://storage.googleapis.com/{BUCKET}'
@@ -83,7 +84,7 @@ def attrs_query(src, hh, keep=''):
             SELECT m.id, m.src, ST_Centroid(m.geometry) c, m.area_m2, m.conf, m.osm_id, m.name,
                    nullif(trim(concat_ws(' ', m.addr_housenumber, m.addr_street)), '') addr,
                    CASE WHEN isnan(hh.h25) THEN NULL ELSE hh.h25 END h25,
-                   coalesce({pos('try_cast(m.height AS DOUBLE)')}, {pos('try_cast(m.building_levels AS DOUBLE)')} * 3.3) osm_h,
+                   coalesce({pos('try_cast(m.height AS DOUBLE)')}, {pos('try_cast(m.building_levels AS DOUBLE)')} * {LEVEL_M}) osm_h,
                    {pos('try_cast(m.building_levels AS DOUBLE)')} osm_levels
             FROM {src} m JOIN {hh} USING (id) {keep})
         , u AS (SELECT *, coalesce(osm_h, CASE WHEN h25 >= 2 THEN h25 END) hm FROM t)
@@ -92,7 +93,7 @@ def attrs_query(src, hh, keep=''):
                {dm('h25')} h25_dm, {dm('osm_h')} osm_h_dm, {dm('hm')} height_dm,
                CASE WHEN osm_h IS NOT NULL THEN 'osm' WHEN hm IS NOT NULL THEN 'g25' END height_src,
                CASE WHEN osm_levels IS NOT NULL THEN CAST(least(osm_levels, 255) AS UTINYINT)
-                    WHEN hm IS NOT NULL THEN CAST(least(greatest(1, 1 + round((hm - 3.9) / 3.3)), 255) AS UTINYINT) END floors,
+                    WHEN hm IS NOT NULL THEN CAST(least(greatest(1, 1 + round((hm - {FLOOR_BASE_M}) / {LEVEL_M})), 255) AS UTINYINT) END floors,
                osm_id, name, addr
         FROM u ORDER BY id"""
 
@@ -160,7 +161,7 @@ def main():
     a = ap.parse_args()
     t0 = time.time()
     src = os.path.join(a.out, a.src).replace('\\', '/')
-    con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
+    con = spatial_connection()
     where = f"WHERE cx BETWEEN {a.bbox[0]} AND {a.bbox[2]} AND cy BETWEEN {a.bbox[1]} AND {a.bbox[3]}" if a.bbox else ''
     con.execute(f"""CREATE TABLE b AS SELECT * FROM (SELECT id, ST_X(c) cx, ST_Y(c) cy, ST_AsWKB(geometry) wkb
                     FROM (SELECT id, geometry, ST_Centroid(geometry) c FROM '{src}')) {where} ORDER BY id""")

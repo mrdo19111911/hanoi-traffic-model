@@ -9,7 +9,8 @@ These are the OSM inputs of the building merge (merge_buildings.py):
     .venv/Scripts/python.exe buildings/extract_osm.py [--pbf osrm/data/vietnam-latest.osm.pbf] [--out data/buildings]
 """
 import argparse, gzip, json, os, time
-import duckdb, osmium
+import osmium
+from common import spatial_connection
 
 B_TAGS = ('building', 'building:levels', 'height', 'name', 'addr:housenumber', 'addr:street', 'amenity', 'shop')
 
@@ -71,8 +72,7 @@ def main():
     h.apply_file(a.pbf, locations=True, idx='flex_mem')
     h.close()
     print('read', h.n, round(time.time() - t), 's', flush=True)
-    con = duckdb.connect()
-    con.execute('INSTALL spatial; LOAD spatial;')
+    con = spatial_connection(install=True, progress_bar=True)
     for k in h.f:
         src = os.path.join(a.out, f'_osm_{k}.ndjson.gz').replace('\\', '/')
         dst = os.path.join(a.out, f'osm_{k}.parquet').replace('\\', '/')

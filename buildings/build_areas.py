@@ -50,6 +50,7 @@ from compact_layer import SCHEMA, decode, encode, encode_rows
 from heights_25d import attrs_query, tile_heights, tiles_for
 from part_heights import apply_in_build as part_heights
 from split_by_area import assign_communes, load_admin
+from common import PARQUET_KW, REPO, load_commune_groups, spatial_connection
 
 MAX_MB = 95                        # GitHub refuses files over 100 MB
 OVER_M2 = 0.05                     # check threshold, as check_road_overlap.py reports
@@ -68,7 +69,6 @@ MEM_HEADROOM = 1.5e9               # kept free when starting another area
 # The scheduling knobs above can be changed while a run goes on: <work>/tune.json, re-read before every start, may set
 # workers (up to the logical CPU count), start_gap_s, after_b_share, mem_base, mem_per_building and mem_headroom.
 TUNE_KEYS = ('workers', 'start_gap_s', 'after_b_share', 'mem_base', 'mem_per_building', 'mem_headroom')
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _W = {}                            # per worker: admin units and the group of each commune
 
 
@@ -82,7 +82,7 @@ def limit_threads(n):
 def _init(admin, pbf, groups_json):
     limit_threads(1)                # one core per worker; the pool size is the budget
     prov, comm = load_admin(admin, pbf)
-    gof = {c['osm_relation']: gi for gi, g in enumerate(json.load(open(groups_json, encoding='utf-8'))['groups']) for c in g['communes']}
+    gof = {c['osm_relation']: gi for gi, g in enumerate(load_commune_groups(groups_json)['groups']) for c in g['communes']}
     _W.update(prov=prov, comm=comm, cg=np.array([gof.get(r['rel_id'], -1) for r in comm], np.int32))
 
 
@@ -97,7 +97,7 @@ def prepare(out, work, bbox, groups_json, admin, pbf):
     os.makedirs(work, exist_ok=True)
     w = lambda n: os.path.join(work, n).replace('\\', '/')
     if not os.path.exists(w('areas.json')):
-        con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
+        con = spatial_connection()
         con.execute(f"SET temp_directory = '{w('_tmp')}'")
         fit.prepare(con, out, work, bbox)
         merged = os.path.join(out, 'vn_buildings_merged.parquet').replace('\\', '/')
@@ -134,7 +134,7 @@ def build_area(args):
     work, dst_dir, area, tiles, test = args
     t0 = time.time()
     gi, file = area['gi'], area['file']
-    g = json.load(open(os.path.join(REPO, 'buildings', 'commune_groups.json'), encoding='utf-8'))['groups'][gi]
+    g = load_commune_groups()['groups'][gi]
     entry = {'file': file, 'province': g['province'], 'province_iso': g['province_iso'], 'version': BUILD_VERSION}
     core = np.array(area['box']) + np.array([-1, -1, 1, 1]) * (1e-7 if test else 1e-4)
     margin = 0.0 if test else fit.NB_MARGIN_DEG
@@ -157,7 +157,7 @@ def build_area(args):
     open(os.path.join(work, 'phase', file), 'w').close()   # past its memory peak (pass B), for the scheduler
 
     # The rows vn_buildings_clean.parquet would hold (fit_footprints.main), then the area's own buildings.
-    con = duckdb.connect(); con.execute("LOAD spatial; SET enable_progress_bar = false;")
+    con = spatial_connection()
     con.register('f', res)
     con.execute(f"""CREATE TABLE clean AS SELECT m.* EXCLUDE (cx, cy), f.area_m2, ST_GeomFromWKB(f.wkb) geometry,
                f.shift_m::FLOAT shift_m, f.clip_m2::FLOAT clip_m2, f.fill_m2::FLOAT fill_m2, f.overlap_m2::FLOAT overlap_m2,
@@ -275,7 +275,7 @@ def build_area(args):
     bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
     os.makedirs(dst_dir, exist_ok=True)
     path = os.path.join(dst_dir, file)
-    pq.write_table(tbl, path, compression='zstd', compression_level=19, row_group_size=500_000)
+    pq.write_table(tbl, path, **PARQUET_KW)
     if test and test.get('attrs_out'):
         con.execute(f"COPY attrs TO '{test['attrs_out']}' (FORMAT parquet)")
         con.execute(f"COPY (SELECT * FROM clean WHERE id IN (SELECT id FROM attrs)) TO '{test['clean_out']}' (FORMAT parquet)")

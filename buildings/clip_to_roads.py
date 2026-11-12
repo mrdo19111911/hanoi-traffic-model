@@ -21,12 +21,10 @@ Summary in vn_buildings_clean.meta.json.
     .venv/Scripts/python.exe buildings/clip_to_roads.py [--out data/buildings] [--bbox W S E N]
 """
 import argparse, json, os, time
-import duckdb
+from common import UTM_BACK_SQL as BACK, UTM_SQL as UTM, spatial_connection
 
 CELL = 0.25
 MARGIN = 0.002
-UTM = "'EPSG:4326', 'EPSG:32648', always_xy := true"
-BACK = "'EPSG:32648', 'EPSG:4326', always_xy := true"
 KEEP_SHARE, MIN_M2 = 0.5, 6.0
 ROUND_M = 0.1                                    # margin for coordinate rounding downstream
 GAP_M = 5.0                                      # road_gap_m is recorded up to this distance
@@ -47,8 +45,8 @@ def main():
     a = ap.parse_args()
     t0 = time.time()
     p = lambda n: os.path.join(a.out, n).replace('\\', '/')
-    con = duckdb.connect(p('_clip.duckdb'))
-    con.execute(f"INSTALL spatial; LOAD spatial; SET enable_progress_bar = false; SET memory_limit = '20GB'; SET temp_directory = '{p('_tmp')}';")
+    con = spatial_connection(p('_clip.duckdb'), install=True)
+    con.execute(f"SET memory_limit = '20GB'; SET temp_directory = '{p('_tmp')}';")
     where = f"WHERE cx BETWEEN {a.bbox[0]} AND {a.bbox[2]} AND cy BETWEEN {a.bbox[1]} AND {a.bbox[3]}" if a.bbox else ''
     con.execute(f"""CREATE OR REPLACE TABLE b AS SELECT * FROM (
         SELECT id, ST_X(ST_Centroid(geometry)) cx, ST_Y(ST_Centroid(geometry)) cy, ST_XMin(geometry) x0, ST_YMin(geometry) y0,

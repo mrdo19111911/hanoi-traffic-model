@@ -28,13 +28,11 @@ import argparse, json, os, sys, time
 import numpy as np, pyarrow as pa, pyarrow.parquet as pq
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from calibrate_heights import LEVEL_M, dm_of, floors_of
+from calibrate_heights import dm_of
+from common import BY_AREA as PUB_DIR, COMMUNE_GROUPS as GROUPS, LEVEL_M, PARQUET_KW, RAW_DIR, REPO
+from common import floors_of, load_commune_groups
 from frontrow_heights import load_frontrow
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PUB_DIR = os.path.join(REPO, 'buildings', 'by_area')
-RAW_DIR = os.path.join(REPO, 'data', 'buildings', '_calib', 'raw_by_area')
-GROUPS = os.path.join(REPO, 'buildings', 'commune_groups.json')
 FRONTROW = os.path.join(REPO, 'buildings', 'frontrow_heights.json')
 SCOPE_SRC = ('g25cal', 'frontrow')
 ALPHA, CAP_FLOORS = 1.7, 8                  # the user's decision, 2026-10-27
@@ -43,7 +41,7 @@ FLOOR_BINS = [(1, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 255)]
 
 def alpha_files():
     """(file, commune names) of every commune group: the files in scope."""
-    G = json.load(open(GROUPS, encoding='utf-8'))
+    G = load_commune_groups(GROUPS)
     return [(g['file'], [c['name'] for c in g['communes']]) for g in G['groups']]
 
 
@@ -117,7 +115,7 @@ def run(names, fr_ids, alpha, cap_floors, dst=None):
             t = t.set_column(t.schema.get_field_index('height_src'), 'height_src',
                              pa.array(src.tolist(), pa.string()).dictionary_encode().cast(t.schema.field('height_src').type))
             out = os.path.join(dst, name)
-            pq.write_table(t, out + '.tmp', compression='zstd', compression_level=19, row_group_size=500_000)
+            pq.write_table(t, out + '.tmp', **PARQUET_KW)
             os.replace(out + '.tmp', out)
             per[name]['file_mb'] = round(os.path.getsize(out) / 1e6, 1)
     cat = lambda L: np.concatenate(L) if L else np.zeros(0)

@@ -18,11 +18,10 @@ At the end the parts and the OSM buildings are assembled into data/buildings/vn_
     .venv/Scripts/python.exe buildings/merge_buildings.py [--ob data/open_buildings/vnm] [--out data/buildings]
 """
 import argparse, json, math, os, time
-import duckdb
+from common import UTM_SQL as UTM, spatial_connection
 
 CELL = 0.25
 MARGIN = 0.002                                   # degrees; features straddling a cell edge
-UTM = "'EPSG:4326', 'EPSG:32648', always_xy := true"
 RULES = {'low_conf': 0.7, 'osm_dup': 0.2, 'water': 0.3, 'road': 0.4}
 HALF_WIDTH = """coalesce(try_cast(lanes AS DOUBLE) * 1.75, CASE
     WHEN hw IN ('motorway','trunk','primary') THEN 7 WHEN hw = 'secondary' THEN 5 WHEN hw = 'tertiary' THEN 4
@@ -31,8 +30,7 @@ HALF_WIDTH = """coalesce(try_cast(lanes AS DOUBLE) * 1.75, CASE
 
 
 def connect(out):
-    con = duckdb.connect(os.path.join(out, '_merge.duckdb'))
-    con.execute("INSTALL spatial; LOAD spatial; SET enable_progress_bar = false;")
+    con = spatial_connection(os.path.join(out, '_merge.duckdb'), install=True)
     con.execute(f"SET temp_directory = '{os.path.join(out, '_tmp').replace(chr(92), '/')}'; SET memory_limit = '20GB';")
     return con
 

@@ -56,8 +56,7 @@ import numpy as np, pyarrow as pa, pyarrow.parquet as pq, shapely
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from frontrow_heights import common_frame, half_width, PARAMS as FR
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PUB_DIR = os.path.join(REPO, 'buildings', 'by_area')
+from common import BY_AREA as PUB_DIR, REPO, load_index, metres_per_deg_np, spatial_connection
 ROADS = os.path.join(REPO, 'data', 'buildings', 'osm_roads.parquet')
 OSM_B = os.path.join(REPO, 'data', 'buildings', 'osm_buildings.parquet')
 POINTS = os.path.join(REPO, 'data', 'buildings', 'osm_addr_points.parquet')
@@ -80,7 +79,7 @@ MAX_SUFFIX = 3                       # 12A-12C; a house that would need more get
 RULE_MIN = 0.8                       # alley rule used only when the dev alleys agree this often
 INTERP_CONF_M = (60.0, 200.0)        # anchor gap: <= high, <= medium, else low
 LON0, LAT0 = 105.85, 21.03
-KX, KY = 111320 * np.cos(np.radians(LAT0)), 110574.0
+KX, KY = metres_per_deg_np(LAT0)
 ALLEY = re.compile(r'^(ngo|ngach|hem|kiet)\s+(\d+(?:/\d+)*)\b\s*(.*)$')
 NUM = re.compile(r'^(\d{1,4})\s*([a-z])?$')
 SLASH = re.compile(r'^(\d{1,4})\s*/\s*(\d{1,4})\s*([a-z])?$')
@@ -143,8 +142,7 @@ class Streets:
     """Named ways of a bbox joined into streets (key + nearby), each with one axis in the metric frame."""
 
     def __init__(self, bbox):
-        import duckdb
-        con = duckdb.connect(); con.execute('LOAD spatial')
+        con = spatial_connection(progress_bar=True)
         W, S, E, N = bbox
         rows = con.execute(f"""SELECT hw, lanes, name, ST_AsWKB(geometry) FROM '{ROADS}' WHERE name IS NOT NULL
             AND hw IN ({','.join(repr(h) for h in HW)}) AND coalesce(bridge, 'no') IN ('no', '')
@@ -586,7 +584,7 @@ def number_by_rule(st, hs, side, streets, R, counts):
 # ---------------------------------------------------------------------------------------------------- commands
 
 def file_list(files, bbox):
-    idx = json.load(open(os.path.join(PUB_DIR, 'index.json'), encoding='utf-8'))
+    idx = load_index()
     ents = [e for e in idx['files'] if e['file'].startswith('ha_noi_')]
     if files:
         ents = [e for e in ents if e['file'] in files]
